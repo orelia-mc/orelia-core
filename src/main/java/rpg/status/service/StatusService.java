@@ -2,13 +2,16 @@ package rpg.status.service;
 
 import rpg.core.player.PlayerDataManager;
 import rpg.status.config.LevelingConfig;
+import rpg.status.model.LeaderboardEntry;
 import rpg.status.model.ModifierType;
 import rpg.status.model.PlayerStatusComponent;
 import rpg.status.model.StatModifier;
 import rpg.status.model.StatSheet;
 import rpg.status.model.StatType;
+import rpg.status.repository.StatusRepository;
 import rpg.util.MathUtil;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,13 +25,20 @@ public final class StatusService {
     private final StatusCalculatorService calculatorService;
     private final LevelGrowthService levelGrowthService;
     private final LevelingConfig levelingConfig;
+    private final StatusRepository repository;
 
     public StatusService(PlayerDataManager playerDataManager, StatusCalculatorService calculatorService,
-                          LevelGrowthService levelGrowthService, LevelingConfig levelingConfig) {
+                          LevelGrowthService levelGrowthService, LevelingConfig levelingConfig, StatusRepository repository) {
         this.playerDataManager = playerDataManager;
         this.calculatorService = calculatorService;
         this.levelGrowthService = levelGrowthService;
         this.levelingConfig = levelingConfig;
+        this.repository = repository;
+    }
+
+    /** Top players by level, straight from storage (SOW RankingModule) - includes offline players. */
+    public List<LeaderboardEntry> getLeaderboard(int limit) {
+        return repository.findTopByLevel(limit);
     }
 
     public Optional<PlayerStatusComponent> component(UUID uuid) {

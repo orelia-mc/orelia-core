@@ -1,5 +1,6 @@
 package rpg.api;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,4 +24,7 @@ public interface StatusApi {
     void damage(UUID playerId, double amount);
 
     void heal(UUID playerId, double amount);
+
+    /** Top players by level (ties broken by experience); includes offline players. */
+    List<LeaderboardEntry> getLeaderboard(int limit);
 }

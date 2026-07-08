@@ -2,6 +2,7 @@ package rpg.status.repository;
 
 import rpg.database.manager.DatabaseManager;
 import rpg.database.repository.SchemaOwner;
+import rpg.status.model.LeaderboardEntry;
 import rpg.status.model.PlayerStatusComponent;
 import rpg.status.model.StatSheet;
 import rpg.status.model.StatType;
@@ -12,6 +13,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -69,6 +72,35 @@ public final class StatusRepository implements SchemaOwner {
 
         StatSheet baseStats = levelGrowthService.baseStatsForLevel(1);
         return new PlayerStatusComponent(uuid, 1, 0L, baseStats, baseStats.get(StatType.HP), baseStats.get(StatType.MP));
+    }
+
+    /** Top {@code limit} players by level (ties broken by experience), joined against the
+     * {@code players} table for their last known name (SOW RankingModule). */
+    public List<LeaderboardEntry> findTopByLevel(int limit) {
+        String sql = """
+                SELECT s.uuid, p.name, s.level, s.experience
+                FROM player_status s
+                JOIN players p ON p.uuid = s.uuid
+                ORDER BY s.level DESC, s.experience DESC
+                LIMIT ?
+                """;
+        List<LeaderboardEntry> entries = new ArrayList<>();
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, limit);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    entries.add(new LeaderboardEntry(
+                            UUID.fromString(resultSet.getString("uuid")),
+                            resultSet.getString("name"),
+                            resultSet.getInt("level"),
+                            resultSet.getLong("experience")));
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to load level leaderboard", e);
+        }
+        return entries;
     }
 
     public void save(PlayerStatusComponent component) {

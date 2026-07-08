@@ -54,7 +54,7 @@ public final class StatusModule implements RpgModule {
         plugin.getPlayerDataManager().registerLoader(statusManager);
 
         StatusCalculatorService calculatorService = new StatusCalculatorService();
-        this.statusService = new StatusService(plugin.getPlayerDataManager(), calculatorService, levelGrowthService, levelingConfig);
+        this.statusService = new StatusService(plugin.getPlayerDataManager(), calculatorService, levelGrowthService, levelingConfig, repository);
 
         plugin.getServer().getPluginManager().registerEvents(new CombatStatusListener(statusService), plugin);
 
