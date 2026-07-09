@@ -27,7 +27,6 @@ accessories:
     type: NECKLACE
     stat-bonus:
       SP: 20
-      INT: 2
     description:
       - "&7SP回復とスキルの冴えを高めるネックレス。"
     custom-model-data: 200201
@@ -36,7 +35,7 @@ accessories:
     name: "疾風の羽"
     type: WING
     stat-bonus:
-      AGI: 3
+      SPD: 3
     description:
       - "&7移動速度を高める羽。"
     custom-model-data: 200301

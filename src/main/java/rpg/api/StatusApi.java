@@ -14,7 +14,7 @@ public interface StatusApi {
 
     Optional<Integer> getLevel(UUID playerId);
 
-    /** Final (post equipment/buff) stat values keyed by stat name (HP, SP, ATK, DEF, AGI, DEX, INT, CRT, CRT_DMG, SPD). */
+    /** Final (post equipment/buff) stat values keyed by stat name (HP, SP, ATK, BOW_ATK, DEF, CRT, CRT_DMG, SPD). */
     Map<String, Double> getFinalStats(UUID playerId);
 
     void addExperience(UUID playerId, long amount);

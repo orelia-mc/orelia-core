@@ -34,16 +34,10 @@ status:
     ATK:
       base: 5
       per-level: 1
+    BOW_ATK:
+      base: 5
+      per-level: 1
     DEF:
-      base: 5
-      per-level: 1
-    AGI:
-      base: 5
-      per-level: 1
-    DEX:
-      base: 5
-      per-level: 1
-    INT:
       base: 5
       per-level: 1
     CRT:
