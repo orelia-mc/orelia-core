@@ -9,8 +9,9 @@ import rpg.job.model.JobType;
 import rpg.job.service.JobService;
 
 /**
- * {@code /rpgjob info} - prints the sender's current job and which weapon types it may
- * equip. Job changes only happen through the job-change NPC, not this command.
+ * {@code /rpgjob <info|list>} - {@code info} prints the sender's current job, {@code list}
+ * prints every job that exists. Job changes only happen through the job-change NPC, not
+ * this command.
  */
 public final class JobCommand implements CommandExecutor {
 
@@ -26,6 +27,12 @@ public final class JobCommand implements CommandExecutor {
             sender.sendMessage("Players only.");
             return true;
         }
+        if (args.length > 0 && args[0].equalsIgnoreCase("list")) {
+            sender.sendMessage(ChatColor.GREEN + "Jobs: " + ChatColor.WHITE
+                    + String.join(", ", java.util.Arrays.stream(JobType.values()).map(JobType::name).toList()));
+            return true;
+        }
+
         JobType job = jobService.getCurrentJob(player.getUniqueId()).orElse(null);
         if (job == null) {
             sender.sendMessage(ChatColor.YELLOW + "You have not chosen a job yet. Visit a job-change NPC.");
