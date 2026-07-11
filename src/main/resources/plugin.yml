@@ -22,7 +22,7 @@ commands:
     permission: orelia.status
   rpgadmin:
     description: Administrative commands for Orelia Core
-    usage: /rpgadmin <reload|...> ...
+    usage: /rpgadmin <reload|spawn <monsterId>|spawnboss <bossId>>
     permission: orelia.admin
 
 permissions:
