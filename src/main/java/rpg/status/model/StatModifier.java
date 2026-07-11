@@ -3,7 +3,7 @@ package rpg.status.model;
 import java.util.UUID;
 
 /**
- * A single timed buff/debuff contribution (e.g. from a necklace's MP regen, a skill's
+ * A single timed buff/debuff contribution (e.g. from a necklace's SP regen, a skill's
  * self-buff, or a boss's enrage debuff). {@code expiresAtMillis <= 0} means permanent
  * for the lifetime of its source (removed explicitly, not by timer).
  */

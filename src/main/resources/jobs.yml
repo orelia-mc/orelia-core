@@ -8,7 +8,7 @@ jobs:
     allowed-weapons:
       - SWORD
     passive-bonus:
-      STR: 2
+      ATK: 2
       AGI: 1
 
   SPEARMAN:
@@ -16,7 +16,7 @@ jobs:
     allowed-weapons:
       - SPEAR
     passive-bonus:
-      STR: 1
+      ATK: 1
       DEX: 2
 
   WARRIOR:
@@ -25,7 +25,7 @@ jobs:
       - AXE
       - SWORD
     passive-bonus:
-      STR: 3
+      ATK: 3
       DEF: 1
 
   ARCHER:

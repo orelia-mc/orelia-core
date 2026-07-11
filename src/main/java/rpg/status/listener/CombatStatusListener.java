@@ -9,7 +9,7 @@ import rpg.status.model.StatType;
 import rpg.status.service.StatusService;
 
 /**
- * Folds STR (attacker) and DEF (victim) into vanilla melee/projectile damage. Weapon
+ * Folds ATK (attacker) and DEF (victim) into vanilla melee/projectile damage. Weapon
  * skill damage multipliers are applied separately by the skill module before this
  * listener runs, since skills fire a fresh damage event of their own.
  */
@@ -28,7 +28,7 @@ public final class CombatStatusListener implements Listener {
         if (event.getDamager() instanceof Player attacker) {
             StatSheet stats = statusService.getFinalStats(attacker.getUniqueId()).orElse(null);
             if (stats != null) {
-                damage *= 1 + stats.get(StatType.STR) / 100.0;
+                damage *= 1 + stats.get(StatType.ATK) / 100.0;
             }
         }
 

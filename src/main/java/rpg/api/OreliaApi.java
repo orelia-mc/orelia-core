@@ -26,7 +26,7 @@ public interface OreliaApi {
     /** Current job name (e.g. {@code "SWORDSMAN"}), or empty if unemployed/not loaded. */
     Optional<String> getPlayerJob(UUID playerId);
 
-    /** Final (post equipment/buff) stat values keyed by stat name (HP, MP, STR, DEF, AGI, DEX, INT, LUK). */
+    /** Final (post equipment/buff) stat values keyed by stat name (HP, SP, ATK, DEF, AGI, DEX, INT, CRT, CRT_DMG, SPD). */
     Map<String, Double> getPlayerStats(UUID playerId);
 
     /** The weapon id of the item currently held in the player's main hand, if it is an Orelia weapon. */

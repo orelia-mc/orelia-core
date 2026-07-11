@@ -68,16 +68,16 @@ public final class StatusService {
         statusComponent(uuid).ifPresent(component -> component.removeBuffsFromSource(sourceKey));
     }
 
-    public boolean tryConsumeMp(UUID uuid, double amount) {
+    public boolean tryConsumeSp(UUID uuid, double amount) {
         Optional<PlayerStatusComponent> componentOpt = statusComponent(uuid);
         if (componentOpt.isEmpty()) {
             return false;
         }
         PlayerStatusComponent component = componentOpt.get();
-        if (component.getCurrentMp() < amount) {
+        if (component.getCurrentSp() < amount) {
             return false;
         }
-        component.setCurrentMp(component.getCurrentMp() - amount);
+        component.setCurrentSp(component.getCurrentSp() - amount);
         return true;
     }
 
@@ -94,24 +94,24 @@ public final class StatusService {
     }
 
     /**
-     * Regenerates HP/MP by the given percentage of max per tick and prunes expired buffs.
+     * Regenerates HP/SP by the given percentage of max per tick and prunes expired buffs.
      * Called periodically by {@link rpg.status.StatusModule}.
      */
-    public void tickRegen(UUID uuid, double hpRegenPercent, double mpRegenPercent) {
+    public void tickRegen(UUID uuid, double hpRegenPercent, double spRegenPercent) {
         statusComponent(uuid).ifPresent(component -> {
             component.removeExpiredBuffs(System.currentTimeMillis());
             StatSheet finalStats = calculatorService.calculateFinal(component);
             double maxHp = finalStats.get(StatType.HP);
-            double maxMp = finalStats.get(StatType.MP);
+            double maxSp = finalStats.get(StatType.SP);
             component.setCurrentHp(MathUtil.clamp(component.getCurrentHp() + maxHp * hpRegenPercent / 100.0, 0, maxHp));
-            component.setCurrentMp(MathUtil.clamp(component.getCurrentMp() + maxMp * mpRegenPercent / 100.0, 0, maxMp));
+            component.setCurrentSp(MathUtil.clamp(component.getCurrentSp() + maxSp * spRegenPercent / 100.0, 0, maxSp));
         });
     }
 
     /**
      * Adds experience and applies as many level-ups as the new total allows (capped at
      * {@link LevelingConfig#getMaxLevel()}). On each level-up, base stats are recalculated
-     * from {@link LevelGrowthService} and HP/MP are refilled to the new max.
+     * from {@link LevelGrowthService} and HP/SP are refilled to the new max.
      */
     public void addExperience(UUID uuid, long amount) {
         if (amount <= 0) {
@@ -130,7 +130,7 @@ public final class StatusService {
                 component.setBaseStats(levelGrowthService.baseStatsForLevel(component.getLevel()));
                 StatSheet finalStats = calculatorService.calculateFinal(component);
                 component.setCurrentHp(finalStats.get(StatType.HP));
-                component.setCurrentMp(finalStats.get(StatType.MP));
+                component.setCurrentSp(finalStats.get(StatType.SP));
             }
         });
     }

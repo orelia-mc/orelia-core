@@ -13,7 +13,7 @@ public final class SkillData {
     private final String name;
     private final WeaponType weaponType;
     private final String executorType;
-    private final double mpCost;
+    private final double spCost;
     private final double cooldownSeconds;
     private final double damageMultiplier;
     private final String effectParticle;
@@ -22,14 +22,14 @@ public final class SkillData {
     private final double knockback;
     private final int maxLevel;
 
-    public SkillData(String id, String name, WeaponType weaponType, String executorType, double mpCost,
+    public SkillData(String id, String name, WeaponType weaponType, String executorType, double spCost,
                       double cooldownSeconds, double damageMultiplier, String effectParticle,
                       double range, double radius, double knockback, int maxLevel) {
         this.id = id;
         this.name = name;
         this.weaponType = weaponType;
         this.executorType = executorType;
-        this.mpCost = mpCost;
+        this.spCost = spCost;
         this.cooldownSeconds = cooldownSeconds;
         this.damageMultiplier = damageMultiplier;
         this.effectParticle = effectParticle;
@@ -55,8 +55,8 @@ public final class SkillData {
         return executorType;
     }
 
-    public double getMpCost() {
-        return mpCost;
+    public double getSpCost() {
+        return spCost;
     }
 
     public double getCooldownSeconds() {

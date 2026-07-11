@@ -12,7 +12,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Per-player runtime status state: level/experience, the persisted base stat sheet,
  * live equipment contributions (keyed by source, e.g. {@code "weapon"}, {@code "accessory:ring"}),
- * active timed buffs, and current HP/MP.
+ * active timed buffs, and current HP/SP.
  */
 public final class PlayerStatusComponent implements PlayerDataComponent {
 
@@ -23,15 +23,15 @@ public final class PlayerStatusComponent implements PlayerDataComponent {
     private final Map<String, StatSheet> equipmentContributions = new ConcurrentHashMap<>();
     private final List<StatModifier> buffs = new CopyOnWriteArrayList<>();
     private double currentHp;
-    private double currentMp;
+    private double currentSp;
 
-    public PlayerStatusComponent(UUID owner, int level, long experience, StatSheet baseStats, double currentHp, double currentMp) {
+    public PlayerStatusComponent(UUID owner, int level, long experience, StatSheet baseStats, double currentHp, double currentSp) {
         this.owner = owner;
         this.level = level;
         this.experience = experience;
         this.baseStats = baseStats;
         this.currentHp = currentHp;
-        this.currentMp = currentMp;
+        this.currentSp = currentSp;
     }
 
     @Override
@@ -99,11 +99,11 @@ public final class PlayerStatusComponent implements PlayerDataComponent {
         this.currentHp = currentHp;
     }
 
-    public double getCurrentMp() {
-        return currentMp;
+    public double getCurrentSp() {
+        return currentSp;
     }
 
-    public void setCurrentMp(double currentMp) {
-        this.currentMp = currentMp;
+    public void setCurrentSp(double currentSp) {
+        this.currentSp = currentSp;
     }
 }

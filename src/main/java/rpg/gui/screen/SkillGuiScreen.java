@@ -58,7 +58,7 @@ public final class SkillGuiScreen {
                     .name("&e" + skill.getName())
                     .lore(List.of(
                             "&7Lv. " + level + " / " + skill.getMaxLevel(),
-                            "&7MP消費: " + skill.getMpCost(),
+                            "&7SP消費: " + skill.getSpCost(),
                             "&7クールタイム: " + skill.getCooldownSeconds() + "s",
                             "",
                             "&a左クリック &7- 習得/レベルアップ",

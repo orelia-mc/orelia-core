@@ -14,12 +14,12 @@ public interface StatusApi {
 
     Optional<Integer> getLevel(UUID playerId);
 
-    /** Final (post equipment/buff) stat values keyed by stat name (HP, MP, STR, DEF, AGI, DEX, INT, LUK). */
+    /** Final (post equipment/buff) stat values keyed by stat name (HP, SP, ATK, DEF, AGI, DEX, INT, CRT, CRT_DMG, SPD). */
     Map<String, Double> getFinalStats(UUID playerId);
 
     void addExperience(UUID playerId, long amount);
 
-    boolean tryConsumeMp(UUID playerId, double amount);
+    boolean tryConsumeSp(UUID playerId, double amount);
 
     void damage(UUID playerId, double amount);
 

@@ -12,7 +12,7 @@ import rpg.monster.service.MonsterSpawnService;
 /**
  * Applies monster-side attack power (when the monster is the damager) and defense (when
  * the monster is the victim) on top of vanilla damage, mirroring how
- * {@link rpg.status.listener.CombatStatusListener} treats player STR/DEF.
+ * {@link rpg.status.listener.CombatStatusListener} treats player ATK/DEF.
  */
 public final class MonsterCombatListener implements Listener {
 

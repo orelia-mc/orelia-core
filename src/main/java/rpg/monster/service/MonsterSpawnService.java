@@ -15,7 +15,7 @@ import java.util.Optional;
  * Spawns the vanilla entity backing a {@link MonsterData} definition, tags it with the
  * monster id, and applies its configured HP. Attack/defense are applied per-hit by
  * {@link rpg.monster.listener.MonsterCombatListener} instead of vanilla attributes, so
- * status-module STR/DEF and monster defense compose the same way on both sides of a fight.
+ * status-module ATK/DEF and monster defense compose the same way on both sides of a fight.
  */
 public final class MonsterSpawnService {
 

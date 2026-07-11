@@ -12,13 +12,13 @@ import rpg.status.service.StatusService;
 import java.util.Optional;
 
 /**
- * Orchestrates one skill cast: weapon/socket/level/cooldown/MP checks, then delegates the
+ * Orchestrates one skill cast: weapon/socket/level/cooldown/SP checks, then delegates the
  * actual effect to the {@link rpg.skill.executor.SkillExecutor} the skill's config points at.
  */
 public final class SkillCastService {
 
     public enum CastFailure {
-        UNKNOWN_SKILL, WRONG_WEAPON, NOT_SOCKETED, NOT_LEARNED, ON_COOLDOWN, NOT_ENOUGH_MP, NO_EXECUTOR
+        UNKNOWN_SKILL, WRONG_WEAPON, NOT_SOCKETED, NOT_LEARNED, ON_COOLDOWN, NOT_ENOUGH_SP, NO_EXECUTOR
     }
 
     private final PlayerDataManager playerDataManager;
@@ -70,8 +70,8 @@ public final class SkillCastService {
         if (component.isOnCooldown(skillId, now)) {
             return Optional.of(CastFailure.ON_COOLDOWN);
         }
-        if (!statusService.tryConsumeMp(caster.getUniqueId(), data.getMpCost())) {
-            return Optional.of(CastFailure.NOT_ENOUGH_MP);
+        if (!statusService.tryConsumeSp(caster.getUniqueId(), data.getSpCost())) {
+            return Optional.of(CastFailure.NOT_ENOUGH_SP);
         }
 
         var executor = executorRegistry.get(data.getExecutorType());

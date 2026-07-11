@@ -39,7 +39,7 @@ public final class SkillRepository {
                 section.getString("name", id),
                 WeaponType.valueOf(section.getString("weapon-type", "SWORD").trim().toUpperCase()),
                 section.getString("executor-type", "MELEE_CONE"),
-                section.getDouble("mp-cost", 10.0),
+                section.getDouble("sp-cost", 10.0),
                 section.getDouble("cooldown-seconds", 5.0),
                 section.getDouble("damage-multiplier", 1.5),
                 section.getString("effect-particle", "SWEEP_ATTACK"),

@@ -21,7 +21,7 @@ skill:
   not-socketed: "&c武器にスキルが装着されていません。"
   not-learned: "&cこのスキルをまだ習得していません。"
   on-cooldown: "&cスキルはクールタイム中です。"
-  not-enough-mp: "&cMPが足りません。"
+  not-enough-sp: "&cSPが足りません。"
 
 quest:
   accepted: "&aクエストを受注しました。"

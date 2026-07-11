@@ -15,7 +15,7 @@ import rpg.util.MathUtil;
 /**
  * Turns a melee hit with an Orelia weapon into base damage from {@link WeaponData}
  * (attack power, crit roll). Runs at {@link EventPriority#LOW} so the status module's
- * STR/DEF combat listener (default priority) applies its percentage modifiers on top of
+ * ATK/DEF combat listener (default priority) applies its percentage modifiers on top of
  * this base value instead of overwriting it.
  */
 public final class WeaponUseListener implements Listener {

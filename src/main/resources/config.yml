@@ -17,7 +17,7 @@ database:
 status:
   regen:
     hp-percent-per-tick: 0.5
-    mp-percent-per-tick: 1.0
+    sp-percent-per-tick: 1.0
     # 100 ticks = 5 seconds
     period-ticks: 100
   leveling:
@@ -28,10 +28,10 @@ status:
     HP:
       base: 100
       per-level: 10
-    MP:
+    SP:
       base: 50
       per-level: 5
-    STR:
+    ATK:
       base: 5
       per-level: 1
     DEF:
@@ -46,7 +46,13 @@ status:
     INT:
       base: 5
       per-level: 1
-    LUK:
+    CRT:
+      base: 5
+      per-level: 1
+    CRT_DMG:
+      base: 5
+      per-level: 1
+    SPD:
       base: 5
       per-level: 1
 

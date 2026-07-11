@@ -16,7 +16,7 @@ import rpg.status.service.StatusService;
 import java.util.logging.Level;
 
 /**
- * Owns character level/stat calculation and HP/MP regen. Every other module reads a
+ * Owns character level/stat calculation and HP/SP regen. Every other module reads a
  * player's effective stats through {@link #getStatusService()} rather than computing
  * their own copy.
  */
@@ -60,11 +60,11 @@ public final class StatusModule implements RpgModule {
 
         YamlConfiguration config = plugin.getConfigManager().get("config.yml").get();
         double hpRegen = config.getDouble("status.regen.hp-percent-per-tick", 0.5);
-        double mpRegen = config.getDouble("status.regen.mp-percent-per-tick", 1.0);
+        double spRegen = config.getDouble("status.regen.sp-percent-per-tick", 1.0);
         long periodTicks = config.getLong("status.regen.period-ticks", 100L);
         plugin.getSchedulerService().runTimer(() ->
                 plugin.getServer().getOnlinePlayers().forEach(player ->
-                        statusService.tickRegen(player.getUniqueId(), hpRegen, mpRegen)),
+                        statusService.tickRegen(player.getUniqueId(), hpRegen, spRegen)),
                 periodTicks, periodTicks);
     }
 

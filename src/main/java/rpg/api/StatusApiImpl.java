@@ -37,8 +37,8 @@ final class StatusApiImpl implements StatusApi {
     }
 
     @Override
-    public boolean tryConsumeMp(UUID playerId, double amount) {
-        return statusService.tryConsumeMp(playerId, amount);
+    public boolean tryConsumeSp(UUID playerId, double amount) {
+        return statusService.tryConsumeSp(playerId, amount);
     }
 
     @Override

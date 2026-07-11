@@ -16,8 +16,8 @@ accessories:
     name: "戦士の指輪"
     type: RING
     stat-bonus:
-      STR: 3
-      LUK: 1
+      ATK: 3
+      CRT: 1
     description:
       - "&7会心の一撃を後押しする指輪。"
     custom-model-data: 200101
@@ -26,10 +26,10 @@ accessories:
     name: "賢者のネックレス"
     type: NECKLACE
     stat-bonus:
-      MP: 20
+      SP: 20
       INT: 2
     description:
-      - "&7MP回復とスキルの冴えを高めるネックレス。"
+      - "&7SP回復とスキルの冴えを高めるネックレス。"
     custom-model-data: 200201
 
   swift_wing:

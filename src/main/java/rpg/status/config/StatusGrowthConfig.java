@@ -34,7 +34,7 @@ public final class StatusGrowthConfig {
     private static double defaultBase(StatType type) {
         return switch (type) {
             case HP -> 100.0;
-            case MP -> 50.0;
+            case SP -> 50.0;
             default -> 5.0;
         };
     }
@@ -42,7 +42,7 @@ public final class StatusGrowthConfig {
     private static double defaultPerLevel(StatType type) {
         return switch (type) {
             case HP -> 10.0;
-            case MP -> 5.0;
+            case SP -> 5.0;
             default -> 1.0;
         };
     }

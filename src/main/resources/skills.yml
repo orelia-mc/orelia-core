@@ -15,7 +15,7 @@ skills:
     name: "斬撃"
     weapon-type: SWORD
     executor-type: MELEE_CONE
-    mp-cost: 8
+    sp-cost: 8
     cooldown-seconds: 3
     damage-multiplier: 1.4
     effect-particle: SWEEP_ATTACK
@@ -28,7 +28,7 @@ skills:
     name: "回転斬り"
     weapon-type: SWORD
     executor-type: MELEE_AOE
-    mp-cost: 16
+    sp-cost: 16
     cooldown-seconds: 8
     damage-multiplier: 1.6
     effect-particle: CRIT
@@ -41,7 +41,7 @@ skills:
     name: "居合"
     weapon-type: SWORD
     executor-type: DASH_STRIKE
-    mp-cost: 20
+    sp-cost: 20
     cooldown-seconds: 10
     damage-multiplier: 2.2
     effect-particle: CLOUD
@@ -54,7 +54,7 @@ skills:
     name: "クロススラッシュ"
     weapon-type: SWORD
     executor-type: MELEE_CONE
-    mp-cost: 14
+    sp-cost: 14
     cooldown-seconds: 6
     damage-multiplier: 1.9
     effect-particle: SWEEP_ATTACK
@@ -68,7 +68,7 @@ skills:
     name: "突進"
     weapon-type: SPEAR
     executor-type: DASH_STRIKE
-    mp-cost: 12
+    sp-cost: 12
     cooldown-seconds: 6
     damage-multiplier: 1.5
     effect-particle: CRIT
@@ -81,7 +81,7 @@ skills:
     name: "スパイラルランス"
     weapon-type: SPEAR
     executor-type: DASH_STRIKE
-    mp-cost: 22
+    sp-cost: 22
     cooldown-seconds: 10
     damage-multiplier: 2.1
     effect-particle: SWEEP_ATTACK
@@ -94,7 +94,7 @@ skills:
     name: "ジャンプ突き"
     weapon-type: SPEAR
     executor-type: DASH_STRIKE
-    mp-cost: 15
+    sp-cost: 15
     cooldown-seconds: 7
     damage-multiplier: 1.7
     effect-particle: CLOUD
@@ -108,7 +108,7 @@ skills:
     name: "バーサーク"
     weapon-type: AXE
     executor-type: MELEE_AOE
-    mp-cost: 25
+    sp-cost: 25
     cooldown-seconds: 15
     damage-multiplier: 1.8
     effect-particle: ANGRY_VILLAGER
@@ -121,7 +121,7 @@ skills:
     name: "アースクラッシュ"
     weapon-type: AXE
     executor-type: MELEE_AOE
-    mp-cost: 20
+    sp-cost: 20
     cooldown-seconds: 12
     damage-multiplier: 2.0
     effect-particle: BLOCK_CRACK
@@ -134,7 +134,7 @@ skills:
     name: "大振り"
     weapon-type: AXE
     executor-type: MELEE_CONE
-    mp-cost: 10
+    sp-cost: 10
     cooldown-seconds: 5
     damage-multiplier: 1.6
     effect-particle: SWEEP_ATTACK
@@ -148,7 +148,7 @@ skills:
     name: "パワーショット"
     weapon-type: BOW
     executor-type: ARROW_VOLLEY
-    mp-cost: 10
+    sp-cost: 10
     cooldown-seconds: 4
     damage-multiplier: 1.8
     effect-particle: CRIT
@@ -161,7 +161,7 @@ skills:
     name: "マルチショット"
     weapon-type: BOW
     executor-type: ARROW_VOLLEY
-    mp-cost: 18
+    sp-cost: 18
     cooldown-seconds: 8
     damage-multiplier: 1.2
     effect-particle: CRIT
@@ -174,7 +174,7 @@ skills:
     name: "爆裂矢"
     weapon-type: BOW
     executor-type: EXPLOSIVE_ARROW
-    mp-cost: 24
+    sp-cost: 24
     cooldown-seconds: 12
     damage-multiplier: 1.5
     effect-particle: EXPLOSION

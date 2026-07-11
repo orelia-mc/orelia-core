@@ -19,7 +19,7 @@ import java.util.UUID;
 
 /**
  * Persists the parts of {@link PlayerStatusComponent} that must survive a restart:
- * level, experience, current HP/MP. Equipment contributions and buffs are runtime-only
+ * level, experience, current HP/SP. Equipment contributions and buffs are runtime-only
  * and are rebuilt by the item/accessory/skill modules on join.
  */
 public final class StatusRepository implements SchemaOwner {
@@ -42,14 +42,24 @@ public final class StatusRepository implements SchemaOwner {
                         level INTEGER NOT NULL DEFAULT 1,
                         experience BIGINT NOT NULL DEFAULT 0,
                         current_hp DOUBLE NOT NULL DEFAULT 0,
-                        current_mp DOUBLE NOT NULL DEFAULT 0
+                        current_sp DOUBLE NOT NULL DEFAULT 0
                     )
                     """);
+            migrateCurrentMpColumn(connection, statement);
+        }
+    }
+
+    /** One-time migration for installs created before the MP stat was renamed to SP. */
+    private void migrateCurrentMpColumn(Connection connection, Statement statement) throws SQLException {
+        try (ResultSet columns = connection.getMetaData().getColumns(null, null, "player_status", "current_mp")) {
+            if (columns.next()) {
+                statement.execute("ALTER TABLE player_status RENAME COLUMN current_mp TO current_sp");
+            }
         }
     }
 
     public PlayerStatusComponent loadOrCreate(UUID uuid) {
-        String sql = "SELECT level, experience, current_hp, current_mp FROM player_status WHERE uuid = ?";
+        String sql = "SELECT level, experience, current_hp, current_sp FROM player_status WHERE uuid = ?";
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, uuid.toString());
@@ -63,7 +73,7 @@ public final class StatusRepository implements SchemaOwner {
                             resultSet.getLong("experience"),
                             baseStats,
                             resultSet.getDouble("current_hp"),
-                            resultSet.getDouble("current_mp"));
+                            resultSet.getDouble("current_sp"));
                 }
             }
         } catch (SQLException e) {
@@ -71,7 +81,7 @@ public final class StatusRepository implements SchemaOwner {
         }
 
         StatSheet baseStats = levelGrowthService.baseStatsForLevel(1);
-        return new PlayerStatusComponent(uuid, 1, 0L, baseStats, baseStats.get(StatType.HP), baseStats.get(StatType.MP));
+        return new PlayerStatusComponent(uuid, 1, 0L, baseStats, baseStats.get(StatType.HP), baseStats.get(StatType.SP));
     }
 
     /** Top {@code limit} players by level (ties broken by experience), joined against the
@@ -106,14 +116,14 @@ public final class StatusRepository implements SchemaOwner {
     public void save(PlayerStatusComponent component) {
         String sql = switch (databaseManager.getType()) {
             case SQLITE -> """
-                    INSERT INTO player_status (uuid, level, experience, current_hp, current_mp) VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO player_status (uuid, level, experience, current_hp, current_sp) VALUES (?, ?, ?, ?, ?)
                     ON CONFLICT(uuid) DO UPDATE SET level = excluded.level, experience = excluded.experience,
-                        current_hp = excluded.current_hp, current_mp = excluded.current_mp
+                        current_hp = excluded.current_hp, current_sp = excluded.current_sp
                     """;
             case MYSQL -> """
-                    INSERT INTO player_status (uuid, level, experience, current_hp, current_mp) VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO player_status (uuid, level, experience, current_hp, current_sp) VALUES (?, ?, ?, ?, ?)
                     ON DUPLICATE KEY UPDATE level = VALUES(level), experience = VALUES(experience),
-                        current_hp = VALUES(current_hp), current_mp = VALUES(current_mp)
+                        current_hp = VALUES(current_hp), current_sp = VALUES(current_sp)
                     """;
         };
         try (Connection connection = databaseManager.getConnection();
@@ -122,7 +132,7 @@ public final class StatusRepository implements SchemaOwner {
             statement.setInt(2, component.getLevel());
             statement.setLong(3, component.getExperience());
             statement.setDouble(4, component.getCurrentHp());
-            statement.setDouble(5, component.getCurrentMp());
+            statement.setDouble(5, component.getCurrentSp());
             statement.executeUpdate();
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to save status for " + component.getOwner(), e);

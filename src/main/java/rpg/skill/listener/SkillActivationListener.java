@@ -47,7 +47,7 @@ public final class SkillActivationListener implements Listener {
             case NOT_SOCKETED -> "武器にスキルが装着されていません。";
             case NOT_LEARNED -> "このスキルをまだ習得していません。";
             case ON_COOLDOWN -> "スキルはクールタイム中です。";
-            case NOT_ENOUGH_MP -> "MPが足りません。";
+            case NOT_ENOUGH_SP -> "SPが足りません。";
         };
     }
 }
