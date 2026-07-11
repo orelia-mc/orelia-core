@@ -28,4 +28,4 @@ classes. See `rpg.api.OreliaApi` and the narrower `StatusApi`/`JobApi`/`ItemApi`
 
 Every module reads its own file under `src/main/resources/` (`items.yml`, `skills.yml`,
 `jobs.yml`, `accessories.yml`, `monsters.yml`, `bosses.yml`, `effects.yml`, `gui.yml`,
-`config.yml`). Reload all of them with `/rpgadmin reload`.
+`config.yml`). Reload all of them with `/oladmin reload`.

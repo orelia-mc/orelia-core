@@ -14,7 +14,7 @@ import java.util.Optional;
 
 /**
  * In-memory registry of every {@link WeaponData}, rebuilt from {@code items.yml} on load
- * and on {@code /rpgadmin reload}. This is the SOW's "add a weapon via config only" contract -
+ * and on {@code /oladmin reload}. This is the SOW's "add a weapon via config only" contract -
  * no code change is needed to add a new entry under {@code weapons:} in items.yml.
  */
 public final class WeaponRepository {

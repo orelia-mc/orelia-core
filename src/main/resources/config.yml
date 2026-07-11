@@ -1,5 +1,5 @@
 # Orelia core configuration.
-# Reload with: /rpgadmin reload
+# Reload with: /oladmin reload
 
 database:
   # SQLITE or MYSQL
@@ -55,6 +55,6 @@ economy:
 
 monster:
   # Cancels vanilla natural/spawner hostile mob spawning so every enemy in the world comes
-  # from an Orelia monster spawn point (/rpgadmin spawnpoint) instead of random vanilla
+  # from an Orelia monster spawn point (/oladmin spawnpoint) instead of random vanilla
   # spawns. Does not affect passive animals or Orelia's own spawns.
   disable-vanilla-hostile-spawning: true

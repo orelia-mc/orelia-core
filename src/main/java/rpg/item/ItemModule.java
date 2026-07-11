@@ -46,7 +46,7 @@ public final class ItemModule implements RpgModule {
         this.itemManager = new ItemManager(repository, factory, identityService, requirementService);
 
         plugin.getServer().getPluginManager().registerEvents(new WeaponUseListener(identityService, requirementService), plugin);
-        plugin.getCommand("rpgitem").setExecutor(new ItemCommand(itemManager));
+        plugin.getPlayerCommandRegistry().register("item", new ItemCommand(itemManager));
     }
 
     @Override

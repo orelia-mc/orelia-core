@@ -7,31 +7,15 @@ description: RPG foundation plugin (combat, player, status) - weapons, skills, j
 folia-supported: false
 
 commands:
-  rpgitem:
-    description: Manage RPG weapons
-    usage: /rpgitem <give|info> ...
-    permission: orelia.item
-    permission-message: You do not have permission to use this command.
-  rpgjob:
-    description: Manage RPG jobs
-    usage: /rpgjob <info|list> ...
-    permission: orelia.job
-  rpgstatus:
-    description: Open the status GUI
-    usage: /rpgstatus
-    permission: orelia.status
-  rpgadmin:
-    description: Administrative commands for Orelia Core
-    usage: /rpgadmin <reload|spawn <monsterId>|spawnboss <bossId>|spawnpoint <add|remove|list>>
+  ol:
+    description: Orelia player commands (item, job, status, and more registered by orelia-world/orelia-extra)
+    usage: /ol <item|job|status|...> ...
+  oladmin:
+    description: Orelia admin commands (reload, spawn, spawnpoint, and more registered by orelia-world/orelia-extra)
+    usage: /oladmin <reload|spawn <monsterId>|spawnboss <bossId>|spawnpoint <add|remove|list>|...>
     permission: orelia.admin
     permission-message: "&c権限がありません。このコマンドは運営(OP)専用です。"
 
 permissions:
-  orelia.item:
-    default: true
-  orelia.job:
-    default: true
-  orelia.status:
-    default: true
   orelia.admin:
     default: op

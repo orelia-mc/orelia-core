@@ -10,7 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import rpg.item.manager.ItemManager;
 
 /**
- * {@code /rpgitem give <player> <id> [amount]} - admin-facing weapon spawner used for
+ * {@code /ol item give <player> <id> [amount]} - admin-facing weapon spawner used for
  * testing and manual reward grants until the shop/quest reward pipelines cover it.
  */
 public final class ItemCommand implements CommandExecutor {
@@ -24,11 +24,11 @@ public final class ItemCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length < 2 || !args[0].equalsIgnoreCase("give")) {
-            sender.sendMessage(ChatColor.YELLOW + "Usage: /rpgitem give <player> <id> [amount]");
+            sender.sendMessage(ChatColor.YELLOW + "Usage: /" + label + " give <player> <id> [amount]");
             return true;
         }
         if (args.length < 3) {
-            sender.sendMessage(ChatColor.YELLOW + "Usage: /rpgitem give <player> <id> [amount]");
+            sender.sendMessage(ChatColor.YELLOW + "Usage: /" + label + " give <player> <id> [amount]");
             return true;
         }
 

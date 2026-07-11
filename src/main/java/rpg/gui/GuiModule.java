@@ -81,7 +81,7 @@ public final class GuiModule implements RpgModule {
 
         plugin.getServer().getPluginManager().registerEvents(new GuiListener(), plugin);
         plugin.getServer().getPluginManager().registerEvents(new WarehouseSaveListener(warehouseRepository), plugin);
-        plugin.getCommand("rpgstatus").setExecutor(new StatusCommand(guiManager, statusGuiScreen));
+        plugin.getPlayerCommandRegistry().register("status", new StatusCommand(guiManager, statusGuiScreen));
     }
 
     @Override

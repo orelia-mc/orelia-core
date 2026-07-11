@@ -17,7 +17,7 @@ import java.util.UUID;
 
 /**
  * Registers/removes admin-placed {@link MonsterSpawnPoint}s and periodically spawns at
- * each one (SOW follow-up: replaces one-shot {@code /rpgadmin spawn} for recurring farm
+ * each one (SOW follow-up: replaces one-shot {@code /oladmin spawn} for recurring farm
  * spots - a player stands where they want monsters, runs the add command, and that
  * location keeps spawning up to {@code maxAlive} of that monster over time).
  */

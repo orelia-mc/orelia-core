@@ -11,35 +11,35 @@ import rpg.monster.MonsterModule;
 import rpg.monster.spawnpoint.model.MonsterSpawnPoint;
 import rpg.monster.spawnpoint.service.MonsterSpawnPointService;
 
+import java.util.Arrays;
 import java.util.UUID;
 
 /**
- * {@code /rpgadmin <reload|spawn <monsterId>|spawnboss <bossId>|spawnpoint add|remove|list>}.
- * Individual module commands (item, job, quest, ...) live in their own module's
- * {@code command} package.
- *
- * <p>{@code spawn}/{@code spawnboss} are one-shot spawns for quick testing. Vanilla hostile
- * mob spawning is disabled by default (see {@code monster.disable-vanilla-hostile-spawning}
- * in config.yml), so real enemy encounters come from {@code spawnpoint}: stand where you
- * want monsters to appear, run {@code spawnpoint add}, and that location periodically
- * spawns up to its cap of that monster from then on (persisted across restarts).
+ * {@code /oladmin <reload|spawn <monsterId>|spawnboss <bossId>|spawnpoint add|remove|list|...>}
+ * - the root {@code /oladmin} executor. Handles orelia-core's own admin actions directly;
+ * anything it doesn't recognize falls back to {@link AdminCommandRegistry}, which
+ * orelia-world/orelia-extra register their own admin subcommands into (e.g.
+ * {@code worldreload}) so every plugin's admin tools live under one short command instead
+ * of each claiming its own top-level command name.
  */
 public final class AdminCommand implements CommandExecutor {
 
-    private static final String USAGE = "Usage: /rpgadmin <reload|spawn <monsterId>|spawnboss <bossId>|spawnpoint <add|remove|list> ...>";
+    private static final String USAGE_SUFFIX = "<reload|spawn <monsterId>|spawnboss <bossId>|spawnpoint <add|remove|list> ...>";
     private static final int DEFAULT_SPAWN_POINT_INTERVAL_SECONDS = 30;
     private static final int DEFAULT_SPAWN_POINT_MAX_ALIVE = 3;
 
     private final OreliaPlugin plugin;
+    private final AdminCommandRegistry registry;
 
-    public AdminCommand(OreliaPlugin plugin) {
+    public AdminCommand(OreliaPlugin plugin, AdminCommandRegistry registry) {
         this.plugin = plugin;
+        this.registry = registry;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(ChatColor.YELLOW + USAGE);
+            sender.sendMessage(ChatColor.YELLOW + "Usage: /" + label + " " + USAGE_SUFFIX);
             return true;
         }
 
@@ -51,7 +51,14 @@ public final class AdminCommand implements CommandExecutor {
             case "spawn" -> spawnMonster(sender, args);
             case "spawnboss" -> spawnBoss(sender, args);
             case "spawnpoint" -> spawnPoint(sender, args);
-            default -> sender.sendMessage(ChatColor.YELLOW + USAGE);
+            default -> {
+                CommandExecutor delegate = registry.get(args[0]).orElse(null);
+                if (delegate == null) {
+                    sender.sendMessage(ChatColor.YELLOW + "Usage: /" + label + " " + USAGE_SUFFIX);
+                    return true;
+                }
+                return delegate.onCommand(sender, command, label + " " + args[0], Arrays.copyOfRange(args, 1, args.length));
+            }
         }
         return true;
     }
@@ -62,7 +69,7 @@ public final class AdminCommand implements CommandExecutor {
             return;
         }
         if (args.length < 2) {
-            sender.sendMessage(ChatColor.YELLOW + "Usage: /rpgadmin spawn <monsterId>");
+            sender.sendMessage(ChatColor.YELLOW + "Usage: /oladmin spawn <monsterId>");
             return;
         }
         MonsterModule monsterModule = plugin.getModuleManager().get(MonsterModule.class).orElse(null);
@@ -81,7 +88,7 @@ public final class AdminCommand implements CommandExecutor {
             return;
         }
         if (args.length < 2) {
-            sender.sendMessage(ChatColor.YELLOW + "Usage: /rpgadmin spawnboss <bossId>");
+            sender.sendMessage(ChatColor.YELLOW + "Usage: /oladmin spawnboss <bossId>");
             return;
         }
         BossModule bossModule = plugin.getModuleManager().get(BossModule.class).orElse(null);
@@ -96,7 +103,7 @@ public final class AdminCommand implements CommandExecutor {
 
     private void spawnPoint(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(ChatColor.YELLOW + "Usage: /rpgadmin spawnpoint <add <monsterId> [intervalSeconds] [maxAlive]|remove <id>|list>");
+            sender.sendMessage(ChatColor.YELLOW + "Usage: /oladmin spawnpoint <add <monsterId> [intervalSeconds] [maxAlive]|remove <id>|list>");
             return;
         }
         MonsterModule monsterModule = plugin.getModuleManager().get(MonsterModule.class).orElse(null);
@@ -113,7 +120,7 @@ public final class AdminCommand implements CommandExecutor {
                     return;
                 }
                 if (args.length < 3) {
-                    sender.sendMessage(ChatColor.YELLOW + "Usage: /rpgadmin spawnpoint add <monsterId> [intervalSeconds] [maxAlive]");
+                    sender.sendMessage(ChatColor.YELLOW + "Usage: /oladmin spawnpoint add <monsterId> [intervalSeconds] [maxAlive]");
                     return;
                 }
                 int intervalSeconds = parseIntOrDefault(args, 3, DEFAULT_SPAWN_POINT_INTERVAL_SECONDS);
@@ -128,7 +135,7 @@ public final class AdminCommand implements CommandExecutor {
             }
             case "remove" -> {
                 if (args.length < 3) {
-                    sender.sendMessage(ChatColor.YELLOW + "Usage: /rpgadmin spawnpoint remove <id>");
+                    sender.sendMessage(ChatColor.YELLOW + "Usage: /oladmin spawnpoint remove <id>");
                     return;
                 }
                 try {
@@ -152,7 +159,7 @@ public final class AdminCommand implements CommandExecutor {
                             + " (" + point.getIntervalSeconds() + "s, max " + point.getMaxAlive() + ")");
                 }
             }
-            default -> sender.sendMessage(ChatColor.YELLOW + "Usage: /rpgadmin spawnpoint <add <monsterId> [intervalSeconds] [maxAlive]|remove <id>|list>");
+            default -> sender.sendMessage(ChatColor.YELLOW + "Usage: /oladmin spawnpoint <add <monsterId> [intervalSeconds] [maxAlive]|remove <id>|list>");
         }
     }
 
