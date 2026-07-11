@@ -2,6 +2,8 @@ package rpg.boss.repository;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import rpg.boss.model.BossAbility;
+import rpg.boss.model.BossAbilityType;
 import rpg.boss.model.BossData;
 import rpg.boss.model.BossPhase;
 
@@ -55,12 +57,34 @@ public final class BossRepository {
         }
         phases.sort(Comparator.comparingDouble(BossPhase::getHpThresholdPercent).reversed());
 
+        List<BossAbility> abilities = new ArrayList<>();
+        ConfigurationSection abilitiesSection = section.getConfigurationSection("abilities");
+        if (abilitiesSection != null) {
+            for (String abilityId : abilitiesSection.getKeys(false)) {
+                ConfigurationSection abilitySection = abilitiesSection.getConfigurationSection(abilityId);
+                if (abilitySection == null) {
+                    continue;
+                }
+                abilities.add(new BossAbility(
+                        abilityId,
+                        abilitySection.getString("name", abilityId),
+                        BossAbilityType.valueOf(abilitySection.getString("type", "AOE_SLAM").trim().toUpperCase()),
+                        abilitySection.getDouble("damage", 10.0),
+                        abilitySection.getDouble("radius", 5.0),
+                        abilitySection.getInt("cooldown-seconds", 15),
+                        abilitySection.getString("particle", "EXPLOSION_EMITTER"),
+                        abilitySection.getString("sound", "ENTITY_WITHER_SHOOT"),
+                        abilitySection.getString("announce-message", "")));
+            }
+        }
+
         return new BossData(
                 id,
                 section.getString("monster-id", id),
                 phases,
                 section.getDouble("enrage-hp-percent", 20.0),
-                section.getDouble("enrage-damage-multiplier", 1.5));
+                section.getDouble("enrage-damage-multiplier", 1.5),
+                abilities);
     }
 
     public Optional<BossData> findById(String id) {

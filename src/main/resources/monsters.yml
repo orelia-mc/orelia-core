@@ -88,3 +88,27 @@ monsters:
         min-amount: 3
         max-amount: 8
     skills: []
+
+  flame_lord:
+    name: "業火の王ブレイズロード"
+    entity-type: BLAZE
+    hp: 600
+    attack-power: 15
+    defense: 8
+    element: FIRE
+    ai-type: AGGRESSIVE
+    exp-reward: 800
+    money-min: 300
+    money-max: 600
+    drops:
+      blaze_rod:
+        vanilla-material: BLAZE_ROD
+        chance-percent: 100
+        min-amount: 2
+        max-amount: 5
+      emerald:
+        vanilla-material: EMERALD
+        chance-percent: 60
+        min-amount: 5
+        max-amount: 15
+    skills: []
