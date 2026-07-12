@@ -10,9 +10,6 @@ public enum StatType {
     SP,
     ATK,
     DEF,
-    AGI,
-    DEX,
-    INT,
     CRT,
     CRT_DMG,
     SPD
