@@ -1,6 +1,13 @@
 # Boss definitions (SOW section 14). A boss wraps an existing monsters.yml entry
-# (monster-id) and layers HP-threshold phases plus an enrage multiplier on top of it -
-# spawning, attack/defense, and death rewards all come from that underlying monster entry.
+# (monster-id) and layers HP-threshold phases, an enrage multiplier, and periodic ability
+# casting on top of it - spawning, attack/defense, and death rewards all come from that
+# underlying monster entry.
+#
+# abilities.type: AOE_SLAM (instant radius damage burst) | FIREBALL_BARRAGE (fires a
+# SmallFireball at every nearby player, entity-damage-only impact, no block damage).
+# particle must be a valid org.bukkit.Particle name, sound a valid org.bukkit.Sound name.
+# At most one due ability fires per boss per tick (checked every second), oldest-cooldown
+# first in the order they're listed.
 
 bosses:
   goblin_king_boss:
@@ -14,3 +21,33 @@ bosses:
       phase_2:
         hp-threshold-percent: 40
         announce-message: "&4&lゴブリンキングが雄叫びを上げる！"
+
+  flame_lord_boss:
+    monster-id: flame_lord
+    enrage-hp-percent: 25
+    enrage-damage-multiplier: 2.0
+    phases:
+      phase_1:
+        hp-threshold-percent: 60
+        announce-message: "&6&l業火の王ブレイズロードが怒りの咆哮を上げた！"
+      phase_2:
+        hp-threshold-percent: 25
+        announce-message: "&4&l業火の王の周囲に紅蓮の炎が渦巻く！"
+    abilities:
+      meteor_slam:
+        name: "業火の一撃"
+        type: AOE_SLAM
+        damage: 18
+        radius: 6
+        cooldown-seconds: 12
+        particle: FLAME
+        sound: ENTITY_BLAZE_SHOOT
+        announce-message: "&c業火の王が地面を叩きつけた！"
+      fire_barrage:
+        name: "火炎弾幕"
+        type: FIREBALL_BARRAGE
+        damage: 10
+        radius: 3
+        cooldown-seconds: 8
+        sound: ENTITY_BLAZE_SHOOT
+        announce-message: "&6業火の王が火球をばらまいた！"

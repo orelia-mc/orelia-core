@@ -45,7 +45,7 @@ public final class JobModule implements RpgModule {
 
         this.jobService = new JobService(plugin.getPlayerDataManager(), jobManager, statusModule.getStatusService());
 
-        plugin.getCommand("rpgjob").setExecutor(new JobCommand(jobService));
+        plugin.getPlayerCommandRegistry().register("job", new JobCommand(jobService));
     }
 
     @Override

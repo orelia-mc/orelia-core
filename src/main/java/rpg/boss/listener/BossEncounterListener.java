@@ -14,6 +14,7 @@ import rpg.boss.manager.BossStateManager;
 import rpg.boss.model.BossData;
 import rpg.boss.model.BossPhase;
 import rpg.boss.repository.BossRepository;
+import rpg.boss.service.BossAbilityCastService;
 import rpg.monster.service.MonsterSpawnService;
 import rpg.util.ColorUtil;
 
@@ -30,11 +31,14 @@ public final class BossEncounterListener implements Listener {
     private final MonsterSpawnService monsterSpawnService;
     private final BossRepository bossRepository;
     private final BossStateManager stateManager;
+    private final BossAbilityCastService abilityCastService;
 
-    public BossEncounterListener(MonsterSpawnService monsterSpawnService, BossRepository bossRepository, BossStateManager stateManager) {
+    public BossEncounterListener(MonsterSpawnService monsterSpawnService, BossRepository bossRepository,
+                                  BossStateManager stateManager, BossAbilityCastService abilityCastService) {
         this.monsterSpawnService = monsterSpawnService;
         this.bossRepository = bossRepository;
         this.stateManager = stateManager;
+        this.abilityCastService = abilityCastService;
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -71,6 +75,7 @@ public final class BossEncounterListener implements Listener {
     @EventHandler
     public void onDeath(EntityDeathEvent event) {
         stateManager.clear(event.getEntity().getUniqueId());
+        abilityCastService.unregister(event.getEntity().getUniqueId());
     }
 
     private BossData resolveBoss(LivingEntity entity) {

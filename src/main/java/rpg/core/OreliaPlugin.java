@@ -1,7 +1,11 @@
 package rpg.core;
 
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 import rpg.core.command.AdminCommand;
+import rpg.core.command.AdminCommandRegistry;
+import rpg.core.command.OlRootCommand;
+import rpg.core.command.PlayerCommandRegistry;
 import rpg.core.config.ConfigManager;
 import rpg.core.listener.PlayerConnectionListener;
 import rpg.core.module.ModuleManager;
@@ -38,6 +42,8 @@ public final class OreliaPlugin extends JavaPlugin {
     private SchedulerService schedulerService;
     private PlayerDataManager playerDataManager;
     private ModuleManager moduleManager;
+    private PlayerCommandRegistry playerCommandRegistry;
+    private AdminCommandRegistry adminCommandRegistry;
 
     @Override
     public void onEnable() {
@@ -51,7 +57,16 @@ public final class OreliaPlugin extends JavaPlugin {
         this.moduleManager = new ModuleManager(this);
 
         getServer().getPluginManager().registerEvents(new PlayerConnectionListener(playerDataManager), this);
-        getCommand("rpgadmin").setExecutor(new AdminCommand(this));
+
+        // Published so orelia-world/orelia-extra can register their own subcommands into
+        // these same two short entry points instead of each claiming a top-level command.
+        this.playerCommandRegistry = new PlayerCommandRegistry();
+        this.adminCommandRegistry = new AdminCommandRegistry();
+        getServer().getServicesManager().register(PlayerCommandRegistry.class, playerCommandRegistry, this, ServicePriority.Normal);
+        getServer().getServicesManager().register(AdminCommandRegistry.class, adminCommandRegistry, this, ServicePriority.Normal);
+
+        getCommand("ol").setExecutor(new OlRootCommand(playerCommandRegistry));
+        getCommand("oladmin").setExecutor(new AdminCommand(this, adminCommandRegistry));
 
         // Registration order doubles as dependency order: later modules may look up
         // earlier ones via ModuleManager#get, never the reverse. ApiModule is always last
@@ -106,5 +121,13 @@ public final class OreliaPlugin extends JavaPlugin {
 
     public ModuleManager getModuleManager() {
         return moduleManager;
+    }
+
+    public PlayerCommandRegistry getPlayerCommandRegistry() {
+        return playerCommandRegistry;
+    }
+
+    public AdminCommandRegistry getAdminCommandRegistry() {
+        return adminCommandRegistry;
     }
 }

@@ -16,13 +16,16 @@ public final class BossData {
     private final List<BossPhase> phases;
     private final double enrageHpPercent;
     private final double enrageDamageMultiplier;
+    private final List<BossAbility> abilities;
 
-    public BossData(String id, String monsterId, List<BossPhase> phases, double enrageHpPercent, double enrageDamageMultiplier) {
+    public BossData(String id, String monsterId, List<BossPhase> phases, double enrageHpPercent,
+                     double enrageDamageMultiplier, List<BossAbility> abilities) {
         this.id = id;
         this.monsterId = monsterId;
         this.phases = phases;
         this.enrageHpPercent = enrageHpPercent;
         this.enrageDamageMultiplier = enrageDamageMultiplier;
+        this.abilities = abilities;
     }
 
     public String getId() {
@@ -44,5 +47,9 @@ public final class BossData {
 
     public double getEnrageDamageMultiplier() {
         return enrageDamageMultiplier;
+    }
+
+    public List<BossAbility> getAbilities() {
+        return abilities;
     }
 }

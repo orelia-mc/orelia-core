@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 /**
  * A single named YAML config file backed by a file on disk, copied from the jar's
  * bundled default on first use. Not thread-safe; config reload/save happens on the
- * main thread via {@code rpgadmin reload} or module {@code onReload()} hooks.
+ * main thread via {@code /oladmin reload} or module {@code onReload()} hooks.
  */
 public final class ConfigFile {
 

@@ -10,6 +10,7 @@ import rpg.monster.model.MonsterData;
 import rpg.monster.repository.MonsterRepository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Spawns the vanilla entity backing a {@link MonsterData} definition, tags it with the
@@ -28,6 +29,11 @@ public final class MonsterSpawnService {
     }
 
     public Optional<LivingEntity> spawn(String monsterId, Location location) {
+        return spawn(monsterId, location, null);
+    }
+
+    /** Also tags the entity with {@code spawnPointId} so {@link rpg.monster.spawnpoint.manager.MonsterSpawnPointManager} can track/cap it. */
+    public Optional<LivingEntity> spawn(String monsterId, Location location, UUID spawnPointId) {
         MonsterData data = repository.findById(monsterId).orElse(null);
         if (data == null) {
             return Optional.empty();
@@ -35,6 +41,9 @@ public final class MonsterSpawnService {
 
         LivingEntity entity = (LivingEntity) location.getWorld().spawnEntity(location, data.getEntityType());
         entity.getPersistentDataContainer().set(keys.monsterId(), PersistentDataType.STRING, data.getId());
+        if (spawnPointId != null) {
+            entity.getPersistentDataContainer().set(keys.spawnPointId(), PersistentDataType.STRING, spawnPointId.toString());
+        }
         entity.setCustomName(data.getName());
         entity.setCustomNameVisible(true);
 
@@ -55,6 +64,11 @@ public final class MonsterSpawnService {
 
     public Optional<String> idOf(LivingEntity entity) {
         return Optional.ofNullable(entity.getPersistentDataContainer().get(keys.monsterId(), PersistentDataType.STRING));
+    }
+
+    public Optional<UUID> spawnPointIdOf(LivingEntity entity) {
+        String raw = entity.getPersistentDataContainer().get(keys.spawnPointId(), PersistentDataType.STRING);
+        return raw == null ? Optional.empty() : Optional.of(UUID.fromString(raw));
     }
 
     public Optional<MonsterData> dataOf(LivingEntity entity) {

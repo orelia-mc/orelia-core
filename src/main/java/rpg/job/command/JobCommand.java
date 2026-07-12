@@ -9,7 +9,7 @@ import rpg.job.model.JobType;
 import rpg.job.service.JobService;
 
 /**
- * {@code /rpgjob <info|list>} - {@code info} prints the sender's current job, {@code list}
+ * {@code /ol job <info|list>} - {@code info} prints the sender's current job, {@code list}
  * prints every job that exists. Job changes only happen through the job-change NPC, not
  * this command.
  */

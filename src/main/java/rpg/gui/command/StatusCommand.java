@@ -8,7 +8,7 @@ import rpg.gui.framework.GuiManager;
 import rpg.gui.screen.StatusGuiScreen;
 
 /**
- * {@code /rpgstatus} - opens the sender's status GUI.
+ * {@code /ol status} - opens the sender's status GUI.
  */
 public final class StatusCommand implements CommandExecutor {
 

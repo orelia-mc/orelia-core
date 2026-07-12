@@ -5,8 +5,10 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.LivingEntity;
 import rpg.boss.listener.BossEncounterListener;
 import rpg.boss.listener.BossEnrageListener;
+import rpg.boss.listener.BossFireballHitListener;
 import rpg.boss.manager.BossStateManager;
 import rpg.boss.repository.BossRepository;
+import rpg.boss.service.BossAbilityCastService;
 import rpg.core.OreliaPlugin;
 import rpg.core.module.RpgModule;
 import rpg.monster.MonsterModule;
@@ -15,13 +17,17 @@ import java.util.Optional;
 
 /**
  * Boss module: config-driven boss definitions (bosses.yml) layered on top of an existing
- * monster entry, adding HP-threshold phases and an enrage damage multiplier.
+ * monster entry, adding HP-threshold phases, an enrage damage multiplier, and periodic
+ * ability casting (SOW follow-up: "スキルを発動するボス").
  */
 public final class BossModule implements RpgModule {
+
+    private static final long ABILITY_TICK_PERIOD_TICKS = 20L;
 
     private final BossRepository repository = new BossRepository();
     private final BossStateManager stateManager = new BossStateManager();
     private MonsterModule monsterModule;
+    private BossAbilityCastService abilityCastService;
     private OreliaPlugin plugin;
 
     @Override
@@ -37,10 +43,15 @@ public final class BossModule implements RpgModule {
 
         reloadBosses();
 
+        this.abilityCastService = new BossAbilityCastService(plugin, monsterModule.getSpawnService(), repository);
+
         plugin.getServer().getPluginManager().registerEvents(
-                new BossEncounterListener(monsterModule.getSpawnService(), repository, stateManager), plugin);
+                new BossEncounterListener(monsterModule.getSpawnService(), repository, stateManager, abilityCastService), plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new BossEnrageListener(monsterModule.getSpawnService(), repository, stateManager), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new BossFireballHitListener(), plugin);
+
+        plugin.getSchedulerService().runTimer(abilityCastService::tick, ABILITY_TICK_PERIOD_TICKS, ABILITY_TICK_PERIOD_TICKS);
     }
 
     @Override
@@ -59,7 +70,10 @@ public final class BossModule implements RpgModule {
     }
 
     public Optional<LivingEntity> spawn(String bossId, Location location) {
-        return repository.findById(bossId).flatMap(boss -> monsterModule.getSpawnService().spawn(boss.getMonsterId(), location));
+        Optional<LivingEntity> entity = repository.findById(bossId)
+                .flatMap(boss -> monsterModule.getSpawnService().spawn(boss.getMonsterId(), location));
+        entity.ifPresent(abilityCastService::register);
+        return entity;
     }
 
     public BossRepository getRepository() {
