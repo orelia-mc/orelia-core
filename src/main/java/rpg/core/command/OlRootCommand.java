@@ -4,8 +4,10 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * {@code /ol <subcommand> ...} - looks up {@code subcommand} in a {@link PlayerCommandRegistry}
@@ -13,7 +15,7 @@ import java.util.Arrays;
  * itself. {@code Command}/{@code label} are forwarded as-is since no registered executor in
  * this codebase reads them.
  */
-public final class OlRootCommand implements CommandExecutor {
+public final class OlRootCommand implements CommandExecutor, TabCompleter {
 
     private final OlCommandRegistry registry;
 
@@ -33,5 +35,17 @@ public final class OlRootCommand implements CommandExecutor {
             return true;
         }
         return executor.onCommand(sender, command, label + " " + args[0], Arrays.copyOfRange(args, 1, args.length));
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length <= 1) {
+            return TabCompletions.matching(registry.getNames(), args.length == 0 ? "" : args[0]);
+        }
+        CommandExecutor executor = registry.get(args[0]).orElse(null);
+        if (executor instanceof TabCompleter completer) {
+            return completer.onTabComplete(sender, command, alias + " " + args[0], Arrays.copyOfRange(args, 1, args.length));
+        }
+        return List.of();
     }
 }

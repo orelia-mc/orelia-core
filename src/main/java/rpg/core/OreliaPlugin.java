@@ -65,8 +65,13 @@ public final class OreliaPlugin extends JavaPlugin {
         getServer().getServicesManager().register(PlayerCommandRegistry.class, playerCommandRegistry, this, ServicePriority.Normal);
         getServer().getServicesManager().register(AdminCommandRegistry.class, adminCommandRegistry, this, ServicePriority.Normal);
 
-        getCommand("ol").setExecutor(new OlRootCommand(playerCommandRegistry));
-        getCommand("oladmin").setExecutor(new AdminCommand(this, adminCommandRegistry));
+        OlRootCommand olRootCommand = new OlRootCommand(playerCommandRegistry);
+        getCommand("ol").setExecutor(olRootCommand);
+        getCommand("ol").setTabCompleter(olRootCommand);
+
+        AdminCommand adminCommand = new AdminCommand(this, adminCommandRegistry);
+        getCommand("oladmin").setExecutor(adminCommand);
+        getCommand("oladmin").setTabCompleter(adminCommand);
 
         // Registration order doubles as dependency order: later modules may look up
         // earlier ones via ModuleManager#get, never the reverse. ApiModule is always last

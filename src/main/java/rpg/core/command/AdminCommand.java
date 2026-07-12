@@ -4,6 +4,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import rpg.boss.BossModule;
 import rpg.core.OreliaPlugin;
@@ -11,7 +12,9 @@ import rpg.monster.MonsterModule;
 import rpg.monster.spawnpoint.model.MonsterSpawnPoint;
 import rpg.monster.spawnpoint.service.MonsterSpawnPointService;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -22,8 +25,9 @@ import java.util.UUID;
  * {@code worldreload}) so every plugin's admin tools live under one short command instead
  * of each claiming its own top-level command name.
  */
-public final class AdminCommand implements CommandExecutor {
+public final class AdminCommand implements CommandExecutor, TabCompleter {
 
+    private static final List<String> TOP_LEVEL_SUBCOMMANDS = List.of("reload", "spawn", "spawnboss", "spawnpoint");
     private static final String USAGE_SUFFIX = "<reload|spawn <monsterId>|spawnboss <bossId>|spawnpoint <add|remove|list> ...>";
     private static final int DEFAULT_SPAWN_POINT_INTERVAL_SECONDS = 30;
     private static final int DEFAULT_SPAWN_POINT_MAX_ALIVE = 3;
@@ -61,6 +65,23 @@ public final class AdminCommand implements CommandExecutor {
             }
         }
         return true;
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length <= 1) {
+            List<String> options = new ArrayList<>(TOP_LEVEL_SUBCOMMANDS);
+            options.addAll(registry.getNames());
+            return TabCompletions.matching(options, args.length == 0 ? "" : args[0]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("spawnpoint")) {
+            return TabCompletions.matching(List.of("add", "remove", "list"), args[1]);
+        }
+        CommandExecutor delegate = registry.get(args[0]).orElse(null);
+        if (delegate instanceof TabCompleter completer) {
+            return completer.onTabComplete(sender, command, alias + " " + args[0], Arrays.copyOfRange(args, 1, args.length));
+        }
+        return List.of();
     }
 
     private void spawnMonster(CommandSender sender, String[] args) {
