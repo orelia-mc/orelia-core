@@ -9,7 +9,6 @@ jobs:
       - SWORD
     passive-bonus:
       ATK: 2
-      AGI: 1
 
   SPEARMAN:
     display-name: "槍使い"
@@ -17,7 +16,6 @@ jobs:
       - SPEAR
     passive-bonus:
       ATK: 1
-      DEX: 2
 
   WARRIOR:
     display-name: "戦士"
@@ -32,6 +30,3 @@ jobs:
     display-name: "弓使い"
     allowed-weapons:
       - BOW
-    passive-bonus:
-      DEX: 3
-      AGI: 1

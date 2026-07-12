@@ -35,8 +35,7 @@ public final class StatusGuiScreen {
                 .build()));
 
         Material[] icons = {Material.REDSTONE, Material.LAPIS_LAZULI, Material.IRON_INGOT, Material.SHIELD,
-                Material.FEATHER, Material.ARROW, Material.BOOK, Material.EMERALD, Material.BLAZE_POWDER,
-                Material.SUGAR};
+                Material.EMERALD, Material.BLAZE_POWDER, Material.SUGAR};
         StatType[] types = StatType.values();
         for (int i = 0; i < types.length; i++) {
             gui.set(10 + i, GuiButton.display(new ItemBuilder(icons[i % icons.length])
