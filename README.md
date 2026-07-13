@@ -1,31 +1,26 @@
-# orelia-core
+<img src="https://orelia-mc.github.io/assets/logo_wide.jpg" />
+<h1 align="center">Orelia Core</h1>
+<p align="center">RPG Foundation Plugin of Orelia-MC</p>
 
-RPG foundation plugin (Paper 1.21.x / Java 21) - combat, player, and status systems.
+## About
 
-Part of the Orelia 3-plugin split:
+`orelia-core` は Minecraft RPG プラグイン群 **Orelia** の基盤プラグイン(Paper 1.21.x / Java 21)です。戦闘・プレイヤー・ステータス関連のシステムを提供します。
 
-- **orelia-core** (this repo) - Core, Item, Skill, Job, Status, Accessory, Monster, Boss, Effect, Economy, GUI, Database, API, Util
-- [orelia-world](https://github.com/rasp1220/orelia-world) - Quest, NPC, Dialogue, Story, Dungeon, Region, CutScene, Event
-- [orelia-extra](https://github.com/rasp1220/orelia-extra) - later MMORPG features (Party, Guild, Trade, ...), not yet implemented
+Orelia は 3 プラグイン構成です。
 
-## Building
+- **orelia-core**(本リポジトリ) — Core, Item, Skill, Job, Status, Accessory, Monster, Boss, Effect, Economy, GUI, Database, API, Util
+- [orelia-world](https://github.com/orelia-mc/orelia-world) — Quest, NPC, Dialogue, Story, Dungeon, Region, CutScene, Event
+- [orelia-extra](https://github.com/orelia-mc/orelia-extra) — 後発の MMORPG 系機能(Party, Guild, Trade, ...)
 
-```
+## Setup
+
+```bash
 ./gradlew build
 ```
 
-Produces `build/libs/orelia-core-1.0.0.jar`. Requires network access to
-`repo.papermc.io` (Paper API) and `jitpack.io` (Vault API).
+`build/libs/orelia-core-1.0.0.jar` が生成されます。ビルドには `repo.papermc.io`(Paper API)と `jitpack.io`(Vault API)へのネットワークアクセスが必要です。
 
-## Public API
+## Structure
 
-Other plugins (including orelia-world/orelia-extra) integrate through `rpg.api`,
-published via Bukkit's `ServicesManager` - never through this plugin's internal module
-classes. See `rpg.api.OreliaApi` and the narrower `StatusApi`/`JobApi`/`ItemApi`/
-`AccessoryApi`/`SkillApi`/`GuiApi`/`EffectApi`/`CombatApi` interfaces.
-
-## Config
-
-Every module reads its own file under `src/main/resources/` (`items.yml`, `skills.yml`,
-`jobs.yml`, `accessories.yml`, `monsters.yml`, `bosses.yml`, `effects.yml`, `gui.yml`,
-`config.yml`). Reload all of them with `/oladmin reload`.
+- 公開 API — 他プラグイン(orelia-world / orelia-extra を含む)は `rpg.api` 経由(Bukkit の `ServicesManager` で公開)でのみ本プラグインと連携します。内部モジュールクラスへ直接アクセスすることはありません。`rpg.api.OreliaApi` と、より narrow な `StatusApi` / `JobApi` / `ItemApi` / `AccessoryApi` / `SkillApi` / `GuiApi` / `EffectApi` / `CombatApi` を参照してください。
+- 設定ファイル — 各モジュールが `src/main/resources/` 配下の専用ファイル(`items.yml`, `skills.yml`, `jobs.yml`, `accessories.yml`, `monsters.yml`, `bosses.yml`, `effects.yml`, `gui.yml`, `config.yml`)を読み込みます。`/oladmin reload` で一括リロードできます。

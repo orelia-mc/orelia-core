@@ -75,3 +75,7 @@ There are exactly two top-level Bukkit commands, both dispatchers: `/ol` (player
 - `ItemModule` depends on `JobModule` + `StatusModule` (weapon requirement checks).
 - `ApiModule` depends on nearly everything (it's last).
 - When a module needs another module's service, fetch it once in `onEnable` via `plugin.getModuleManager().get(OtherModule.class).orElseThrow(...)` — fail fast with a clear `IllegalStateException` if the dependency isn't registered yet, rather than deferring the lookup.
+
+## Committing changes
+
+When committing, also update README.md and README_EN.md accordingly.
