@@ -1,6 +1,7 @@
 package rpg.gathering.listener;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -8,6 +9,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
 import rpg.gathering.config.LevelRadiusConfig;
+import rpg.gathering.model.GatherActionType;
 import rpg.gathering.model.GatherBlockTemplate;
 import rpg.gathering.repository.GatheringDefinitionRepository;
 import rpg.gathering.service.BlockRegenService;
@@ -63,6 +65,8 @@ public final class GatherBlockBreakListener implements Listener {
             return;
         }
 
+        block.getWorld().playSound(block.getLocation(), breakSound(template.actionType()), 1f, 1f);
+
         // Vanilla removes the block and spawns drops only after this handler returns, so
         // the replace-block swap for the block the event fired on has to wait a tick.
         regenService.scheduleNextTick(block.getWorld(), block.getX(), block.getY(), block.getZ(),
@@ -95,13 +99,20 @@ public final class GatherBlockBreakListener implements Listener {
                     }
                     // breakNaturally() removes the block and spawns drops immediately, so
                     // scheduling the regen right after it is safe (no race, unlike the
-                    // event-triggered break above).
+                    // event-triggered break above). Unlike the event-triggered break,
+                    // breakNaturally() does not play a break sound on its own, so it is
+                    // added explicitly here.
                     target.breakNaturally(tool);
+                    target.getWorld().playSound(target.getLocation(), breakSound(template.actionType()), 1f, 1f);
                     regenService.schedule(target.getWorld(), target.getX(), target.getY(), target.getZ(),
                             template.blockType(), template.replaceBlock(), template.cooldownSeconds());
                     levelService.addExperience(player.getUniqueId(), template.xpGain());
                 }
             }
         }
+    }
+
+    private Sound breakSound(GatherActionType actionType) {
+        return actionType == GatherActionType.WOODCUTTING ? Sound.BLOCK_WOOD_BREAK : Sound.BLOCK_STONE_BREAK;
     }
 }

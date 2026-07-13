@@ -112,6 +112,7 @@ public final class FarmingListener implements Listener {
             return;
         }
         Player player = event.getPlayer();
+        block.getWorld().playSound(block.getLocation(), Sound.BLOCK_CROP_BREAK, 1f, 1f);
         levelService.addExperience(player.getUniqueId(), template.xpGain());
 
         ItemStack tool = player.getInventory().getItemInMainHand();
@@ -147,6 +148,7 @@ public final class FarmingListener implements Listener {
             }
             CropTemplate targetTemplate = definitions.getCrops().get(target.getType());
             target.breakNaturally(tool);
+            target.getWorld().playSound(target.getLocation(), Sound.BLOCK_CROP_BREAK, 1f, 1f);
             levelService.addExperience(player.getUniqueId(), targetTemplate.xpGain());
             harvested++;
         }
