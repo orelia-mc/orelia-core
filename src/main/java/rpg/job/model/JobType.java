@@ -9,5 +9,8 @@ public enum JobType {
     SWORDSMAN,
     SPEARMAN,
     WARRIOR,
-    ARCHER
+    ARCHER,
+    // Gathering job (SOW: 採取・農業拡張). Stat/leveling bonuses for fishing are still
+    // being designed - this is intentionally just a job entry with no passive bonus yet.
+    FISHERMAN
 }

@@ -14,6 +14,7 @@ import rpg.core.scheduler.SchedulerService;
 import rpg.database.DatabaseModule;
 import rpg.status.StatusModule;
 import rpg.job.JobModule;
+import rpg.gathering.GatheringModule;
 import rpg.item.ItemModule;
 import rpg.skill.SkillModule;
 import rpg.accessory.AccessoryModule;
@@ -79,6 +80,7 @@ public final class OreliaPlugin extends JavaPlugin {
         moduleManager.register(new DatabaseModule());
         moduleManager.register(new StatusModule());
         moduleManager.register(new JobModule());
+        moduleManager.register(new GatheringModule());
         moduleManager.register(new ItemModule());
         moduleManager.register(new SkillModule());
         moduleManager.register(new AccessoryModule());
