@@ -6,6 +6,8 @@ author: rasp1220
 description: RPG foundation plugin (combat, player, status) - weapons, skills, jobs, status, accessories, monsters, bosses, effects, economy, GUI, database, public API
 folia-supported: false
 
+softdepend: [WorldGuard]
+
 commands:
   ol:
     description: Orelia player commands (item, job, status, and more registered by orelia-world/orelia-extra)

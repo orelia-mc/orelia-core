@@ -30,3 +30,8 @@ jobs:
     display-name: "弓使い"
     allowed-weapons:
       - BOW
+
+  # Stat/leveling bonuses for fishing are still being designed - job entry only for now.
+  FISHERMAN:
+    display-name: "釣り人"
+    allowed-weapons: []

@@ -1,0 +1,109 @@
+# Gathering/farming configuration (SOW: 採取・農業拡張システム).
+# Reload with: /oladmin reload
+#
+# gather-settings: block gathering (mining/woodcutting). Top-level keys are
+# GatherActionType values (MINING, WOODCUTTING); each block entry supports:
+#   cooldown-seconds : seconds until the block restores itself after being broken.
+#   replace-block    : block temporarily placed while waiting to regenerate.
+#   xp-gain          : gathering experience granted per block.
+#   min-level        : gathering level required to break this block (0 = no restriction).
+#
+# farm-settings: crops (SOW 3.2). Top-level keys are the fully-grown crop block.
+#   seed-item : item a player must be holding to plant this crop.
+#   xp-gain   : gathering experience granted per harvest.
+#
+# leveling: experience curve shared by mining/woodcutting/farming (SOW 3.3).
+#   mode          : FORMULA or TABLE.
+#   formula       : NextXP = a * level^b + c (used when mode is FORMULA).
+#   table         : explicit per-level requirement list (used when mode is TABLE and
+#                   non-empty; the last entry is reused for any level beyond the list).
+#   max-level     : current level cap. Initial phase is 1-50 (SOW 3.3); raising the cap
+#                   later (e.g. to 100) only needs this value (and level-ranges below)
+#                   extended - no code change required.
+#
+# level-ranges: level band -> bulk-action radius (SOW 3.3). radius 0 = 1x1 (vanilla),
+# radius 1 = 3x3, radius 2 = 5x5, etc. A level above every listed band keeps the
+# highest band's radius.
+
+regen-tick-period-ticks: 100 # 100 ticks = 5 seconds
+
+gather-settings:
+  MINING:
+    DIAMOND_ORE:
+      cooldown-seconds: 300
+      replace-block: BEDROCK
+      xp-gain: 50
+      min-level: 0
+    DEEPSLATE_DIAMOND_ORE:
+      cooldown-seconds: 300
+      replace-block: BEDROCK
+      xp-gain: 50
+      min-level: 0
+    GOLD_ORE:
+      cooldown-seconds: 180
+      replace-block: BEDROCK
+      xp-gain: 25
+      min-level: 0
+    IRON_ORE:
+      cooldown-seconds: 120
+      replace-block: STONE
+      xp-gain: 15
+      min-level: 0
+    COAL_ORE:
+      cooldown-seconds: 60
+      replace-block: STONE
+      xp-gain: 5
+      min-level: 0
+  WOODCUTTING:
+    OAK_LOG:
+      cooldown-seconds: 60
+      replace-block: AIR
+      xp-gain: 10
+      min-level: 0
+    SPRUCE_LOG:
+      cooldown-seconds: 60
+      replace-block: AIR
+      xp-gain: 10
+      min-level: 0
+    BIRCH_LOG:
+      cooldown-seconds: 60
+      replace-block: AIR
+      xp-gain: 10
+      min-level: 0
+
+farm-settings:
+  WHEAT:
+    seed-item: WHEAT_SEEDS
+    xp-gain: 8
+  CARROTS:
+    seed-item: CARROT
+    xp-gain: 8
+  POTATOES:
+    seed-item: POTATO
+    xp-gain: 8
+
+leveling:
+  mode: FORMULA
+  formula:
+    a: 50
+    b: 1.5
+    c: 100
+  table: []
+  max-level: 50
+
+level-ranges:
+  - min-level: 1
+    max-level: 9
+    radius: 0 # 1x1 (vanilla)
+  - min-level: 10
+    max-level: 19
+    radius: 1 # 3x3
+  - min-level: 20
+    max-level: 29
+    radius: 2 # 5x5
+  - min-level: 30
+    max-level: 39
+    radius: 3 # 7x7
+  - min-level: 40
+    max-level: 50
+    radius: 4 # 9x9

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `orelia-core` is a Paper 1.21.x (Java 21) Minecraft plugin — the foundation of a 3-plugin RPG suite:
 
-- **orelia-core** (this repo): Core, Item, Skill, Job, Status, Accessory, Monster, Boss, Effect, Economy, GUI, Database, API, Util
+- **orelia-core** (this repo): Core, Item, Skill, Job, Status, Accessory, Monster, Boss, Effect, Economy, GUI, Gathering, Database, API, Util
 - `orelia-world` (separate repo): Quest, NPC, Dialogue, Story, Dungeon, Region, CutScene, Event
 - `orelia-extra` (separate repo, not yet implemented): Party, Guild, Trade, ...
 
@@ -34,7 +34,7 @@ In-game: `/oladmin reload` reloads every module's config file without a server r
 
 `OreliaPlugin` (`rpg/core/OreliaPlugin.java`) is the single entry point. It owns process-wide singletons — `ConfigManager`, `SchedulerService`, `PlayerDataManager`, `ModuleManager` — and registers every top-level feature as an `RpgModule` (`rpg/core/module/RpgModule.java`) in a fixed order in `onEnable()`.
 
-- **Registration order is dependency order.** A module may look up an earlier-registered module via `ModuleManager#get(Class)`, never a later one. Current order: Database → Status → Job → Item → Skill → Accessory → Effect → Economy → Monster → Boss → Gui → **Api (always last)**.
+- **Registration order is dependency order.** A module may look up an earlier-registered module via `ModuleManager#get(Class)`, never a later one. Current order: Database → Status → Job → Gathering → Item → Skill → Accessory → Effect → Economy → Monster → Boss → Gui → **Api (always last)**.
 - Modules are enabled in registration order, **disabled in reverse order**.
 - Each module's `onEnable` typically: registers its config file with `ConfigManager`, loads a repository from that YAML, builds its services/managers, registers Bukkit listeners, and registers its player-facing subcommand into `PlayerCommandRegistry`.
 - `onReload()` is optional (default no-op); implement it to re-read config and rebuild repositories in place — see `ItemModule.reloadWeapons()` for the pattern.
@@ -42,7 +42,7 @@ In-game: `/oladmin reload` reloads every module's config file without a server r
 
 ### Per-module package shape
 
-Most feature packages (`item`, `skill`, `job`, `status`, `accessory`, `monster`, `boss`, `effect`, `economy`, `gui`) follow the same internal layering:
+Most feature packages (`item`, `skill`, `job`, `status`, `accessory`, `monster`, `boss`, `effect`, `economy`, `gui`, `gathering`) follow the same internal layering:
 
 - `repository/` — pure data access: either config-driven (parses a `*.yml` into in-memory templates) or DB-backed (`Repository<K,V>` from `rpg/database/repository/Repository.java`, talking only to `DatabaseManager`). Never touches Bukkit events or game logic.
 - `model/` — plain data holders (templates, per-player components).
