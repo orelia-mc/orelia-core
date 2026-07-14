@@ -4,7 +4,7 @@
 # weapon-type: SWORD | SPEAR | AXE | BOW
 # rarity: COMMON | UNCOMMON | RARE | EPIC | LEGENDARY
 # element: NONE | FIRE | WATER | EARTH | WIND | LIGHT | DARK
-# required-job: SWORDSMAN | SPEARMAN | WARRIOR | ARCHER (blank = any job may use it)
+# required-job: FENCER | WARRIOR | ARCHER (blank = any job may use it)
 
 weapons:
   wooden_training_sword:
@@ -16,7 +16,7 @@ weapons:
     element: NONE
     crit-rate: 5.0
     crit-multiplier: 1.5
-    required-job: SWORDSMAN
+    required-job: FENCER
     required-level: 1
     description:
       - "&7剣士見習いのための訓練用の剣。"
@@ -33,7 +33,7 @@ weapons:
     element: FIRE
     crit-rate: 10.0
     crit-multiplier: 1.8
-    required-job: SWORDSMAN
+    required-job: FENCER
     required-level: 10
     description:
       - "&7刀身が常に紅蓮の炎を纏う長剣。"
@@ -50,7 +50,9 @@ weapons:
     element: NONE
     crit-rate: 8.0
     crit-multiplier: 1.6
-    required-job: SPEARMAN
+    # No job currently has SPEAR in allowed-weapons (jobs.yml), so this weapon can't
+    # deal weapon damage for any job right now regardless of required-job.
+    required-job:
     required-level: 5
     description:
       - "&7遠距離からの突きに優れた槍。"

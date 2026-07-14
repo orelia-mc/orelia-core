@@ -8,8 +8,11 @@ import java.util.UUID;
  */
 public interface JobApi {
 
-    /** Current job name (e.g. {@code "SWORDSMAN"}), or empty if unemployed/not loaded. */
+    /** Current job identifier (e.g. {@code "FENCER"}), or empty if unemployed/not loaded. */
     Optional<String> getCurrentJob(UUID playerId);
+
+    /** Current job's localized display name (e.g. {@code "フェンサー"}), or empty if unemployed/not loaded. */
+    Optional<String> getCurrentJobDisplayName(UUID playerId);
 
     boolean canUseWeaponType(UUID playerId, String weaponType);
 
