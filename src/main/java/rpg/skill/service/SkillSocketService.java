@@ -52,13 +52,6 @@ public final class SkillSocketService {
         return true;
     }
 
-    public void unsocket(ItemStack weapon, String skillId) {
-        List<String> current = new ArrayList<>(getSocketedSkills(weapon));
-        if (current.remove(skillId)) {
-            write(weapon, current);
-        }
-    }
-
     private void write(ItemStack weapon, List<String> skillIds) {
         ItemMeta meta = weapon.getItemMeta();
         meta.getPersistentDataContainer().set(socketedSkillsKey, PersistentDataType.STRING, String.join(";", skillIds));

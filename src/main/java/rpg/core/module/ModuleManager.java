@@ -68,8 +68,4 @@ public final class ModuleManager {
     public <T extends RpgModule> Optional<T> get(Class<T> type) {
         return Optional.ofNullable((T) byType.get(type));
     }
-
-    public List<RpgModule> getModules() {
-        return Collections.unmodifiableList(registrationOrder);
-    }
 }

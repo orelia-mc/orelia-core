@@ -63,10 +63,6 @@ public final class SkillData {
         return cooldownSeconds;
     }
 
-    public double getDamageMultiplier() {
-        return damageMultiplier;
-    }
-
     public String getEffectParticle() {
         return effectParticle;
     }

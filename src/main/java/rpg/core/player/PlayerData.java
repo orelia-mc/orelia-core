@@ -29,10 +29,6 @@ public final class PlayerData {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public <T extends PlayerDataComponent> void attach(Class<T> type, T component) {
         components.put(type, component);
     }

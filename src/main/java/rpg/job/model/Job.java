@@ -31,10 +31,6 @@ public final class Job {
         return displayName;
     }
 
-    public Set<WeaponType> getAllowedWeapons() {
-        return allowedWeapons;
-    }
-
     public boolean canUse(WeaponType weaponType) {
         return allowedWeapons.contains(weaponType);
     }

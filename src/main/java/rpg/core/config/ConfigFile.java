@@ -48,8 +48,4 @@ public final class ConfigFile {
     public YamlConfiguration get() {
         return configuration;
     }
-
-    public File getFile() {
-        return file;
-    }
 }

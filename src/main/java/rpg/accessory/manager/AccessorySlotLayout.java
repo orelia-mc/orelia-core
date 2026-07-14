@@ -39,8 +39,4 @@ public final class AccessorySlotLayout {
     public static boolean isAccessoryRow(int slot) {
         return slot >= 27 && slot <= 35;
     }
-
-    public static Map<AccessoryType, Integer> all() {
-        return Map.copyOf(TYPE_TO_SLOT);
-    }
 }

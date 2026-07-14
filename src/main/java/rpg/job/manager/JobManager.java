@@ -32,10 +32,6 @@ public final class JobManager implements PlayerDataComponentLoader<PlayerJobComp
         return Optional.ofNullable(definitions.get(type));
     }
 
-    public Map<JobType, Job> getDefinitions() {
-        return definitions;
-    }
-
     @Override
     public Class<PlayerJobComponent> type() {
         return PlayerJobComponent.class;

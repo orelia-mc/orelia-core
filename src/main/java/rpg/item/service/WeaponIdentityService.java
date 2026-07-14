@@ -35,10 +35,6 @@ public final class WeaponIdentityService {
         return idOf(stack).flatMap(repository::findById);
     }
 
-    public boolean isOreliaWeapon(ItemStack stack) {
-        return idOf(stack).isPresent();
-    }
-
     /** Enhancement level applied by the "強化屋" NPC (SOW section 12), 0 for a freshly created weapon. */
     public int getEnhancementLevel(ItemStack stack) {
         if (stack == null || !stack.hasItemMeta()) {

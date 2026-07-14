@@ -60,10 +60,6 @@ public final class PlayerSkillComponent implements PlayerDataComponent {
         return cooldownExpiry.getOrDefault(skillId, 0L) > nowMillis;
     }
 
-    public long remainingCooldownMillis(String skillId, long nowMillis) {
-        return Math.max(0, cooldownExpiry.getOrDefault(skillId, 0L) - nowMillis);
-    }
-
     public void setCooldown(String skillId, long expiresAtMillis) {
         cooldownExpiry.put(skillId, expiresAtMillis);
     }

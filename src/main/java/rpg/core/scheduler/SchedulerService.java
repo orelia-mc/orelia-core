@@ -30,15 +30,7 @@ public final class SchedulerService {
         return scheduler.runTaskLater(plugin, task, delayTicks);
     }
 
-    public BukkitTask runLaterAsync(Runnable task, long delayTicks) {
-        return scheduler.runTaskLaterAsynchronously(plugin, task, delayTicks);
-    }
-
     public BukkitTask runTimer(Runnable task, long delayTicks, long periodTicks) {
         return scheduler.runTaskTimer(plugin, task, delayTicks, periodTicks);
-    }
-
-    public BukkitTask runTimerAsync(Runnable task, long delayTicks, long periodTicks) {
-        return scheduler.runTaskTimerAsynchronously(plugin, task, delayTicks, periodTicks);
     }
 }

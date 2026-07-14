@@ -7,9 +7,6 @@ import rpg.database.connection.ConnectionProvider;
 import rpg.database.connection.MySQLConnectionProvider;
 import rpg.database.connection.SQLiteConnectionProvider;
 import rpg.database.manager.DatabaseManager;
-import rpg.database.repository.PlayerAccountRepository;
-
-import java.util.logging.Level;
 
 /**
  * Bootstraps the JDBC connection for whichever backend {@code config.yml: database} selects
@@ -18,7 +15,6 @@ import java.util.logging.Level;
 public final class DatabaseModule implements RpgModule {
 
     private DatabaseManager databaseManager;
-    private PlayerAccountRepository playerAccountRepository;
 
     @Override
     public String getName() {
@@ -42,12 +38,6 @@ public final class DatabaseModule implements RpgModule {
         };
 
         this.databaseManager = new DatabaseManager(type, provider);
-        this.playerAccountRepository = new PlayerAccountRepository(databaseManager);
-        try {
-            playerAccountRepository.createSchemaIfNotExists();
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to initialize database schema", e);
-        }
     }
 
     @Override
@@ -59,9 +49,5 @@ public final class DatabaseModule implements RpgModule {
 
     public DatabaseManager getDatabaseManager() {
         return databaseManager;
-    }
-
-    public PlayerAccountRepository getPlayerAccountRepository() {
-        return playerAccountRepository;
     }
 }

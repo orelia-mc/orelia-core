@@ -2,7 +2,6 @@ package rpg.util;
 
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -43,16 +42,6 @@ public final class ItemBuilder {
         if (customModelData > 0) {
             meta.setCustomModelData(customModelData);
         }
-        return this;
-    }
-
-    public ItemBuilder amount(int amount) {
-        stack.setAmount(amount);
-        return this;
-    }
-
-    public ItemBuilder flags(ItemFlag... flags) {
-        meta.addItemFlags(flags);
         return this;
     }
 

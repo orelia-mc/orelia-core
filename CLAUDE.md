@@ -44,7 +44,7 @@ In-game: `/oladmin reload` reloads every module's config file without a server r
 
 Most feature packages (`item`, `skill`, `job`, `status`, `accessory`, `monster`, `boss`, `effect`, `economy`, `gui`, `gathering`) follow the same internal layering:
 
-- `repository/` — pure data access: either config-driven (parses a `*.yml` into in-memory templates) or DB-backed (`Repository<K,V>` from `rpg/database/repository/Repository.java`, talking only to `DatabaseManager`). Never touches Bukkit events or game logic.
+- `repository/` — pure data access: either config-driven (parses a `*.yml` into in-memory templates) or DB-backed (implements `SchemaOwner` from `rpg/database/repository/SchemaOwner.java` and talks only to `DatabaseManager`). Never touches Bukkit events or game logic.
 - `model/` — plain data holders (templates, per-player components).
 - `service/` or `manager/` — business logic sitting on top of the repository.
 - `listener/` — Bukkit event handlers wired in `onEnable`.

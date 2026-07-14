@@ -37,8 +37,6 @@ import rpg.api.ApiModule;
  */
 public final class OreliaPlugin extends JavaPlugin {
 
-    private static OreliaPlugin instance;
-
     private ConfigManager configManager;
     private SchedulerService schedulerService;
     private PlayerDataManager playerDataManager;
@@ -48,8 +46,6 @@ public final class OreliaPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        instance = this;
-
         this.configManager = new ConfigManager(this);
         this.configManager.register("config.yml");
 
@@ -102,16 +98,11 @@ public final class OreliaPlugin extends JavaPlugin {
         if (moduleManager != null) {
             moduleManager.disableAll();
         }
-        instance = null;
     }
 
     public void reload() {
         configManager.reloadAll();
         moduleManager.reloadAll();
-    }
-
-    public static OreliaPlugin getInstance() {
-        return instance;
     }
 
     public ConfigManager getConfigManager() {
