@@ -6,6 +6,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import rpg.job.manager.JobManager;
 import rpg.job.model.JobType;
 import rpg.job.service.JobService;
 
@@ -20,9 +21,11 @@ import java.util.List;
 public final class JobCommand implements CommandExecutor, TabCompleter {
 
     private final JobService jobService;
+    private final JobManager jobManager;
 
-    public JobCommand(JobService jobService) {
+    public JobCommand(JobService jobService, JobManager jobManager) {
         this.jobService = jobService;
+        this.jobManager = jobManager;
     }
 
     @Override
@@ -33,7 +36,7 @@ public final class JobCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length > 0 && args[0].equalsIgnoreCase("list")) {
             sender.sendMessage(ChatColor.GREEN + "Jobs: " + ChatColor.WHITE
-                    + String.join(", ", java.util.Arrays.stream(JobType.values()).map(JobType::name).toList()));
+                    + String.join(", ", java.util.Arrays.stream(JobType.values()).map(this::displayName).toList()));
             return true;
         }
 
@@ -42,7 +45,7 @@ public final class JobCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.YELLOW + "You have not chosen a job yet. Visit a job-change NPC.");
             return true;
         }
-        sender.sendMessage(ChatColor.GREEN + "Job: " + ChatColor.WHITE + job.name());
+        sender.sendMessage(ChatColor.GREEN + "Job: " + ChatColor.WHITE + displayName(job));
         return true;
     }
 
@@ -57,5 +60,9 @@ public final class JobCommand implements CommandExecutor, TabCompleter {
             return result;
         }
         return List.of();
+    }
+
+    private String displayName(JobType type) {
+        return jobManager.getDefinition(type).map(job -> job.getDisplayName()).orElse(type.name());
     }
 }

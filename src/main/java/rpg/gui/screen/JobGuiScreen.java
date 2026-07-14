@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import rpg.gui.config.GuiConfig;
 import rpg.gui.framework.Gui;
 import rpg.gui.framework.GuiButton;
+import rpg.job.manager.JobManager;
 import rpg.job.model.JobType;
 import rpg.job.service.JobService;
 import rpg.util.ItemBuilder;
@@ -17,10 +18,12 @@ import rpg.util.ItemBuilder;
 public final class JobGuiScreen {
 
     private final JobService jobService;
+    private final JobManager jobManager;
     private final GuiConfig guiConfig;
 
-    public JobGuiScreen(JobService jobService, GuiConfig guiConfig) {
+    public JobGuiScreen(JobService jobService, JobManager jobManager, GuiConfig guiConfig) {
         this.jobService = jobService;
+        this.jobManager = jobManager;
         this.guiConfig = guiConfig;
     }
 
@@ -31,20 +34,25 @@ public final class JobGuiScreen {
         int slot = 10;
         for (JobType type : JobType.values()) {
             boolean isCurrent = type == current;
+            String displayName = displayName(type);
             gui.set(slot++, new GuiButton(new ItemBuilder(isCurrent ? Material.GOLDEN_HELMET : Material.LEATHER_HELMET)
-                    .name((isCurrent ? "&a" : "&f") + type)
+                    .name((isCurrent ? "&a" : "&f") + displayName)
                     .lore(isCurrent ? "&7現在の職業" : "&7クリックで転職")
                     .build(), (clicker, clickType) -> {
                 if (isCurrent) {
                     return;
                 }
                 boolean changed = jobService.changeJob(clicker.getUniqueId(), type);
-                clicker.sendMessage(changed ? ChatColor.GREEN + type.name() + "に転職しました。" : ChatColor.RED + "転職に失敗しました。");
+                clicker.sendMessage(changed ? ChatColor.GREEN + displayName + "に転職しました。" : ChatColor.RED + "転職に失敗しました。");
                 if (changed) {
                     clicker.closeInventory();
                 }
             }));
         }
         return gui;
+    }
+
+    private String displayName(JobType type) {
+        return jobManager.getDefinition(type).map(job -> job.getDisplayName()).orElse(type.name());
     }
 }

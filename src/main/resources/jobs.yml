@@ -3,35 +3,22 @@
 # is active.
 
 jobs:
-  SWORDSMAN:
-    display-name: "剣士"
+  FENCER:
+    display-name: "フェンサー"
     allowed-weapons:
       - SWORD
     passive-bonus:
       ATK: 2
 
-  SPEARMAN:
-    display-name: "槍使い"
-    allowed-weapons:
-      - SPEAR
-    passive-bonus:
-      ATK: 1
-
   WARRIOR:
-    display-name: "戦士"
+    display-name: "ウォーリアー"
     allowed-weapons:
       - AXE
-      - SWORD
     passive-bonus:
       ATK: 3
       DEF: 1
 
   ARCHER:
-    display-name: "弓使い"
+    display-name: "アーチャー"
     allowed-weapons:
       - BOW
-
-  # Stat/leveling bonuses for fishing are still being designed - job entry only for now.
-  FISHERMAN:
-    display-name: "釣り人"
-    allowed-weapons: []

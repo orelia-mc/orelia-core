@@ -67,7 +67,7 @@ public final class GuiModule implements RpgModule {
         this.equipmentGuiScreen = new EquipmentGuiScreen(guiConfig);
         this.skillGuiScreen = new SkillGuiScreen(skillModule.getSkillRepository(), skillModule.getProgressService(),
                 skillModule.getSocketService(), itemModule.getItemManager().getIdentityService(), guiConfig);
-        this.jobGuiScreen = new JobGuiScreen(jobModule.getJobService(), guiConfig);
+        this.jobGuiScreen = new JobGuiScreen(jobModule.getJobService(), jobModule.getJobManager(), guiConfig);
         this.shopGuiScreen = new ShopGuiScreen(itemModule.getItemManager(), accessoryModule.getRepository(),
                 accessoryModule.getFactory(), economyModule.getEconomyService(), guiConfig);
 

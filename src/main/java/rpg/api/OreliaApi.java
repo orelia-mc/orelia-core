@@ -23,7 +23,7 @@ public interface OreliaApi {
     /** Character level, or empty if the player's data has not finished loading. */
     Optional<Integer> getPlayerLevel(UUID playerId);
 
-    /** Current job name (e.g. {@code "SWORDSMAN"}), or empty if unemployed/not loaded. */
+    /** Current job name (e.g. {@code "FENCER"}), or empty if unemployed/not loaded. */
     Optional<String> getPlayerJob(UUID playerId);
 
     /** Final (post equipment/buff) stat values keyed by stat name (HP, SP, ATK, DEF, CRT, CRT_DMG, SPD). */
