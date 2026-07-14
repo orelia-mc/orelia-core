@@ -66,7 +66,8 @@ public final class MonsterModule implements RpgModule {
         this.spawnPointService = new MonsterSpawnPointService(spawnPointRepository, new MonsterSpawnPointManager(), spawnService, repository);
         spawnPointService.loadAll();
 
-        plugin.getServer().getPluginManager().registerEvents(new MonsterCombatListener(spawnService), plugin);
+        plugin.getServer().getPluginManager().registerEvents(
+                new MonsterCombatListener(spawnService, itemModule.getItemManager().getIdentityService()), plugin);
         plugin.getServer().getPluginManager().registerEvents(new MonsterDeathListener(spawnService, dropService, spawnPointService), plugin);
 
         boolean disableVanillaSpawning = plugin.getConfigManager().get("config.yml").get()

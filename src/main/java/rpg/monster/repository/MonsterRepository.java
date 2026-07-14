@@ -64,6 +64,7 @@ public final class MonsterRepository {
                 section.getDouble("attack-power", 3.0),
                 section.getDouble("defense", 0.0),
                 ElementType.valueOf(section.getString("element", "NONE").trim().toUpperCase()),
+                ElementType.valueOf(section.getString("weakness", "NONE").trim().toUpperCase()),
                 AiType.valueOf(section.getString("ai-type", "AGGRESSIVE").trim().toUpperCase()),
                 drops,
                 section.getLong("exp-reward", 10),

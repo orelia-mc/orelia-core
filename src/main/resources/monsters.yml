@@ -1,5 +1,8 @@
 # Monster definitions (SOW section 13). entity-type must be a valid org.bukkit.entity.EntityType.
 # ai-type: PASSIVE | AGGRESSIVE | RANGED
+# weakness: optional ElementType (NONE by default). A weapon whose element matches deals
+# a flat x1.5 damage multiplier (MonsterCombatListener); any other weapon (including NONE)
+# deals normal (x1.0) damage.
 # Each drop entry sets either weapon-id (an items.yml id) or vanilla-material (a Material name).
 
 monsters:
@@ -10,6 +13,7 @@ monsters:
     attack-power: 2
     defense: 0
     element: NONE
+    weakness: FIRE
     ai-type: AGGRESSIVE
     exp-reward: 5
     money-min: 1

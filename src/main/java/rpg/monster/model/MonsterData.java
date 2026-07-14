@@ -19,6 +19,7 @@ public final class MonsterData {
     private final double attackPower;
     private final double defense;
     private final ElementType element;
+    private final ElementType weakness;
     private final AiType aiType;
     private final List<DropEntry> drops;
     private final long expReward;
@@ -27,7 +28,7 @@ public final class MonsterData {
     private final List<String> skillIds;
 
     public MonsterData(String id, String name, EntityType entityType, double hp, double attackPower, double defense,
-                        ElementType element, AiType aiType, List<DropEntry> drops, long expReward,
+                        ElementType element, ElementType weakness, AiType aiType, List<DropEntry> drops, long expReward,
                         double moneyMin, double moneyMax, List<String> skillIds) {
         this.id = id;
         this.name = name;
@@ -36,6 +37,7 @@ public final class MonsterData {
         this.attackPower = attackPower;
         this.defense = defense;
         this.element = element;
+        this.weakness = weakness;
         this.aiType = aiType;
         this.drops = drops;
         this.expReward = expReward;
@@ -70,6 +72,11 @@ public final class MonsterData {
 
     public ElementType getElement() {
         return element;
+    }
+
+    /** Element a weapon must carry to deal {@code MonsterCombatListener}'s weakness-multiplier damage; {@code NONE} means no weak point. */
+    public ElementType getWeakness() {
+        return weakness;
     }
 
     public AiType getAiType() {
