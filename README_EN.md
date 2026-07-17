@@ -6,11 +6,13 @@
 
 `orelia-core` is the foundation plugin (Paper 1.21.x / Java 21) of the Minecraft RPG plugin suite **Orelia**, providing combat, player, and status systems.
 
-Orelia is split into 3 plugins:
+Orelia is split into the following plugins:
 
-- **orelia-core** (this repo) — Core, Item, Skill, Job, Status, Accessory, Monster, Boss, Effect, Economy, GUI, Database, API, Util
+- **orelia-core** (this repo) — Core, Item, Skill, Job, Status, Accessory, Monster, Boss, Effect, Economy, GUI, Gathering, Database, API, Util
 - [orelia-world](https://github.com/orelia-mc/orelia-world) — Quest, NPC, Dialogue, Story, Dungeon, Region, CutScene, Event
 - [orelia-extra](https://github.com/orelia-mc/orelia-extra) — later MMORPG features (Party, Guild, Trade, ...)
+- [orelia-debug](https://github.com/orelia-mc/orelia-debug) — admin-only testplay/debug tooling for orelia-core/world/extra
+- [orelia-serverutil](https://github.com/orelia-mc/orelia-serverutil) — gameplay-independent server operations/UX plugin (hub transfer, scoreboard/tab-list API, join messages, ...)
 
 ## Setup
 
