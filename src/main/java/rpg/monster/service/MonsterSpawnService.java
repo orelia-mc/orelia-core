@@ -8,6 +8,7 @@ import org.bukkit.persistence.PersistentDataType;
 import rpg.monster.model.AiType;
 import rpg.monster.model.MonsterData;
 import rpg.monster.repository.MonsterRepository;
+import rpg.util.ColorUtil;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -44,7 +45,7 @@ public final class MonsterSpawnService {
         if (spawnPointId != null) {
             entity.getPersistentDataContainer().set(keys.spawnPointId(), PersistentDataType.STRING, spawnPointId.toString());
         }
-        entity.setCustomName(data.getName());
+        entity.customName(ColorUtil.component(data.getName()));
         entity.setCustomNameVisible(true);
 
         var maxHealthAttribute = entity.getAttribute(Attribute.MAX_HEALTH);

@@ -23,6 +23,7 @@ public final class OreliaVaultEconomy implements Economy {
         this.economyService = economyService;
     }
 
+    @Deprecated
     private UUID uuidOf(String playerName) {
         return Bukkit.getOfflinePlayer(playerName).getUniqueId();
     }
@@ -63,6 +64,7 @@ public final class OreliaVaultEconomy implements Economy {
     }
 
     @Override
+    @Deprecated
     public boolean hasAccount(String playerName) {
         return true;
     }
@@ -73,6 +75,7 @@ public final class OreliaVaultEconomy implements Economy {
     }
 
     @Override
+    @Deprecated
     public boolean hasAccount(String playerName, String worldName) {
         return hasAccount(playerName);
     }
@@ -83,6 +86,7 @@ public final class OreliaVaultEconomy implements Economy {
     }
 
     @Override
+    @Deprecated
     public double getBalance(String playerName) {
         return economyService.getBalance(uuidOf(playerName));
     }
@@ -93,6 +97,7 @@ public final class OreliaVaultEconomy implements Economy {
     }
 
     @Override
+    @Deprecated
     public double getBalance(String playerName, String world) {
         return getBalance(playerName);
     }
@@ -103,6 +108,7 @@ public final class OreliaVaultEconomy implements Economy {
     }
 
     @Override
+    @Deprecated
     public boolean has(String playerName, double amount) {
         return economyService.has(uuidOf(playerName), amount);
     }
@@ -113,6 +119,7 @@ public final class OreliaVaultEconomy implements Economy {
     }
 
     @Override
+    @Deprecated
     public boolean has(String playerName, String worldName, double amount) {
         return has(playerName, amount);
     }
@@ -123,6 +130,7 @@ public final class OreliaVaultEconomy implements Economy {
     }
 
     @Override
+    @Deprecated
     public EconomyResponse withdrawPlayer(String playerName, double amount) {
         return withdraw(uuidOf(playerName), amount);
     }
@@ -133,6 +141,7 @@ public final class OreliaVaultEconomy implements Economy {
     }
 
     @Override
+    @Deprecated
     public EconomyResponse withdrawPlayer(String playerName, String worldName, double amount) {
         return withdrawPlayer(playerName, amount);
     }
@@ -143,6 +152,7 @@ public final class OreliaVaultEconomy implements Economy {
     }
 
     @Override
+    @Deprecated
     public EconomyResponse depositPlayer(String playerName, double amount) {
         return deposit(uuidOf(playerName), amount);
     }
@@ -153,6 +163,7 @@ public final class OreliaVaultEconomy implements Economy {
     }
 
     @Override
+    @Deprecated
     public EconomyResponse depositPlayer(String playerName, String worldName, double amount) {
         return depositPlayer(playerName, amount);
     }
@@ -179,6 +190,7 @@ public final class OreliaVaultEconomy implements Economy {
     }
 
     @Override
+    @Deprecated
     public EconomyResponse createBank(String name, String player) {
         return unsupported();
     }
@@ -214,6 +226,7 @@ public final class OreliaVaultEconomy implements Economy {
     }
 
     @Override
+    @Deprecated
     public EconomyResponse isBankOwner(String name, String playerName) {
         return unsupported();
     }
@@ -224,6 +237,7 @@ public final class OreliaVaultEconomy implements Economy {
     }
 
     @Override
+    @Deprecated
     public EconomyResponse isBankMember(String name, String playerName) {
         return unsupported();
     }
@@ -239,6 +253,7 @@ public final class OreliaVaultEconomy implements Economy {
     }
 
     @Override
+    @Deprecated
     public boolean createPlayerAccount(String playerName) {
         return true;
     }
@@ -249,6 +264,7 @@ public final class OreliaVaultEconomy implements Economy {
     }
 
     @Override
+    @Deprecated
     public boolean createPlayerAccount(String playerName, String worldName) {
         return true;
     }

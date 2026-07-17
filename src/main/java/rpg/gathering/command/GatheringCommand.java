@@ -1,6 +1,7 @@
 package rpg.gathering.command;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -27,8 +28,10 @@ public final class GatheringCommand implements CommandExecutor {
         }
         int level = levelService.getLevel(player.getUniqueId());
         int radius = radiusConfig.radiusForLevel(level);
-        sender.sendMessage(ChatColor.GREEN + "採取/農業レベル: " + ChatColor.WHITE + level
-                + ChatColor.GREEN + " / 一括範囲(半径): " + ChatColor.WHITE + radius);
+        sender.sendMessage(Component.text("採取/農業レベル: ", NamedTextColor.GREEN)
+                .append(Component.text(String.valueOf(level), NamedTextColor.WHITE))
+                .append(Component.text(" / 一括範囲(半径): ", NamedTextColor.GREEN))
+                .append(Component.text(String.valueOf(radius), NamedTextColor.WHITE)));
         return true;
     }
 }

@@ -1,6 +1,7 @@
 package rpg.gui.screen;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import rpg.gui.config.GuiConfig;
@@ -68,10 +69,12 @@ public final class SkillGuiScreen {
                     boolean socketed = socketService.socket(clicker.getInventory().getItemInMainHand(), skill.getId(),
                             weaponIdentityService.dataOf(clicker.getInventory().getItemInMainHand())
                                     .map(w -> w.getSkillSlotCount()).orElse(1));
-                    clicker.sendMessage(socketed ? ChatColor.GREEN + "スキルを装着しました。" : ChatColor.RED + "空きスロットがありません。");
+                    clicker.sendMessage(socketed ? Component.text("スキルを装着しました。", NamedTextColor.GREEN)
+                            : Component.text("空きスロットがありません。", NamedTextColor.RED));
                 } else {
                     boolean upgraded = progressService.upgradeSkill(clicker.getUniqueId(), skill.getId());
-                    clicker.sendMessage(upgraded ? ChatColor.GREEN + "スキルレベルが上がりました。" : ChatColor.RED + "習得できません（ポイント不足か最大レベル）。");
+                    clicker.sendMessage(upgraded ? Component.text("スキルレベルが上がりました。", NamedTextColor.GREEN)
+                            : Component.text("習得できません（ポイント不足か最大レベル）。", NamedTextColor.RED));
                 }
             }));
         }

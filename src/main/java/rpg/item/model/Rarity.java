@@ -1,25 +1,23 @@
 package rpg.item.model;
 
-import org.bukkit.ChatColor;
-
 /**
- * Weapon rarity tiers. Order matters (ordinal is used for GUI sorting), colors are used
- * to prefix generated item names.
+ * Weapon rarity tiers. Order matters (ordinal is used for GUI sorting), colors are
+ * {@code &}-codes used to prefix generated item names.
  */
 public enum Rarity {
-    COMMON(ChatColor.WHITE),
-    UNCOMMON(ChatColor.GREEN),
-    RARE(ChatColor.AQUA),
-    EPIC(ChatColor.LIGHT_PURPLE),
-    LEGENDARY(ChatColor.GOLD);
+    COMMON("&f"),
+    UNCOMMON("&a"),
+    RARE("&b"),
+    EPIC("&d"),
+    LEGENDARY("&6");
 
-    private final ChatColor color;
+    private final String colorCode;
 
-    Rarity(ChatColor color) {
-        this.color = color;
+    Rarity(String colorCode) {
+        this.colorCode = colorCode;
     }
 
-    public ChatColor getColor() {
-        return color;
+    public String getColor() {
+        return colorCode;
     }
 }

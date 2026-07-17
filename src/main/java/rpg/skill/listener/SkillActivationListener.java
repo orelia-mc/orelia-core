@@ -1,6 +1,7 @@
 package rpg.skill.listener;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -74,7 +75,7 @@ public final class SkillActivationListener implements Listener {
             return false;
         }
         Optional<SkillCastService.CastFailure> failure = castService.cast(player, socketed.get(slotIndex));
-        failure.ifPresent(f -> player.sendMessage(ChatColor.RED + describe(f)));
+        failure.ifPresent(f -> player.sendMessage(Component.text(describe(f), NamedTextColor.RED)));
         return true;
     }
 
