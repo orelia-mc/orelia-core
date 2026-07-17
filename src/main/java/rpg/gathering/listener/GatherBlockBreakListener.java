@@ -1,6 +1,7 @@
 package rpg.gathering.listener;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -57,7 +58,7 @@ public final class GatherBlockBreakListener implements Listener {
         int playerLevel = levelService.getLevel(player.getUniqueId());
         if (playerLevel < template.minLevel()) {
             event.setCancelled(true);
-            player.sendMessage(ChatColor.RED + "採取レベルが不足しています。(必要Lv: " + template.minLevel() + ")");
+            player.sendMessage(Component.text("採取レベルが不足しています。(必要Lv: " + template.minLevel() + ")", NamedTextColor.RED));
             return;
         }
         if (!protectionService.canModify(player, block)) {

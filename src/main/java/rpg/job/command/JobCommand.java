@@ -1,6 +1,7 @@
 package rpg.job.command;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -35,17 +36,19 @@ public final class JobCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length > 0 && args[0].equalsIgnoreCase("list")) {
-            sender.sendMessage(ChatColor.GREEN + "Jobs: " + ChatColor.WHITE
-                    + String.join(", ", java.util.Arrays.stream(JobType.values()).map(this::displayName).toList()));
+            sender.sendMessage(Component.text("Jobs: ", NamedTextColor.GREEN).append(Component.text(
+                    String.join(", ", java.util.Arrays.stream(JobType.values()).map(this::displayName).toList()),
+                    NamedTextColor.WHITE)));
             return true;
         }
 
         JobType job = jobService.getCurrentJob(player.getUniqueId()).orElse(null);
         if (job == null) {
-            sender.sendMessage(ChatColor.YELLOW + "You have not chosen a job yet. Visit a job-change NPC.");
+            sender.sendMessage(Component.text("You have not chosen a job yet. Visit a job-change NPC.", NamedTextColor.YELLOW));
             return true;
         }
-        sender.sendMessage(ChatColor.GREEN + "Job: " + ChatColor.WHITE + displayName(job));
+        sender.sendMessage(Component.text("Job: ", NamedTextColor.GREEN)
+                .append(Component.text(displayName(job), NamedTextColor.WHITE)));
         return true;
     }
 

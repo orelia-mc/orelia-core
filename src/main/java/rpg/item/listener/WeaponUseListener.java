@@ -1,6 +1,7 @@
 package rpg.item.listener;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -51,7 +52,7 @@ public final class WeaponUseListener implements Listener {
 
         if (!requirementService.meetsRequirements(attacker.getUniqueId(), data)) {
             event.setCancelled(true);
-            attacker.sendMessage(ChatColor.RED + "この武器を使用する条件を満たしていません。");
+            attacker.sendMessage(Component.text("この武器を使用する条件を満たしていません。", NamedTextColor.RED));
             return;
         }
 

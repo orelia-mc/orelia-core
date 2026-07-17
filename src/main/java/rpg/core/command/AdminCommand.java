@@ -1,6 +1,7 @@
 package rpg.core.command;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -43,14 +44,14 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(ChatColor.YELLOW + "Usage: /" + label + " " + USAGE_SUFFIX);
+            sender.sendMessage(Component.text("Usage: /" + label + " " + USAGE_SUFFIX, NamedTextColor.YELLOW));
             return true;
         }
 
         switch (args[0].toLowerCase()) {
             case "reload" -> {
                 plugin.reload();
-                sender.sendMessage(ChatColor.GREEN + "Orelia configuration reloaded.");
+                sender.sendMessage(Component.text("Orelia configuration reloaded.", NamedTextColor.GREEN));
             }
             case "spawn" -> spawnMonster(sender, args);
             case "spawnboss" -> spawnBoss(sender, args);
@@ -58,7 +59,7 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             default -> {
                 CommandExecutor delegate = registry.get(args[0]).orElse(null);
                 if (delegate == null) {
-                    sender.sendMessage(ChatColor.YELLOW + "Usage: /" + label + " " + USAGE_SUFFIX);
+                    sender.sendMessage(Component.text("Usage: /" + label + " " + USAGE_SUFFIX, NamedTextColor.YELLOW));
                     return true;
                 }
                 return delegate.onCommand(sender, command, label + " " + args[0], Arrays.copyOfRange(args, 1, args.length));
@@ -90,17 +91,17 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             return;
         }
         if (args.length < 2) {
-            sender.sendMessage(ChatColor.YELLOW + "Usage: /oladmin spawn <monsterId>");
+            sender.sendMessage(Component.text("Usage: /oladmin spawn <monsterId>", NamedTextColor.YELLOW));
             return;
         }
         MonsterModule monsterModule = plugin.getModuleManager().get(MonsterModule.class).orElse(null);
         if (monsterModule == null) {
-            sender.sendMessage(ChatColor.RED + "Monster module is not enabled.");
+            sender.sendMessage(Component.text("Monster module is not enabled.", NamedTextColor.RED));
             return;
         }
         boolean spawned = monsterModule.getSpawnService().spawn(args[1], player.getLocation()).isPresent();
-        sender.sendMessage(spawned ? ChatColor.GREEN + "Spawned " + args[1] + "."
-                : ChatColor.RED + "Unknown monster id: " + args[1]);
+        sender.sendMessage(spawned ? Component.text("Spawned " + args[1] + ".", NamedTextColor.GREEN)
+                : Component.text("Unknown monster id: " + args[1], NamedTextColor.RED));
     }
 
     private void spawnBoss(CommandSender sender, String[] args) {
@@ -109,27 +110,27 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             return;
         }
         if (args.length < 2) {
-            sender.sendMessage(ChatColor.YELLOW + "Usage: /oladmin spawnboss <bossId>");
+            sender.sendMessage(Component.text("Usage: /oladmin spawnboss <bossId>", NamedTextColor.YELLOW));
             return;
         }
         BossModule bossModule = plugin.getModuleManager().get(BossModule.class).orElse(null);
         if (bossModule == null) {
-            sender.sendMessage(ChatColor.RED + "Boss module is not enabled.");
+            sender.sendMessage(Component.text("Boss module is not enabled.", NamedTextColor.RED));
             return;
         }
         boolean spawned = bossModule.spawn(args[1], player.getLocation()).isPresent();
-        sender.sendMessage(spawned ? ChatColor.GREEN + "Spawned boss " + args[1] + "."
-                : ChatColor.RED + "Unknown boss id: " + args[1]);
+        sender.sendMessage(spawned ? Component.text("Spawned boss " + args[1] + ".", NamedTextColor.GREEN)
+                : Component.text("Unknown boss id: " + args[1], NamedTextColor.RED));
     }
 
     private void spawnPoint(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(ChatColor.YELLOW + "Usage: /oladmin spawnpoint <add <monsterId> [intervalSeconds] [maxAlive]|remove <id>|list>");
+            sender.sendMessage(Component.text("Usage: /oladmin spawnpoint <add <monsterId> [intervalSeconds] [maxAlive]|remove <id>|list>", NamedTextColor.YELLOW));
             return;
         }
         MonsterModule monsterModule = plugin.getModuleManager().get(MonsterModule.class).orElse(null);
         if (monsterModule == null) {
-            sender.sendMessage(ChatColor.RED + "Monster module is not enabled.");
+            sender.sendMessage(Component.text("Monster module is not enabled.", NamedTextColor.RED));
             return;
         }
         MonsterSpawnPointService spawnPointService = monsterModule.getSpawnPointService();
@@ -141,46 +142,46 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
                     return;
                 }
                 if (args.length < 3) {
-                    sender.sendMessage(ChatColor.YELLOW + "Usage: /oladmin spawnpoint add <monsterId> [intervalSeconds] [maxAlive]");
+                    sender.sendMessage(Component.text("Usage: /oladmin spawnpoint add <monsterId> [intervalSeconds] [maxAlive]", NamedTextColor.YELLOW));
                     return;
                 }
                 int intervalSeconds = parseIntOrDefault(args, 3, DEFAULT_SPAWN_POINT_INTERVAL_SECONDS);
                 int maxAlive = parseIntOrDefault(args, 4, DEFAULT_SPAWN_POINT_MAX_ALIVE);
                 var created = spawnPointService.add(player, args[2], intervalSeconds, maxAlive);
                 if (created.isEmpty()) {
-                    sender.sendMessage(ChatColor.RED + "Unknown monster id: " + args[2]);
+                    sender.sendMessage(Component.text("Unknown monster id: " + args[2], NamedTextColor.RED));
                     return;
                 }
-                sender.sendMessage(ChatColor.GREEN + "Registered spawn point " + created.get().getId() + " for " + args[2]
-                        + " here (every " + intervalSeconds + "s, up to " + maxAlive + " alive).");
+                sender.sendMessage(Component.text("Registered spawn point " + created.get().getId() + " for " + args[2]
+                        + " here (every " + intervalSeconds + "s, up to " + maxAlive + " alive).", NamedTextColor.GREEN));
             }
             case "remove" -> {
                 if (args.length < 3) {
-                    sender.sendMessage(ChatColor.YELLOW + "Usage: /oladmin spawnpoint remove <id>");
+                    sender.sendMessage(Component.text("Usage: /oladmin spawnpoint remove <id>", NamedTextColor.YELLOW));
                     return;
                 }
                 try {
                     boolean removed = spawnPointService.remove(UUID.fromString(args[2]));
-                    sender.sendMessage(removed ? ChatColor.GREEN + "Removed spawn point " + args[2] + "."
-                            : ChatColor.RED + "No spawn point with id " + args[2] + ".");
+                    sender.sendMessage(removed ? Component.text("Removed spawn point " + args[2] + ".", NamedTextColor.GREEN)
+                            : Component.text("No spawn point with id " + args[2] + ".", NamedTextColor.RED));
                 } catch (IllegalArgumentException e) {
-                    sender.sendMessage(ChatColor.RED + "Not a valid spawn point id: " + args[2]);
+                    sender.sendMessage(Component.text("Not a valid spawn point id: " + args[2], NamedTextColor.RED));
                 }
             }
             case "list" -> {
                 var points = spawnPointService.getAll();
                 if (points.isEmpty()) {
-                    sender.sendMessage(ChatColor.YELLOW + "No spawn points registered.");
+                    sender.sendMessage(Component.text("No spawn points registered.", NamedTextColor.YELLOW));
                     return;
                 }
-                sender.sendMessage(ChatColor.GREEN + "Spawn points:");
+                sender.sendMessage(Component.text("Spawn points:", NamedTextColor.GREEN));
                 for (MonsterSpawnPoint point : points.values()) {
-                    sender.sendMessage(ChatColor.GRAY + "- " + point.getId() + " " + point.getMonsterId()
+                    sender.sendMessage(Component.text("- " + point.getId() + " " + point.getMonsterId()
                             + " @ " + point.getWorld() + " " + (int) point.getX() + "," + (int) point.getY() + "," + (int) point.getZ()
-                            + " (" + point.getIntervalSeconds() + "s, max " + point.getMaxAlive() + ")");
+                            + " (" + point.getIntervalSeconds() + "s, max " + point.getMaxAlive() + ")", NamedTextColor.GRAY));
                 }
             }
-            default -> sender.sendMessage(ChatColor.YELLOW + "Usage: /oladmin spawnpoint <add <monsterId> [intervalSeconds] [maxAlive]|remove <id>|list>");
+            default -> sender.sendMessage(Component.text("Usage: /oladmin spawnpoint <add <monsterId> [intervalSeconds] [maxAlive]|remove <id>|list>", NamedTextColor.YELLOW));
         }
     }
 

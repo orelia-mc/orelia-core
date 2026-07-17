@@ -1,6 +1,7 @@
 package rpg.gui.screen;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -46,8 +47,11 @@ public final class ShopGuiScreen {
                 continue;
             }
             ItemStack icon = preview.clone();
+            Component name = icon.hasItemMeta() && icon.getItemMeta().hasDisplayName()
+                    ? icon.getItemMeta().displayName()
+                    : Component.text(entry.id());
             icon = new ItemBuilder(icon.getType())
-                    .name(icon.hasItemMeta() && icon.getItemMeta().hasDisplayName() ? icon.getItemMeta().getDisplayName() : entry.id())
+                    .name(name)
                     .lore("&7価格: " + entry.price())
                     .build();
             gui.set(slot++, new GuiButton(icon, (clicker, clickType) -> buy(clicker, entry)));
@@ -57,19 +61,19 @@ public final class ShopGuiScreen {
 
     private void buy(Player player, ShopEntry entry) {
         if (!economyService.withdraw(player.getUniqueId(), entry.price())) {
-            player.sendMessage(ChatColor.RED + "所持金が足りません。");
+            player.sendMessage(Component.text("所持金が足りません。", NamedTextColor.RED));
             return;
         }
         java.util.Optional<ItemStack> stack = resolve(entry);
         if (stack.isEmpty()) {
             economyService.deposit(player.getUniqueId(), entry.price());
-            player.sendMessage(ChatColor.RED + "商品を取得できませんでした。");
+            player.sendMessage(Component.text("商品を取得できませんでした。", NamedTextColor.RED));
             return;
         }
         ItemStack purchased = stack.get();
         player.getInventory().addItem(purchased).values()
                 .forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
-        player.sendMessage(ChatColor.GREEN + "購入しました。");
+        player.sendMessage(Component.text("購入しました。", NamedTextColor.GREEN));
     }
 
     private java.util.Optional<ItemStack> resolve(ShopEntry entry) {

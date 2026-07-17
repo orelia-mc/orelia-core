@@ -1,7 +1,8 @@
 package rpg.gathering.service;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import rpg.core.player.PlayerDataManager;
@@ -71,7 +72,7 @@ public final class GatheringLevelService {
                 .flatMap(jobManager::getDefinition)
                 .map(Job::getDisplayName)
                 .orElse(NO_JOB_LABEL);
-        player.sendMessage(ChatColor.GREEN + player.getName() + ":" + jobName + "のレベルが" + newLevel + "に上がりました");
+        player.sendMessage(Component.text(player.getName() + ":" + jobName + "のレベルが" + newLevel + "に上がりました", NamedTextColor.GREEN));
     }
 
     public int getLevel(UUID uuid) {

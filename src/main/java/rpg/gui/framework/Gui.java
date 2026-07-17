@@ -2,6 +2,7 @@ package rpg.gui.framework;
 
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.Inventory;
+import rpg.util.ColorUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -57,7 +58,7 @@ public final class Gui {
 
     public Inventory toInventory() {
         if (inventory == null) {
-            inventory = Bukkit.createInventory(new GuiHolder(this), size, title);
+            inventory = Bukkit.createInventory(new GuiHolder(this), size, ColorUtil.component(title));
             buttons.forEach((slot, button) -> inventory.setItem(slot, button.getIcon()));
         }
         return inventory;

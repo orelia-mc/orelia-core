@@ -1,6 +1,7 @@
 package rpg.core.command;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -26,12 +27,12 @@ public final class OlRootCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(ChatColor.YELLOW + "Usage: /" + label + " <" + String.join("|", registry.getNames()) + "> ...");
+            sender.sendMessage(Component.text("Usage: /" + label + " <" + String.join("|", registry.getNames()) + "> ...", NamedTextColor.YELLOW));
             return true;
         }
         CommandExecutor executor = registry.get(args[0]).orElse(null);
         if (executor == null) {
-            sender.sendMessage(ChatColor.RED + "Unknown subcommand: " + args[0]);
+            sender.sendMessage(Component.text("Unknown subcommand: " + args[0], NamedTextColor.RED));
             return true;
         }
         return executor.onCommand(sender, command, label + " " + args[0], Arrays.copyOfRange(args, 1, args.length));
