@@ -1,9 +1,8 @@
 package rpg.gui.screen;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import rpg.core.message.MessageManager;
 import rpg.gui.config.GuiConfig;
 import rpg.gui.framework.Gui;
 import rpg.gui.framework.GuiButton;
@@ -30,14 +29,17 @@ public final class SkillGuiScreen {
     private final SkillSocketService socketService;
     private final WeaponIdentityService weaponIdentityService;
     private final GuiConfig guiConfig;
+    private final MessageManager messages;
 
     public SkillGuiScreen(SkillRepository skillRepository, SkillProgressService progressService,
-                           SkillSocketService socketService, WeaponIdentityService weaponIdentityService, GuiConfig guiConfig) {
+                           SkillSocketService socketService, WeaponIdentityService weaponIdentityService, GuiConfig guiConfig,
+                           MessageManager messages) {
         this.skillRepository = skillRepository;
         this.progressService = progressService;
         this.socketService = socketService;
         this.weaponIdentityService = weaponIdentityService;
         this.guiConfig = guiConfig;
+        this.messages = messages;
     }
 
     public Gui build(Player player) {
@@ -69,12 +71,10 @@ public final class SkillGuiScreen {
                     boolean socketed = socketService.socket(clicker.getInventory().getItemInMainHand(), skill.getId(),
                             weaponIdentityService.dataOf(clicker.getInventory().getItemInMainHand())
                                     .map(w -> w.getSkillSlotCount()).orElse(1));
-                    clicker.sendMessage(socketed ? Component.text("スキルを装着しました。", NamedTextColor.GREEN)
-                            : Component.text("空きスロットがありません。", NamedTextColor.RED));
+                    messages.send(clicker, socketed ? "skill.socketed" : "skill.socket-failed");
                 } else {
                     boolean upgraded = progressService.upgradeSkill(clicker.getUniqueId(), skill.getId());
-                    clicker.sendMessage(upgraded ? Component.text("スキルレベルが上がりました。", NamedTextColor.GREEN)
-                            : Component.text("習得できません（ポイント不足か最大レベル）。", NamedTextColor.RED));
+                    messages.send(clicker, upgraded ? "skill.upgraded" : "skill.upgrade-failed");
                 }
             }));
         }

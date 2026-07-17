@@ -1,13 +1,12 @@
 package rpg.item.listener;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.inventory.ItemStack;
+import rpg.core.message.MessageManager;
 import rpg.item.model.WeaponData;
 import rpg.item.service.WeaponIdentityService;
 import rpg.item.service.WeaponRequirementService;
@@ -30,10 +29,13 @@ public final class WeaponUseListener implements Listener {
 
     private final WeaponIdentityService identityService;
     private final WeaponRequirementService requirementService;
+    private final MessageManager messages;
 
-    public WeaponUseListener(WeaponIdentityService identityService, WeaponRequirementService requirementService) {
+    public WeaponUseListener(WeaponIdentityService identityService, WeaponRequirementService requirementService,
+                              MessageManager messages) {
         this.identityService = identityService;
         this.requirementService = requirementService;
+        this.messages = messages;
     }
 
     @EventHandler(priority = EventPriority.LOW)
@@ -52,7 +54,7 @@ public final class WeaponUseListener implements Listener {
 
         if (!requirementService.meetsRequirements(attacker.getUniqueId(), data)) {
             event.setCancelled(true);
-            attacker.sendMessage(Component.text("この武器を使用する条件を満たしていません。", NamedTextColor.RED));
+            messages.send(attacker, "item.requirement-not-met");
             return;
         }
 

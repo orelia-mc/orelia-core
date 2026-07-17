@@ -1,7 +1,5 @@
 package rpg.skill.listener;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -10,6 +8,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import rpg.core.message.MessageManager;
 import rpg.item.model.WeaponType;
 import rpg.item.service.WeaponIdentityService;
 import rpg.skill.service.SkillCastService;
@@ -32,12 +31,14 @@ public final class SkillActivationListener implements Listener {
     private final SkillCastService castService;
     private final SkillSocketService socketService;
     private final WeaponIdentityService weaponIdentityService;
+    private final MessageManager messages;
 
     public SkillActivationListener(SkillCastService castService, SkillSocketService socketService,
-                                    WeaponIdentityService weaponIdentityService) {
+                                    WeaponIdentityService weaponIdentityService, MessageManager messages) {
         this.castService = castService;
         this.socketService = socketService;
         this.weaponIdentityService = weaponIdentityService;
+        this.messages = messages;
     }
 
     @EventHandler
@@ -75,18 +76,18 @@ public final class SkillActivationListener implements Listener {
             return false;
         }
         Optional<SkillCastService.CastFailure> failure = castService.cast(player, socketed.get(slotIndex));
-        failure.ifPresent(f -> player.sendMessage(Component.text(describe(f), NamedTextColor.RED)));
+        failure.ifPresent(f -> messages.send(player, messageKey(f)));
         return true;
     }
 
-    private String describe(SkillCastService.CastFailure failure) {
+    private String messageKey(SkillCastService.CastFailure failure) {
         return switch (failure) {
-            case UNKNOWN_SKILL, NO_EXECUTOR -> "このスキルは設定されていません。";
-            case WRONG_WEAPON -> "この武器ではこのスキルを使用できません。";
-            case NOT_SOCKETED -> "武器にスキルが装着されていません。";
-            case NOT_LEARNED -> "このスキルをまだ習得していません。";
-            case ON_COOLDOWN -> "スキルはクールタイム中です。";
-            case NOT_ENOUGH_SP -> "SPが足りません。";
+            case UNKNOWN_SKILL, NO_EXECUTOR -> "skill.unknown";
+            case WRONG_WEAPON -> "skill.wrong-weapon";
+            case NOT_SOCKETED -> "skill.not-socketed";
+            case NOT_LEARNED -> "skill.not-learned";
+            case ON_COOLDOWN -> "skill.on-cooldown";
+            case NOT_ENOUGH_SP -> "skill.not-enough-sp";
         };
     }
 }

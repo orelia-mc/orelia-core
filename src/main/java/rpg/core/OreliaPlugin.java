@@ -8,6 +8,7 @@ import rpg.core.command.OlRootCommand;
 import rpg.core.command.PlayerCommandRegistry;
 import rpg.core.config.ConfigManager;
 import rpg.core.listener.PlayerConnectionListener;
+import rpg.core.message.MessageManager;
 import rpg.core.module.ModuleManager;
 import rpg.core.player.PlayerDataManager;
 import rpg.core.scheduler.SchedulerService;
@@ -38,6 +39,7 @@ import rpg.api.ApiModule;
 public final class OreliaPlugin extends JavaPlugin {
 
     private ConfigManager configManager;
+    private MessageManager messageManager;
     private SchedulerService schedulerService;
     private PlayerDataManager playerDataManager;
     private ModuleManager moduleManager;
@@ -48,6 +50,7 @@ public final class OreliaPlugin extends JavaPlugin {
     public void onEnable() {
         this.configManager = new ConfigManager(this);
         this.configManager.register("config.yml");
+        this.messageManager = new MessageManager(configManager.register("messages.yml"));
 
         this.schedulerService = new SchedulerService(this);
         this.playerDataManager = new PlayerDataManager(getLogger(), schedulerService);
@@ -107,6 +110,10 @@ public final class OreliaPlugin extends JavaPlugin {
 
     public ConfigManager getConfigManager() {
         return configManager;
+    }
+
+    public MessageManager getMessageManager() {
+        return messageManager;
     }
 
     public SchedulerService getSchedulerService() {

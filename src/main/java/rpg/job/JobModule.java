@@ -45,7 +45,8 @@ public final class JobModule implements RpgModule {
 
         this.jobService = new JobService(plugin.getPlayerDataManager(), jobManager, statusModule.getStatusService());
 
-        plugin.getPlayerCommandRegistry().register("job", new JobCommand(jobService, jobManager));
+        plugin.getPlayerCommandRegistry().register("job", new JobCommand(jobService, jobManager, plugin.getMessageManager()),
+                "現在の職業を確認します。", "job [list]");
     }
 
     @Override

@@ -1,6 +1,7 @@
 plugins {
     id("java")
     id("com.gradleup.shadow") version "9.5.1"
+    id("maven-publish")
 }
 
 group = "rpg"
@@ -61,5 +62,20 @@ tasks.processResources {
     filteringCharset = "UTF-8"
     filesMatching("plugin.yml") {
         expand(props)
+    }
+}
+
+// Publishes to mavenLocal under the same coordinates jitpack normally resolves
+// (com.github.orelia-mc:orelia-core:main-SNAPSHOT), so orelia-world/orelia-extra can pick up
+// local changes during development without waiting on a push. Temporary dev-loop aid only -
+// production builds still resolve this dependency from jitpack.io.
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "com.github.orelia-mc"
+            artifactId = "orelia-core"
+            version = "main-SNAPSHOT"
+            from(components["java"])
+        }
     }
 }

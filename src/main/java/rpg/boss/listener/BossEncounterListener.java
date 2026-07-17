@@ -15,6 +15,7 @@ import rpg.boss.model.BossData;
 import rpg.boss.model.BossPhase;
 import rpg.boss.repository.BossRepository;
 import rpg.boss.service.BossAbilityCastService;
+import rpg.core.message.MessageManager;
 import rpg.monster.service.MonsterSpawnService;
 import rpg.util.ColorUtil;
 
@@ -32,13 +33,16 @@ public final class BossEncounterListener implements Listener {
     private final BossRepository bossRepository;
     private final BossStateManager stateManager;
     private final BossAbilityCastService abilityCastService;
+    private final MessageManager messages;
 
     public BossEncounterListener(MonsterSpawnService monsterSpawnService, BossRepository bossRepository,
-                                  BossStateManager stateManager, BossAbilityCastService abilityCastService) {
+                                  BossStateManager stateManager, BossAbilityCastService abilityCastService,
+                                  MessageManager messages) {
         this.monsterSpawnService = monsterSpawnService;
         this.bossRepository = bossRepository;
         this.stateManager = stateManager;
         this.abilityCastService = abilityCastService;
+        this.messages = messages;
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -68,7 +72,7 @@ public final class BossEncounterListener implements Listener {
 
         if (percent <= boss.getEnrageHpPercent() && !state.isEnraged()) {
             state.setEnraged(true);
-            announce(entity, "&c" + entity.getName() + " が狂暴化した！");
+            announce(entity, messages.format("boss.enraged", "boss", entity.getName()));
         }
     }
 

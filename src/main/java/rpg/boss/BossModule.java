@@ -46,7 +46,8 @@ public final class BossModule implements RpgModule {
         this.abilityCastService = new BossAbilityCastService(plugin, monsterModule.getSpawnService(), repository);
 
         plugin.getServer().getPluginManager().registerEvents(
-                new BossEncounterListener(monsterModule.getSpawnService(), repository, stateManager, abilityCastService), plugin);
+                new BossEncounterListener(monsterModule.getSpawnService(), repository, stateManager, abilityCastService,
+                        plugin.getMessageManager()), plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new BossEnrageListener(monsterModule.getSpawnService(), repository, stateManager), plugin);
         plugin.getServer().getPluginManager().registerEvents(new BossFireballHitListener(), plugin);

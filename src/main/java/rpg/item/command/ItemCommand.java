@@ -1,7 +1,5 @@
 package rpg.item.command;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -9,6 +7,7 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.command.CommandSender;
 import org.bukkit.inventory.ItemStack;
+import rpg.core.message.MessageManager;
 import rpg.item.manager.ItemManager;
 
 import java.util.ArrayList;
@@ -21,25 +20,23 @@ import java.util.List;
 public final class ItemCommand implements CommandExecutor, TabCompleter {
 
     private final ItemManager itemManager;
+    private final MessageManager messages;
 
-    public ItemCommand(ItemManager itemManager) {
+    public ItemCommand(ItemManager itemManager, MessageManager messages) {
         this.itemManager = itemManager;
+        this.messages = messages;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length < 2 || !args[0].equalsIgnoreCase("give")) {
-            sender.sendMessage(Component.text("Usage: /" + label + " give <player> <id> [amount]", NamedTextColor.YELLOW));
-            return true;
-        }
-        if (args.length < 3) {
-            sender.sendMessage(Component.text("Usage: /" + label + " give <player> <id> [amount]", NamedTextColor.YELLOW));
+        if (args.length < 3 || !args[0].equalsIgnoreCase("give")) {
+            messages.send(sender, "item.usage-give", "label", label);
             return true;
         }
 
         Player target = Bukkit.getPlayerExact(args[1]);
         if (target == null) {
-            sender.sendMessage(Component.text("Player not found: " + args[1], NamedTextColor.RED));
+            messages.send(sender, "item.player-not-found", "player", args[1]);
             return true;
         }
 
@@ -48,12 +45,12 @@ public final class ItemCommand implements CommandExecutor, TabCompleter {
 
         ItemStack weapon = itemManager.createWeapon(weaponId).orElse(null);
         if (weapon == null) {
-            sender.sendMessage(Component.text("Unknown weapon id: " + weaponId, NamedTextColor.RED));
+            messages.send(sender, "item.unknown-weapon");
             return true;
         }
         weapon.setAmount(amount);
         target.getInventory().addItem(weapon);
-        sender.sendMessage(Component.text("Gave " + amount + "x " + weaponId + " to " + target.getName(), NamedTextColor.GREEN));
+        messages.send(sender, "item.given", "amount", amount, "weapon", weaponId, "player", target.getName());
         return true;
     }
 

@@ -1,20 +1,26 @@
-# Centralized user-facing text (SOW section 20).
-#
-# NOTE: this file is reserved for a follow-up pass that routes every hardcoded chat
-# message in the plugin through here (via rpg.core.config.ConfigManager, the same way
-# every other *.yml is loaded). It is not read by any code yet - treat it as the source
-# of truth for wording/translation review in the meantime.
+# Centralized user-facing text. Every chat message the plugin sends goes through
+# rpg.core.message.MessageManager, keyed by the dotted paths below - do not hardcode
+# ChatColor + literal strings in command/listener/service code, add a key here instead.
 
 prefix: "&8[&6Orelia&8] &r"
+
+command:
+  player-only: "&cプレイヤーのみ実行できます。"
+  unknown-subcommand: "&c不明なサブコマンドです: {name}。/{label} help を試してください。"
 
 item:
   requirement-not-met: "&cこの武器を使用する条件を満たしていません。"
   unknown-weapon: "&c不明な武器IDです。"
+  usage-give: "&e使い方: /{label} give <player> <id> [amount]"
+  player-not-found: "&c対象のプレイヤーが見つかりません: {player}"
+  given: "&a{amount}個の{weapon}を{player}に渡しました。"
 
 job:
   not-chosen: "&e職業がまだ選択されていません。ギルドで職業を選びましょう。"
   changed: "&a{job}に転職しました。"
   change-failed: "&c転職に失敗しました。"
+  current: "&a職業: &f{job}"
+  list: "&a職業一覧: &f{jobs}"
 
 skill:
   wrong-weapon: "&cこの武器ではこのスキルを使用できません。"
@@ -22,6 +28,11 @@ skill:
   not-learned: "&cこのスキルをまだ習得していません。"
   on-cooldown: "&cスキルはクールタイム中です。"
   not-enough-sp: "&cSPが足りません。"
+  unknown: "&cこのスキルは設定されていません。"
+  socketed: "&aスキルを装着しました。"
+  socket-failed: "&c空きスロットがありません。"
+  upgraded: "&aスキルレベルが上がりました。"
+  upgrade-failed: "&c習得できません（ポイント不足か最大レベル）。"
 
 quest:
   accepted: "&aクエストを受注しました。"
@@ -31,8 +42,33 @@ quest:
 
 economy:
   insufficient-funds: "&c所持金が足りません。"
+  item-unavailable: "&c商品を取得できませんでした。"
+  purchase-success: "&a購入しました。"
 
 dungeon:
   party-too-small: "&cパーティ人数が足りません。"
   party-too-large: "&cパーティ人数が多すぎます。"
   already-in-dungeon: "&c既にダンジョンに入っています。"
+
+boss:
+  enraged: "&c{boss} が狂暴化した！"
+
+admin:
+  reloaded: "&aOrelia の設定を再読み込みしました。"
+  usage-spawn: "&e使い方: /oladmin spawn <monsterId>"
+  module-disabled: "&c{module}モジュールは有効化されていません。"
+  spawned-monster: "&a{id}を召喚しました。"
+  unknown-monster: "&c不明なモンスターIDです: {id}"
+  usage-spawnboss: "&e使い方: /oladmin spawnboss <bossId>"
+  spawned-boss: "&aボス{id}を召喚しました。"
+  unknown-boss: "&c不明なボスIDです: {id}"
+  usage-spawnpoint: "&e使い方: /oladmin spawnpoint <add <monsterId> [intervalSeconds] [maxAlive]|remove <id>|list>"
+  usage-spawnpoint-add: "&e使い方: /oladmin spawnpoint add <monsterId> [intervalSeconds] [maxAlive]"
+  spawnpoint-registered: "&aスポーンポイント{id}（{monster}）をここに登録しました（{interval}秒毎、最大{max}体）。"
+  usage-spawnpoint-remove: "&e使い方: /oladmin spawnpoint remove <id>"
+  spawnpoint-removed: "&aスポーンポイント{id}を削除しました。"
+  spawnpoint-not-found: "&cスポーンポイント{id}は見つかりません。"
+  spawnpoint-invalid-id: "&c無効なスポーンポイントIDです: {id}"
+  spawnpoint-empty: "&e登録されているスポーンポイントはありません。"
+  spawnpoint-list-header: "&aスポーンポイント一覧:"
+  spawnpoint-list-entry: "&7- {id} {monster} @ {world} {x},{y},{z} ({interval}s, max {max})"

@@ -2,7 +2,9 @@ package rpg.core.command;
 
 import org.bukkit.command.CommandExecutor;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -17,17 +19,31 @@ import java.util.Set;
  */
 public class OlCommandRegistry {
 
-    private final Map<String, CommandExecutor> subcommands = new LinkedHashMap<>();
+    /** A registered subcommand plus the metadata {@link CommandHelpUtil} renders in {@code help}. */
+    public record Entry(String name, CommandExecutor executor, String description, String usage) {
+    }
 
-    public void register(String name, CommandExecutor executor) {
-        subcommands.put(name.toLowerCase(), executor);
+    private final Map<String, Entry> subcommands = new LinkedHashMap<>();
+
+    public void register(String name, CommandExecutor executor, String description, String usage) {
+        subcommands.put(name.toLowerCase(), new Entry(name.toLowerCase(), executor, description, usage));
     }
 
     public Optional<CommandExecutor> get(String name) {
+        Entry entry = subcommands.get(name.toLowerCase());
+        return entry == null ? Optional.empty() : Optional.of(entry.executor());
+    }
+
+    public Optional<Entry> getEntry(String name) {
         return Optional.ofNullable(subcommands.get(name.toLowerCase()));
     }
 
     public Set<String> getNames() {
         return Set.copyOf(subcommands.keySet());
+    }
+
+    /** Entries in registration order, for help-page rendering. */
+    public List<Entry> getEntries() {
+        return new ArrayList<>(subcommands.values());
     }
 }

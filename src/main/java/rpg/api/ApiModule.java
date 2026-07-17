@@ -8,6 +8,7 @@ import rpg.core.module.RpgModule;
 import rpg.core.player.PlayerDataManager;
 import rpg.database.DatabaseModule;
 import rpg.database.manager.DatabaseManager;
+import rpg.economy.EconomyModule;
 import rpg.effect.EffectModule;
 import rpg.gui.GuiModule;
 import rpg.item.ItemModule;
@@ -47,6 +48,7 @@ public final class ApiModule implements RpgModule {
         AccessoryModule accessoryModule = require(plugin, AccessoryModule.class);
         SkillModule skillModule = require(plugin, SkillModule.class);
         EffectModule effectModule = require(plugin, EffectModule.class);
+        EconomyModule economyModule = require(plugin, EconomyModule.class);
         MonsterModule monsterModule = require(plugin, MonsterModule.class);
         BossModule bossModule = require(plugin, BossModule.class);
         GuiModule guiModule = require(plugin, GuiModule.class);
@@ -63,6 +65,8 @@ public final class ApiModule implements RpgModule {
         servicesManager.register(SkillApi.class,
                 new SkillApiImpl(skillModule.getProgressService(), skillModule.getSkillRepository()), plugin, ServicePriority.Normal);
         servicesManager.register(EffectApi.class, new EffectApiImpl(effectModule.getPlaybackService()), plugin, ServicePriority.Normal);
+        servicesManager.register(EconomyApi.class, new EconomyApiImpl(economyModule.getEconomyService()), plugin, ServicePriority.Normal);
+        servicesManager.register(DebugApi.class, new DebugApiImpl(plugin.getConfigManager()), plugin, ServicePriority.Normal);
         servicesManager.register(CombatApi.class,
                 new CombatApiImpl(monsterModule.getSpawnService(), bossModule.getRepository()), plugin, ServicePriority.Normal);
         servicesManager.register(GuiApi.class, new GuiApiImpl(guiModule), plugin, ServicePriority.Normal);

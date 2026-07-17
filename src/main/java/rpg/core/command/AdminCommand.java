@@ -1,7 +1,5 @@
 package rpg.core.command;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -9,6 +7,7 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import rpg.boss.BossModule;
 import rpg.core.OreliaPlugin;
+import rpg.core.message.MessageManager;
 import rpg.monster.MonsterModule;
 import rpg.monster.spawnpoint.model.MonsterSpawnPoint;
 import rpg.monster.spawnpoint.service.MonsterSpawnPointService;
@@ -29,29 +28,42 @@ import java.util.UUID;
 public final class AdminCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> TOP_LEVEL_SUBCOMMANDS = List.of("reload", "spawn", "spawnboss", "spawnpoint");
-    private static final String USAGE_SUFFIX = "<reload|spawn <monsterId>|spawnboss <bossId>|spawnpoint <add|remove|list> ...>";
+    // Built-in subcommands are hardcoded in this class rather than going through
+    // AdminCommandRegistry, so they need their own Entry list to show up in "/oladmin help"
+    // alongside whatever orelia-world/orelia-extra/orelia-debug register.
+    private static final List<OlCommandRegistry.Entry> BUILTIN_ENTRIES = List.of(
+            new OlCommandRegistry.Entry("reload", null, "全モジュールの設定を再読み込みします。", "reload"),
+            new OlCommandRegistry.Entry("spawn", null, "自分の足元にモンスターを湧かせます。", "spawn <monsterId>"),
+            new OlCommandRegistry.Entry("spawnboss", null, "自分の足元にボスを湧かせます。", "spawnboss <bossId>"),
+            new OlCommandRegistry.Entry("spawnpoint", null, "モンスターの自動湧きポイントを管理します。", "spawnpoint <add|remove|list> ...")
+    );
     private static final int DEFAULT_SPAWN_POINT_INTERVAL_SECONDS = 30;
     private static final int DEFAULT_SPAWN_POINT_MAX_ALIVE = 3;
 
     private final OreliaPlugin plugin;
     private final AdminCommandRegistry registry;
+    private final MessageManager messages;
 
     public AdminCommand(OreliaPlugin plugin, AdminCommandRegistry registry) {
         this.plugin = plugin;
         this.registry = registry;
+        this.messages = plugin.getMessageManager();
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length == 0) {
-            sender.sendMessage(Component.text("Usage: /" + label + " " + USAGE_SUFFIX, NamedTextColor.YELLOW));
+        if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
+            int page = args.length >= 2 ? parsePageOrDefault(args[1]) : 1;
+            List<OlCommandRegistry.Entry> entries = new ArrayList<>(BUILTIN_ENTRIES);
+            entries.addAll(registry.getEntries());
+            CommandHelpUtil.sendHelp(sender, label, entries, page);
             return true;
         }
 
         switch (args[0].toLowerCase()) {
             case "reload" -> {
                 plugin.reload();
-                sender.sendMessage(Component.text("Orelia configuration reloaded.", NamedTextColor.GREEN));
+                messages.send(sender, "admin.reloaded");
             }
             case "spawn" -> spawnMonster(sender, args);
             case "spawnboss" -> spawnBoss(sender, args);
@@ -59,7 +71,7 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             default -> {
                 CommandExecutor delegate = registry.get(args[0]).orElse(null);
                 if (delegate == null) {
-                    sender.sendMessage(Component.text("Usage: /" + label + " " + USAGE_SUFFIX, NamedTextColor.YELLOW));
+                    messages.send(sender, "command.unknown-subcommand", "name", args[0], "label", label);
                     return true;
                 }
                 return delegate.onCommand(sender, command, label + " " + args[0], Arrays.copyOfRange(args, 1, args.length));
@@ -68,10 +80,19 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private int parsePageOrDefault(String raw) {
+        try {
+            return Integer.parseInt(raw);
+        } catch (NumberFormatException e) {
+            return 1;
+        }
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length <= 1) {
             List<String> options = new ArrayList<>(TOP_LEVEL_SUBCOMMANDS);
+            options.add("help");
             options.addAll(registry.getNames());
             return TabCompletions.matching(options, args.length == 0 ? "" : args[0]);
         }
@@ -87,50 +108,56 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
 
     private void spawnMonster(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            messages.send(sender, "command.player-only");
             return;
         }
         if (args.length < 2) {
-            sender.sendMessage(Component.text("Usage: /oladmin spawn <monsterId>", NamedTextColor.YELLOW));
+            messages.send(sender, "admin.usage-spawn");
             return;
         }
         MonsterModule monsterModule = plugin.getModuleManager().get(MonsterModule.class).orElse(null);
         if (monsterModule == null) {
-            sender.sendMessage(Component.text("Monster module is not enabled.", NamedTextColor.RED));
+            messages.send(sender, "admin.module-disabled", "module", "Monster");
             return;
         }
         boolean spawned = monsterModule.getSpawnService().spawn(args[1], player.getLocation()).isPresent();
-        sender.sendMessage(spawned ? Component.text("Spawned " + args[1] + ".", NamedTextColor.GREEN)
-                : Component.text("Unknown monster id: " + args[1], NamedTextColor.RED));
+        if (spawned) {
+            messages.send(sender, "admin.spawned-monster", "id", args[1]);
+        } else {
+            messages.send(sender, "admin.unknown-monster", "id", args[1]);
+        }
     }
 
     private void spawnBoss(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            messages.send(sender, "command.player-only");
             return;
         }
         if (args.length < 2) {
-            sender.sendMessage(Component.text("Usage: /oladmin spawnboss <bossId>", NamedTextColor.YELLOW));
+            messages.send(sender, "admin.usage-spawnboss");
             return;
         }
         BossModule bossModule = plugin.getModuleManager().get(BossModule.class).orElse(null);
         if (bossModule == null) {
-            sender.sendMessage(Component.text("Boss module is not enabled.", NamedTextColor.RED));
+            messages.send(sender, "admin.module-disabled", "module", "Boss");
             return;
         }
         boolean spawned = bossModule.spawn(args[1], player.getLocation()).isPresent();
-        sender.sendMessage(spawned ? Component.text("Spawned boss " + args[1] + ".", NamedTextColor.GREEN)
-                : Component.text("Unknown boss id: " + args[1], NamedTextColor.RED));
+        if (spawned) {
+            messages.send(sender, "admin.spawned-boss", "id", args[1]);
+        } else {
+            messages.send(sender, "admin.unknown-boss", "id", args[1]);
+        }
     }
 
     private void spawnPoint(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(Component.text("Usage: /oladmin spawnpoint <add <monsterId> [intervalSeconds] [maxAlive]|remove <id>|list>", NamedTextColor.YELLOW));
+            messages.send(sender, "admin.usage-spawnpoint");
             return;
         }
         MonsterModule monsterModule = plugin.getModuleManager().get(MonsterModule.class).orElse(null);
         if (monsterModule == null) {
-            sender.sendMessage(Component.text("Monster module is not enabled.", NamedTextColor.RED));
+            messages.send(sender, "admin.module-disabled", "module", "Monster");
             return;
         }
         MonsterSpawnPointService spawnPointService = monsterModule.getSpawnPointService();
@@ -138,50 +165,54 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
         switch (args[1].toLowerCase()) {
             case "add" -> {
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage("Players only.");
+                    messages.send(sender, "command.player-only");
                     return;
                 }
                 if (args.length < 3) {
-                    sender.sendMessage(Component.text("Usage: /oladmin spawnpoint add <monsterId> [intervalSeconds] [maxAlive]", NamedTextColor.YELLOW));
+                    messages.send(sender, "admin.usage-spawnpoint-add");
                     return;
                 }
                 int intervalSeconds = parseIntOrDefault(args, 3, DEFAULT_SPAWN_POINT_INTERVAL_SECONDS);
                 int maxAlive = parseIntOrDefault(args, 4, DEFAULT_SPAWN_POINT_MAX_ALIVE);
                 var created = spawnPointService.add(player, args[2], intervalSeconds, maxAlive);
                 if (created.isEmpty()) {
-                    sender.sendMessage(Component.text("Unknown monster id: " + args[2], NamedTextColor.RED));
+                    messages.send(sender, "admin.unknown-monster", "id", args[2]);
                     return;
                 }
-                sender.sendMessage(Component.text("Registered spawn point " + created.get().getId() + " for " + args[2]
-                        + " here (every " + intervalSeconds + "s, up to " + maxAlive + " alive).", NamedTextColor.GREEN));
+                messages.send(sender, "admin.spawnpoint-registered",
+                        "id", created.get().getId(), "monster", args[2], "interval", intervalSeconds, "max", maxAlive);
             }
             case "remove" -> {
                 if (args.length < 3) {
-                    sender.sendMessage(Component.text("Usage: /oladmin spawnpoint remove <id>", NamedTextColor.YELLOW));
+                    messages.send(sender, "admin.usage-spawnpoint-remove");
                     return;
                 }
                 try {
                     boolean removed = spawnPointService.remove(UUID.fromString(args[2]));
-                    sender.sendMessage(removed ? Component.text("Removed spawn point " + args[2] + ".", NamedTextColor.GREEN)
-                            : Component.text("No spawn point with id " + args[2] + ".", NamedTextColor.RED));
+                    if (removed) {
+                        messages.send(sender, "admin.spawnpoint-removed", "id", args[2]);
+                    } else {
+                        messages.send(sender, "admin.spawnpoint-not-found", "id", args[2]);
+                    }
                 } catch (IllegalArgumentException e) {
-                    sender.sendMessage(Component.text("Not a valid spawn point id: " + args[2], NamedTextColor.RED));
+                    messages.send(sender, "admin.spawnpoint-invalid-id", "id", args[2]);
                 }
             }
             case "list" -> {
                 var points = spawnPointService.getAll();
                 if (points.isEmpty()) {
-                    sender.sendMessage(Component.text("No spawn points registered.", NamedTextColor.YELLOW));
+                    messages.send(sender, "admin.spawnpoint-empty");
                     return;
                 }
-                sender.sendMessage(Component.text("Spawn points:", NamedTextColor.GREEN));
+                messages.send(sender, "admin.spawnpoint-list-header");
                 for (MonsterSpawnPoint point : points.values()) {
-                    sender.sendMessage(Component.text("- " + point.getId() + " " + point.getMonsterId()
-                            + " @ " + point.getWorld() + " " + (int) point.getX() + "," + (int) point.getY() + "," + (int) point.getZ()
-                            + " (" + point.getIntervalSeconds() + "s, max " + point.getMaxAlive() + ")", NamedTextColor.GRAY));
+                    messages.sendRaw(sender, "admin.spawnpoint-list-entry",
+                            "id", point.getId(), "monster", point.getMonsterId(), "world", point.getWorld(),
+                            "x", (int) point.getX(), "y", (int) point.getY(), "z", (int) point.getZ(),
+                            "interval", point.getIntervalSeconds(), "max", point.getMaxAlive());
                 }
             }
-            default -> sender.sendMessage(Component.text("Usage: /oladmin spawnpoint <add <monsterId> [intervalSeconds] [maxAlive]|remove <id>|list>", NamedTextColor.YELLOW));
+            default -> messages.send(sender, "admin.usage-spawnpoint");
         }
     }
 

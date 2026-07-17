@@ -66,10 +66,11 @@ public final class GuiModule implements RpgModule {
         this.statusGuiScreen = new StatusGuiScreen(statusModule.getStatusService(), guiConfig);
         this.equipmentGuiScreen = new EquipmentGuiScreen(guiConfig);
         this.skillGuiScreen = new SkillGuiScreen(skillModule.getSkillRepository(), skillModule.getProgressService(),
-                skillModule.getSocketService(), itemModule.getItemManager().getIdentityService(), guiConfig);
-        this.jobGuiScreen = new JobGuiScreen(jobModule.getJobService(), jobModule.getJobManager(), guiConfig);
+                skillModule.getSocketService(), itemModule.getItemManager().getIdentityService(), guiConfig,
+                plugin.getMessageManager());
+        this.jobGuiScreen = new JobGuiScreen(jobModule.getJobService(), jobModule.getJobManager(), guiConfig, plugin.getMessageManager());
         this.shopGuiScreen = new ShopGuiScreen(itemModule.getItemManager(), accessoryModule.getRepository(),
-                accessoryModule.getFactory(), economyModule.getEconomyService(), guiConfig);
+                accessoryModule.getFactory(), economyModule.getEconomyService(), guiConfig, plugin.getMessageManager());
 
         WarehouseRepository warehouseRepository = new WarehouseRepository(databaseModule.getDatabaseManager());
         try {
@@ -81,7 +82,9 @@ public final class GuiModule implements RpgModule {
 
         plugin.getServer().getPluginManager().registerEvents(new GuiListener(), plugin);
         plugin.getServer().getPluginManager().registerEvents(new WarehouseSaveListener(warehouseRepository), plugin);
-        plugin.getPlayerCommandRegistry().register("status", new StatusCommand(guiManager, statusGuiScreen));
+        plugin.getPlayerCommandRegistry().register("status",
+                new StatusCommand(guiManager, statusGuiScreen, plugin.getMessageManager()),
+                "ステータス画面を開きます。", "status");
     }
 
     @Override

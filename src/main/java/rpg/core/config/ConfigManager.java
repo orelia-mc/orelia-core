@@ -4,6 +4,7 @@ import org.bukkit.plugin.Plugin;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Central registry of the plugin's YAML config files (config.yml, items.yml, skills.yml, ...).
@@ -45,5 +46,10 @@ public final class ConfigManager {
 
     public void reloadAll() {
         files.values().forEach(ConfigFile::reload);
+    }
+
+    /** Names of every config file registered so far (e.g. {@code "config.yml"}), for debug tooling. */
+    public Set<String> getRegisteredFileNames() {
+        return Set.copyOf(files.keySet());
     }
 }

@@ -81,7 +81,8 @@ public final class GatheringModule implements RpgModule {
                 new FarmingListener(definitions, levelService, radiusConfig, protectionService), plugin);
         plugin.getServer().getPluginManager().registerEvents(new GatherChunkLoadListener(regenService), plugin);
 
-        plugin.getPlayerCommandRegistry().register("gathering", new GatheringCommand(levelService, radiusConfig));
+        plugin.getPlayerCommandRegistry().register("gathering", new GatheringCommand(levelService, radiusConfig),
+                "採取/農業レベルと一括範囲を確認します。", "gathering");
     }
 
     @Override

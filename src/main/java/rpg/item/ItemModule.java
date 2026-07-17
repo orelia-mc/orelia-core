@@ -45,8 +45,10 @@ public final class ItemModule implements RpgModule {
         WeaponRequirementService requirementService = new WeaponRequirementService(jobModule.getJobService(), statusModule.getStatusService());
         this.itemManager = new ItemManager(repository, factory, identityService, requirementService);
 
-        plugin.getServer().getPluginManager().registerEvents(new WeaponUseListener(identityService, requirementService), plugin);
-        plugin.getPlayerCommandRegistry().register("item", new ItemCommand(itemManager));
+        plugin.getServer().getPluginManager().registerEvents(
+                new WeaponUseListener(identityService, requirementService, plugin.getMessageManager()), plugin);
+        plugin.getPlayerCommandRegistry().register("item", new ItemCommand(itemManager, plugin.getMessageManager()),
+                "武器の付与など、アイテム関連の操作を行います。", "item give <player> <id> [amount]");
     }
 
     @Override

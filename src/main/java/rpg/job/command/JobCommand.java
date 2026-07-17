@@ -1,12 +1,11 @@
 package rpg.job.command;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import rpg.core.message.MessageManager;
 import rpg.job.manager.JobManager;
 import rpg.job.model.JobType;
 import rpg.job.service.JobService;
@@ -23,32 +22,32 @@ public final class JobCommand implements CommandExecutor, TabCompleter {
 
     private final JobService jobService;
     private final JobManager jobManager;
+    private final MessageManager messages;
 
-    public JobCommand(JobService jobService, JobManager jobManager) {
+    public JobCommand(JobService jobService, JobManager jobManager, MessageManager messages) {
         this.jobService = jobService;
         this.jobManager = jobManager;
+        this.messages = messages;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            messages.send(sender, "command.player-only");
             return true;
         }
         if (args.length > 0 && args[0].equalsIgnoreCase("list")) {
-            sender.sendMessage(Component.text("Jobs: ", NamedTextColor.GREEN).append(Component.text(
-                    String.join(", ", java.util.Arrays.stream(JobType.values()).map(this::displayName).toList()),
-                    NamedTextColor.WHITE)));
+            String jobs = String.join(", ", java.util.Arrays.stream(JobType.values()).map(this::displayName).toList());
+            messages.send(sender, "job.list", "jobs", jobs);
             return true;
         }
 
         JobType job = jobService.getCurrentJob(player.getUniqueId()).orElse(null);
         if (job == null) {
-            sender.sendMessage(Component.text("You have not chosen a job yet. Visit a job-change NPC.", NamedTextColor.YELLOW));
+            messages.send(sender, "job.not-chosen");
             return true;
         }
-        sender.sendMessage(Component.text("Job: ", NamedTextColor.GREEN)
-                .append(Component.text(displayName(job), NamedTextColor.WHITE)));
+        messages.send(sender, "job.current", "job", displayName(job));
         return true;
     }
 
