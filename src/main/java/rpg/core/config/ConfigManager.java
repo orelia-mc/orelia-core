@@ -2,9 +2,14 @@ package rpg.core.config;
 
 import org.bukkit.plugin.Plugin;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 
 /**
  * Central registry of the plugin's YAML config files (config.yml, items.yml, skills.yml, ...).
@@ -26,10 +31,27 @@ public final class ConfigManager {
     public ConfigFile register(String fileName) {
         return files.computeIfAbsent(fileName, name -> {
             if (plugin.getResource(name) != null) {
+                boolean alreadyExisted = new File(plugin.getDataFolder(), name).exists();
                 plugin.saveResource(name, false);
+                if (alreadyExisted) {
+                    migrateExisting(name);
+                }
             }
             return new ConfigFile(plugin.getLogger(), plugin.getDataFolder(), name);
         });
+    }
+
+    /** Appends any newly-added top-level config-version keys - see {@link ConfigMigrator}. */
+    private void migrateExisting(String fileName) {
+        try (InputStream in = plugin.getResource(fileName)) {
+            if (in == null) {
+                return;
+            }
+            String bundledText = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            ConfigMigrator.migrate(plugin.getLogger(), new File(plugin.getDataFolder(), fileName), bundledText);
+        } catch (IOException e) {
+            plugin.getLogger().log(Level.WARNING, "Failed to check " + fileName + " for config migrations", e);
+        }
     }
 
     public ConfigFile get(String fileName) {

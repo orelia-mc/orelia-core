@@ -1,5 +1,11 @@
 # Orelia core configuration.
 # Reload with: /oladmin reload
+#
+# config-version tracks this file's schema. Bump it whenever a new top-level section is
+# added - on next startup, ConfigManager appends the new section (with its comments) to any
+# existing config.yml that's missing it, without touching anything you've already customized.
+# Never bump this for a value-only change (e.g. tweaking a default), only for new/removed keys.
+config-version: 1
 
 database:
   # SQLITE or MYSQL
@@ -61,7 +67,7 @@ combat:
     # down. Tune this if numbers feel like they're floating too high above the target.
     y-offset: -0.3
     normal-color: "&f"
-    crit-color: "&e"
+    crit-color: "&6"
     crit-scale: 1.3
 
 monster:
