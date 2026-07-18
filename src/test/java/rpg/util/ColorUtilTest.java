@@ -36,4 +36,14 @@ class ColorUtilTest {
     void colorizeOfNullReturnsEmptyString() {
         assertEquals("", ColorUtil.colorize(null));
     }
+
+    @Test
+    void colorizeExpandsMappedCustomCode() {
+        assertEquals("§x§e§7§4§c§3§ctest", ColorUtil.colorize("&%ctest"));
+    }
+
+    @Test
+    void colorizeLeavesUnmappedCustomCodeUntouched() {
+        assertEquals("&%ztest", ColorUtil.colorize("&%ztest"));
+    }
 }

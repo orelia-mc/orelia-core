@@ -7,10 +7,14 @@ import rpg.util.MathUtil;
  * template/colors/length), used both at spawn (full HP) and after every hit
  * ({@code MonsterHealthBarListener}). Pure/testable - takes already-resolved config values
  * rather than reading {@code config.yml} itself.
+ *
+ * <p>The bar itself is drawn with the classic "strikethrough space" trick ({@code &m} +
+ * spaces renders as a solid colored line through the gap) rather than a block character, so
+ * it looks consistent across fonts/resource packs. Each segment (filled/empty) ends with
+ * {@code &r} so the strikethrough doesn't bleed into the following segment or the
+ * {@code {current}}/{@code {max}} text.
  */
 public final class MonsterHealthBarRenderer {
-
-    private static final String BAR_CHAR = "█"; // █
 
     public String render(String name, double currentHp, double maxHp, int length, String format,
                           String filledColor, String emptyColor) {
@@ -18,7 +22,8 @@ public final class MonsterHealthBarRenderer {
         int filled = MathUtil.clamp((int) Math.round(ratio * length), 0, length);
         int empty = length - filled;
 
-        String bar = filledColor + BAR_CHAR.repeat(filled) + emptyColor + BAR_CHAR.repeat(empty);
+        String bar = filledColor + "&m" + " ".repeat(filled) + "&r"
+                + emptyColor + "&m" + " ".repeat(empty) + "&r";
 
         return format
                 .replace("{name}", name)
