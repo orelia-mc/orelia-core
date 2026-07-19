@@ -77,6 +77,12 @@ weapon-level:
 # Floating damage-number text (rises for duration-ticks then despawns). Works for any hit,
 # not just monsters - PvP included.
 combat:
+  scaled-health:
+    # Tagged monsters' true HP (monsters.yml "hp:") can run into the thousands for a
+    # high-difficulty boss, far past what's safe to put directly into vanilla's MAX_HEALTH
+    # attribute - their vanilla health is capped to this instead and kept proportional to the
+    # real value (same idea as players staying at ~20 hearts regardless of their real HP pool).
+    vanilla-cap: 1024
   damage-display:
     enabled: true
     duration-ticks: 20

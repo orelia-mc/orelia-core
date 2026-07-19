@@ -78,12 +78,13 @@ public final class CombatDamageListener implements Listener {
     }
 
     /**
-     * {@code result.amount()} is in "scaled" units (a player's HP pool can be in the hundreds
-     * while their real vanilla health stays at ~20) - for a scaled victim, converts it to the
-     * vanilla-equivalent amount for {@code event.setDamage} (so Bukkit's own event resolution
-     * still applies knockback/hurt sound/death normally) and separately reduces the tracked
-     * scaled current HP by the original amount. Anything else (a tagged monster - see Phase 4,
-     * or an unrecognized victim) passes the amount through unchanged for now.
+     * {@code result.amount()} is in "scaled" units (a player's/tagged monster's HP pool can be
+     * in the hundreds or thousands while their real vanilla health stays in a small, engine-safe
+     * range) - for a scaled victim, converts it to the vanilla-equivalent amount for
+     * {@code event.setDamage} (so Bukkit's own event resolution still applies knockback/hurt
+     * sound/death normally) and separately reduces the tracked scaled current HP by the
+     * original amount. Anything else (an untagged vanilla mob, or environmental damage which
+     * never reaches this listener at all) passes the amount through unchanged.
      */
     private double resolveFinalDamage(Entity victim, double scaledDamage) {
         if (victim instanceof Player player) {
@@ -94,6 +95,15 @@ public final class CombatDamageListener implements Listener {
             // floating number shows the meaningful scaled amount, not the tiny vanilla one.
             player.setMetadata(DamageFormula.SCALED_DAMAGE_METADATA_KEY, new FixedMetadataValue(plugin, scaledDamage));
             return vanillaDamage;
+        }
+        if (victim instanceof LivingEntity living) {
+            MonsterData data = spawnService.dataOf(living).orElse(null);
+            if (data != null) {
+                double vanillaDamage = ScaledHealthService.convertDamageToVanilla(living, scaledDamage, data.getHp());
+                spawnService.applyScaledCombatDamage(living, data, scaledDamage);
+                living.setMetadata(DamageFormula.SCALED_DAMAGE_METADATA_KEY, new FixedMetadataValue(plugin, scaledDamage));
+                return vanillaDamage;
+            }
         }
         return scaledDamage;
     }

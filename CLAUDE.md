@@ -131,6 +131,23 @@ Every place `currentHp` can change keeps vanilla health in step:
   the next regen tick would read the stale near-0 `currentHp` from the killing blow and drag the
   freshly-respawned player's vanilla health back down).
 
+Tagged monsters (`MonsterSpawnService`) get the same treatment, since a fully-scaled
+high-difficulty boss's true HP (`monsters.yml` `hp:`) can run well past what's safe to put
+directly into vanilla's `MAX_HEALTH` attribute - vanilla health is capped to
+`config.yml: combat.scaled-health.vanilla-cap` (default 1024) at spawn instead of being set to
+the full scaled value, and the true current HP lives in a PDC value
+(`MonsterKeys#scaledCurrentHp`) rather than a database row (monsters aren't tracked there the
+way players are). `CombatDamageListener` handles the combat-event path exactly like it does for
+players; `MonsterHealthBarListener` handles the one path that never reaches
+`CombatDamageListener` - environmental damage (fall/fire/...), which only fires a plain
+`EntityDamageEvent` - via `MonsterSpawnService#applyEnvironmentalDamage` (mirrors the vanilla
+percentage lost onto the scaled side, same idea as `ScaledHealthRegenListener`). The nametag HP
+bar (`MonsterHealthBarRenderer`) always renders the scaled current/max, not vanilla, so its
+numbers stay meaningful past the vanilla cap. `BossEncounterListener`'s phase/enrage
+percentage thresholds needed no changes - vanilla and scaled health are kept in the exact same
+proportion by construction, so reading vanilla percentage is equivalent to reading scaled
+percentage.
+
 ### Weapon level vs. enhancement (`rpg.item.service.WeaponIdentityService`)
 
 Two independent, PDC-backed per-instance counters live on a weapon `ItemStack`, both distinct
