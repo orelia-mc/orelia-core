@@ -18,9 +18,17 @@ public final class ScaledHealthService {
     private ScaledHealthService() {
     }
 
-    /** Sets {@code entity}'s vanilla health to the same percentage as {@code scaledCurrent / scaledMax}. */
+    /**
+     * Sets {@code entity}'s vanilla health to the same percentage as
+     * {@code scaledCurrent / scaledMax}. No-ops for an entity that's currently dead (a player
+     * between death and respawn is still {@code Bukkit.getOnlinePlayers()}-visible, so a
+     * periodic caller like {@code StatusService#tickRegen} can still reach them mid-death-screen
+     * - calling {@code setHealth} with a nonzero value there was observed to partially "revive"
+     * them server-side (health > 0, still targetable by mobs) while their client stays stuck on
+     * the death screen, requiring a second respawn attempt to recover).
+     */
     public static void syncVanillaHealth(LivingEntity entity, double scaledCurrent, double scaledMax) {
-        if (scaledMax <= 0) {
+        if (scaledMax <= 0 || entity.isDead()) {
             return;
         }
         double vanillaMax = vanillaMaxHealth(entity);

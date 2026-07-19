@@ -106,7 +106,12 @@ depending on level and gear. `ScaledHealthService` (static, pure Bukkit-entity u
 percentage, and `convertDamageToVanilla(entity, scaledDamage, scaledMax)` returns the
 vanilla-equivalent amount for `EntityDamageEvent#setDamage` (letting Bukkit's own event
 resolution - knockback, hurt sound, death - apply naturally, rather than this class calling
-`setHealth` itself mid-event).
+`setHealth` itself mid-event). `syncVanillaHealth` no-ops for a dead entity - a player between
+death and respawn is still in `Bukkit.getOnlinePlayers()`, so a periodic caller like
+`StatusService#tickRegen` can still reach them mid-death-screen; calling `setHealth` with a
+nonzero value there was observed to partially "revive" them server-side (health > 0, still
+targetable by mobs) while their client stayed stuck on the death screen, needing a second
+respawn attempt to actually recover.
 
 Every place `currentHp` can change keeps vanilla health in step:
 
