@@ -25,6 +25,15 @@ public final class DamageFormula {
      */
     public static final String SKILL_OVERRIDE_METADATA = "orelia_skill_active";
 
+    /**
+     * Metadata key set on the *victim* with the pre-vanilla-conversion "scaled" damage amount
+     * (a player's/scaled monster's HP pool can be in the hundreds while their real vanilla
+     * health stays near 20 - see {@code rpg.status.service.ScaledHealthService}), so the
+     * floating damage-number display shows the meaningful RPG number instead of the tiny
+     * vanilla-equivalent value actually written to {@code EntityDamageEvent#setDamage}.
+     */
+    public static final String SCALED_DAMAGE_METADATA_KEY = "orelia_scaled_damage_amount";
+
     /** Crit multiplier used when there's no weapon/monster to supply its own (bare hands). */
     public static final double DEFAULT_CRIT_MULTIPLIER = 1.5;
 

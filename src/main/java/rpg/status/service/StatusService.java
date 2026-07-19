@@ -1,5 +1,7 @@
 package rpg.status.service;
 
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import rpg.core.player.PlayerDataManager;
 import rpg.status.config.LevelingConfig;
 import rpg.status.model.LeaderboardEntry;
@@ -18,6 +20,13 @@ import java.util.UUID;
 /**
  * Public entry point other modules use to read/modify a player's status. Wraps the
  * component lookup so callers never touch {@link PlayerDataManager} directly.
+ *
+ * <p>{@code currentHp} is the player's "scaled" HP - it can be in the hundreds/thousands
+ * depending on level/gear, while the player's real vanilla health stays fixed at (or near) 20
+ * hearts. Every method here that changes {@code currentHp} outside the combat-event pipeline
+ * (which handles its own vanilla sync via {@link ScaledHealthService#convertDamageToVanilla} -
+ * see {@code rpg.monster.listener.CombatDamageListener}) re-syncs the online player's vanilla
+ * health to match the new percentage via {@link ScaledHealthService#syncVanillaHealth}.
  */
 public final class StatusService {
 
@@ -50,22 +59,32 @@ public final class StatusService {
     }
 
     public void setEquipmentContribution(UUID uuid, String sourceKey, StatSheet sheet) {
-        statusComponent(uuid).ifPresent(component -> component.setEquipmentContribution(sourceKey, sheet));
+        statusComponent(uuid).ifPresent(component -> {
+            component.setEquipmentContribution(sourceKey, sheet);
+            reconcileScaledHealth(uuid, component);
+        });
     }
 
     public void clearEquipmentContribution(UUID uuid, String sourceKey) {
-        statusComponent(uuid).ifPresent(component -> component.clearEquipmentContribution(sourceKey));
+        statusComponent(uuid).ifPresent(component -> {
+            component.clearEquipmentContribution(sourceKey);
+            reconcileScaledHealth(uuid, component);
+        });
     }
 
     public void addBuff(UUID uuid, String sourceKey, StatType statType, ModifierType modifierType, double amount, long durationMillis) {
         statusComponent(uuid).ifPresent(component -> {
             long expiresAt = durationMillis <= 0 ? 0 : System.currentTimeMillis() + durationMillis;
             component.addBuff(new StatModifier(sourceKey, statType, modifierType, amount, expiresAt));
+            reconcileScaledHealth(uuid, component);
         });
     }
 
     public void removeBuffsFromSource(UUID uuid, String sourceKey) {
-        statusComponent(uuid).ifPresent(component -> component.removeBuffsFromSource(sourceKey));
+        statusComponent(uuid).ifPresent(component -> {
+            component.removeBuffsFromSource(sourceKey);
+            reconcileScaledHealth(uuid, component);
+        });
     }
 
     public boolean tryConsumeSp(UUID uuid, double amount) {
@@ -81,16 +100,33 @@ public final class StatusService {
         return true;
     }
 
+    /** For callers outside the Bukkit damage-event pipeline (skills, API, quest effects, ...) - syncs vanilla health too. */
     public void damage(UUID uuid, double amount) {
-        statusComponent(uuid).ifPresent(component ->
-                component.setCurrentHp(Math.max(0, component.getCurrentHp() - amount)));
+        statusComponent(uuid).ifPresent(component -> {
+            double max = calculatorService.calculateFinal(component).get(StatType.HP);
+            component.setCurrentHp(Math.max(0, component.getCurrentHp() - amount));
+            syncVanillaHealth(uuid, component.getCurrentHp(), max);
+        });
     }
 
     public void heal(UUID uuid, double amount) {
         statusComponent(uuid).ifPresent(component -> {
             double max = calculatorService.calculateFinal(component).get(StatType.HP);
             component.setCurrentHp(MathUtil.clamp(component.getCurrentHp() + amount, 0, max));
+            syncVanillaHealth(uuid, component.getCurrentHp(), max);
         });
+    }
+
+    /**
+     * Reduces {@code currentHp} by a scaled damage amount already computed by
+     * {@code CombatDamageListener} - deliberately does NOT touch vanilla health, since that
+     * listener converts the same amount into a vanilla-equivalent value for
+     * {@code EntityDamageEvent#setDamage} instead, letting Bukkit's own event resolution
+     * (knockback, hurt sound, death) apply it naturally.
+     */
+    public void applyScaledCombatDamage(UUID uuid, double scaledAmount) {
+        statusComponent(uuid).ifPresent(component ->
+                component.setCurrentHp(Math.max(0, component.getCurrentHp() - scaledAmount)));
     }
 
     /**
@@ -105,6 +141,7 @@ public final class StatusService {
             double maxSp = finalStats.get(StatType.SP);
             component.setCurrentHp(MathUtil.clamp(component.getCurrentHp() + maxHp * hpRegenPercent / 100.0, 0, maxHp));
             component.setCurrentSp(MathUtil.clamp(component.getCurrentSp() + maxSp * spRegenPercent / 100.0, 0, maxSp));
+            syncVanillaHealth(uuid, component.getCurrentHp(), maxHp);
         });
     }
 
@@ -131,8 +168,31 @@ public final class StatusService {
                 StatSheet finalStats = calculatorService.calculateFinal(component);
                 component.setCurrentHp(finalStats.get(StatType.HP));
                 component.setCurrentSp(finalStats.get(StatType.SP));
+                syncVanillaHealth(uuid, component.getCurrentHp(), finalStats.get(StatType.HP));
             }
         });
+    }
+
+    /**
+     * Re-syncs vanilla health after something that can change max HP without changing
+     * {@code currentHp} itself (equipment/buff changes) - keeps the scaled/vanilla percentage
+     * in step, but does not attempt to preserve {@code currentHp}'s own percentage of the
+     * (now different) max; it simply clamps and re-syncs. A max-HP increase that leaves
+     * {@code currentHp} unchanged in absolute terms will therefore show as a *lower*
+     * percentage of vanilla health too - same tradeoff vanilla Minecraft's own max-health
+     * attribute changes have.
+     */
+    private void reconcileScaledHealth(UUID uuid, PlayerStatusComponent component) {
+        double max = calculatorService.calculateFinal(component).get(StatType.HP);
+        component.setCurrentHp(MathUtil.clamp(component.getCurrentHp(), 0, max));
+        syncVanillaHealth(uuid, component.getCurrentHp(), max);
+    }
+
+    private void syncVanillaHealth(UUID uuid, double currentHp, double maxHp) {
+        Player player = Bukkit.getPlayer(uuid);
+        if (player != null) {
+            ScaledHealthService.syncVanillaHealth(player, currentHp, maxHp);
+        }
     }
 
     private Optional<PlayerStatusComponent> statusComponent(UUID uuid) {
