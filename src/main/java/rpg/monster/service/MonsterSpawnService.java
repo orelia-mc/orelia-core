@@ -88,9 +88,9 @@ public final class MonsterSpawnService {
             return;
         }
         int length = config.getInt("monster.health-bar.length", 10);
-        String format = config.getString("monster.health-bar.format", "{name} &7[{bar}&7] &f{current}/{max}");
-        String filledColor = config.getString("monster.health-bar.filled-color", "&a");
-        String emptyColor = config.getString("monster.health-bar.empty-color", "&8");
+        String format = config.getString("monster.health-bar.format", "{name} &%7[{bar}&%7] &%f{current}/{max}");
+        String filledColor = config.getString("monster.health-bar.filled-color", "&%a");
+        String emptyColor = config.getString("monster.health-bar.empty-color", "&%8");
         String rendered = healthBarRenderer.render(data.getName(), currentHp, maxHp, length, format, filledColor, emptyColor);
         entity.customName(ColorUtil.component(rendered));
     }

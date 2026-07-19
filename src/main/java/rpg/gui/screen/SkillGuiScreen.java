@@ -44,13 +44,13 @@ public final class SkillGuiScreen {
     }
 
     public Gui build(Player player) {
-        Gui gui = new Gui(guiConfig.title("skill", "&8武器スキル"), 27);
+        Gui gui = new Gui(guiConfig.title("skill", "&%8武器スキル"), 27);
 
         WeaponType weaponType = weaponIdentityService.dataOf(player.getInventory().getItemInMainHand())
                 .map(w -> w.getWeaponType())
                 .orElse(null);
         if (weaponType == null) {
-            gui.set(13, GuiButton.display(new ItemBuilder(Material.BARRIER).name("&c武器を持っていません").build()));
+            gui.set(13, GuiButton.display(new ItemBuilder(Material.BARRIER).name("&%c武器を持っていません").build()));
             return gui;
         }
 
@@ -82,14 +82,14 @@ public final class SkillGuiScreen {
     private ItemStack skillIcon(Player player, SkillData skill) {
         int level = progressService.getSkillLevel(player.getUniqueId(), skill.getId());
         return new ItemBuilder(Material.ENCHANTED_BOOK)
-                .name("&e" + skill.getName())
+                .name("&%e" + skill.getName())
                 .lore(List.of(
-                        "&7Lv. " + level + " / " + skill.getMaxLevel(),
-                        "&7SP消費: " + skill.getSpCost(),
-                        "&7クールタイム: " + skill.getCooldownSeconds() + "s",
+                        "&%7Lv. " + level + " / " + skill.getMaxLevel(),
+                        "&%7SP消費: " + skill.getSpCost(),
+                        "&%7クールタイム: " + skill.getCooldownSeconds() + "s",
                         "",
-                        "&a左クリック &7- 習得/レベルアップ",
-                        "&b右クリック &7- 武器に装着"))
+                        "&%a左クリック &%7- 習得/レベルアップ",
+                        "&%b右クリック &%7- 武器に装着"))
                 .build();
     }
 }

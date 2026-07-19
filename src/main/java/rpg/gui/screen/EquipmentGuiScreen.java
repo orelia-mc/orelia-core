@@ -23,11 +23,11 @@ public final class EquipmentGuiScreen {
     }
 
     public Gui build(Player player) {
-        Gui gui = new Gui(guiConfig.title("equipment", "&8装備"), 27);
+        Gui gui = new Gui(guiConfig.title("equipment", "&%8装備"), 27);
 
         ItemStack weapon = player.getInventory().getItemInMainHand();
         gui.set(13, GuiButton.display(weapon.getType().isAir()
-                ? new ItemBuilder(Material.BARRIER).name("&7武器なし").build()
+                ? new ItemBuilder(Material.BARRIER).name("&%7武器なし").build()
                 : weapon.clone()));
 
         int[] slots = {19, 20, 21, 22};
@@ -36,7 +36,7 @@ public final class EquipmentGuiScreen {
         for (int i = 0; i < types.length; i++) {
             ItemStack accessory = storage[AccessorySlotLayout.slotFor(types[i])];
             gui.set(slots[i], GuiButton.display(accessory == null || accessory.getType().isAir()
-                    ? new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).name("&7" + types[i]).build()
+                    ? new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).name("&%7" + types[i]).build()
                     : accessory.clone()));
         }
         return gui;

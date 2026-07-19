@@ -30,16 +30,16 @@ public final class AccessoryFactory {
 
     public ItemStack create(AccessoryData data) {
         List<String> lore = new ArrayList<>();
-        lore.add("&7" + data.getType());
+        lore.add("&%7" + data.getType());
         lore.addAll(data.getDescription());
         data.getStatBonus().asMap().forEach((stat, value) -> {
             if (value != 0) {
-                lore.add("&a+" + value + " &7" + stat);
+                lore.add("&%a+" + value + " &%7" + stat);
             }
         });
 
         return new ItemBuilder(BASE_MATERIAL.getOrDefault(data.getType(), Material.EMERALD))
-                .name("&d" + data.getName())
+                .name("&%d" + data.getName())
                 .lore(lore)
                 .customModelData(data.getCustomModelData())
                 .tag(keys.accessoryId(), PersistentDataType.STRING, data.getId())

@@ -30,7 +30,7 @@ public final class JobGuiScreen {
     }
 
     public Gui build(Player player) {
-        Gui gui = new Gui(guiConfig.title("job", "&8職業変更"), 27);
+        Gui gui = new Gui(guiConfig.title("job", "&%8職業変更"), 27);
         JobType current = jobService.getCurrentJob(player.getUniqueId()).orElse(null);
 
         int slot = 10;
@@ -38,8 +38,8 @@ public final class JobGuiScreen {
             boolean isCurrent = type == current;
             String displayName = displayName(type);
             gui.set(slot++, new GuiButton(new ItemBuilder(isCurrent ? Material.GOLDEN_HELMET : Material.LEATHER_HELMET)
-                    .name((isCurrent ? "&a" : "&f") + displayName)
-                    .lore(isCurrent ? "&7現在の職業" : "&7クリックで転職")
+                    .name((isCurrent ? "&%a" : "&%f") + displayName)
+                    .lore(isCurrent ? "&%7現在の職業" : "&%7クリックで転職")
                     .build(), (clicker, clickType) -> {
                 if (isCurrent) {
                     return;

@@ -9,7 +9,7 @@ accessories:
       HP: 30
       DEF: 2
     description:
-      - "&7最大HPと防御力を高める護符。"
+      - "&%7最大HPと防御力を高める護符。"
     custom-model-data: 200001
 
   warriors_ring:
@@ -19,7 +19,7 @@ accessories:
       ATK: 3
       CRT: 1
     description:
-      - "&7会心の一撃を後押しする指輪。"
+      - "&%7会心の一撃を後押しする指輪。"
     custom-model-data: 200101
 
   mages_necklace:
@@ -28,12 +28,12 @@ accessories:
     stat-bonus:
       SP: 20
     description:
-      - "&7SP回復とスキルの冴えを高めるネックレス。"
+      - "&%7SP回復とスキルの冴えを高めるネックレス。"
     custom-model-data: 200201
 
   swift_wing:
     name: "疾風の羽"
     type: WING
     description:
-      - "&7移動速度を高める羽。"
+      - "&%7移動速度を高める羽。"
     custom-model-data: 200301

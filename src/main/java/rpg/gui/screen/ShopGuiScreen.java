@@ -42,7 +42,7 @@ public final class ShopGuiScreen {
     }
 
     public Gui build(Player player, List<ShopEntry> stock) {
-        Gui gui = new Gui(guiConfig.title("shop", "&8NPCショップ"), 54);
+        Gui gui = new Gui(guiConfig.title("shop", "&%8NPCショップ"), 54);
         int slot = 0;
         for (ShopEntry entry : stock) {
             ItemStack preview = resolve(entry).orElse(null);
@@ -55,7 +55,7 @@ public final class ShopGuiScreen {
                     : Component.text(entry.id());
             icon = new ItemBuilder(icon.getType())
                     .name(name)
-                    .lore("&7価格: " + entry.price())
+                    .lore("&%7価格: " + entry.price())
                     .build();
             gui.set(slot++, new GuiButton(icon, (clicker, clickType) -> buy(clicker, entry)));
         }

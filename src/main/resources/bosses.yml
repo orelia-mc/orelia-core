@@ -17,10 +17,10 @@ bosses:
     phases:
       phase_1:
         hp-threshold-percent: 70
-        announce-message: "&c&lゴブリンキングが激怒し始めた！"
+        announce-message: "&%c&lゴブリンキングが激怒し始めた！"
       phase_2:
         hp-threshold-percent: 40
-        announce-message: "&4&lゴブリンキングが雄叫びを上げる！"
+        announce-message: "&%4&lゴブリンキングが雄叫びを上げる！"
 
   flame_lord_boss:
     monster-id: flame_lord
@@ -29,10 +29,10 @@ bosses:
     phases:
       phase_1:
         hp-threshold-percent: 60
-        announce-message: "&6&l業火の王ブレイズロードが怒りの咆哮を上げた！"
+        announce-message: "&%6&l業火の王ブレイズロードが怒りの咆哮を上げた！"
       phase_2:
         hp-threshold-percent: 25
-        announce-message: "&4&l業火の王の周囲に紅蓮の炎が渦巻く！"
+        announce-message: "&%4&l業火の王の周囲に紅蓮の炎が渦巻く！"
     abilities:
       meteor_slam:
         name: "業火の一撃"
@@ -42,7 +42,7 @@ bosses:
         cooldown-seconds: 12
         particle: FLAME
         sound: ENTITY_BLAZE_SHOOT
-        announce-message: "&c業火の王が地面を叩きつけた！"
+        announce-message: "&%c業火の王が地面を叩きつけた！"
       fire_barrage:
         name: "火炎弾幕"
         type: FIREBALL_BARRAGE
@@ -50,4 +50,4 @@ bosses:
         radius: 3
         cooldown-seconds: 8
         sound: ENTITY_BLAZE_SHOOT
-        announce-message: "&6業火の王が火球をばらまいた！"
+        announce-message: "&%6業火の王が火球をばらまいた！"
