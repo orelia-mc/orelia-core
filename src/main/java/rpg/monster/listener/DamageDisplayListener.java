@@ -15,6 +15,13 @@ import rpg.status.combat.DamageFormula;
  * monsters and players alike. Runs at {@link EventPriority#MONITOR}, after damage is fully
  * resolved, and reads (then clears) {@link DamageFormula#CRIT_METADATA_KEY} off the damager
  * to color/scale crits differently from normal hits.
+ *
+ * <p>Ignores cancelled hits and zero/negative final damage (e.g. a weapon requirement wasn't
+ * met, or defense fully absorbed the hit) - showing a number there would be misleading since no
+ * damage actually landed. For a scaled victim (see {@code rpg.status.service.ScaledHealthService}),
+ * prefers {@link DamageFormula#SCALED_DAMAGE_METADATA_KEY} over {@code event.getFinalDamage()} -
+ * the latter is the tiny vanilla-equivalent amount actually applied to real health, not the
+ * meaningful RPG-scale number a player expects to see.
  */
 public final class DamageDisplayListener implements Listener {
 
@@ -26,9 +33,9 @@ public final class DamageDisplayListener implements Listener {
         this.displayService = displayService;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDamage(EntityDamageEvent event) {
-        if (!(event.getEntity() instanceof LivingEntity victim)) {
+        if (event.getFinalDamage() <= 0 || !(event.getEntity() instanceof LivingEntity victim)) {
             return;
         }
         boolean isCrit = false;
@@ -36,6 +43,16 @@ public final class DamageDisplayListener implements Listener {
             isCrit = attacker.hasMetadata(DamageFormula.CRIT_METADATA_KEY);
             attacker.removeMetadata(DamageFormula.CRIT_METADATA_KEY, plugin);
         }
-        displayService.show(victim.getEyeLocation(), event.getFinalDamage(), isCrit);
+        double amount = resolveDisplayAmount(victim, event.getFinalDamage());
+        displayService.show(victim.getEyeLocation(), amount, isCrit);
+    }
+
+    private double resolveDisplayAmount(LivingEntity victim, double vanillaFinalDamage) {
+        if (!victim.hasMetadata(DamageFormula.SCALED_DAMAGE_METADATA_KEY)) {
+            return vanillaFinalDamage;
+        }
+        double scaledAmount = victim.getMetadata(DamageFormula.SCALED_DAMAGE_METADATA_KEY).get(0).asDouble();
+        victim.removeMetadata(DamageFormula.SCALED_DAMAGE_METADATA_KEY, plugin);
+        return scaledAmount;
     }
 }

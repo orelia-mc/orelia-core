@@ -96,6 +96,41 @@ the *attacker* after a crit (clearing it on a non-crit hit so a stale flag never
 the next attack) — `rpg.monster.listener.DamageDisplayListener` reads it to color/scale the
 floating damage number.
 
+### Scaled health (`rpg.status.service.ScaledHealthService`)
+
+A player's real vanilla health stays fixed at (or near) 20 hearts, but their meaningful HP pool
+is `StatType.HP` (`currentHp` on `PlayerStatusComponent`) — potentially in the hundreds/thousands
+depending on level and gear. `ScaledHealthService` (static, pure Bukkit-entity utility, no
+`rpg.status` dependency) is the only place that converts between the two:
+`syncVanillaHealth(entity, scaledCurrent, scaledMax)` sets vanilla health to the same
+percentage, and `convertDamageToVanilla(entity, scaledDamage, scaledMax)` returns the
+vanilla-equivalent amount for `EntityDamageEvent#setDamage` (letting Bukkit's own event
+resolution - knockback, hurt sound, death - apply naturally, rather than this class calling
+`setHealth` itself mid-event).
+
+Every place `currentHp` can change keeps vanilla health in step:
+
+- **Combat** (`CombatDamageListener`) - converts the final scaled damage to a vanilla-equivalent
+  for `event.setDamage`, and separately calls `StatusService#applyScaledCombatDamage` (reduces
+  `currentHp` only, no `setHealth` call - Bukkit's own event resolution handles vanilla). Also
+  stamps `DamageFormula.SCALED_DAMAGE_METADATA_KEY` on the victim so
+  `DamageDisplayListener` shows the meaningful scaled number instead of the tiny vanilla one.
+- **Everything else that isn't a Bukkit damage event** - `StatusService#damage`/`heal`/
+  `tickRegen`/`addExperience` (level-up refill) call `syncVanillaHealth` directly after mutating
+  `currentHp`. `setEquipmentContribution`/`clearEquipmentContribution`/`addBuff`/
+  `removeBuffsFromSource` call a private `reconcileScaledHealth` that clamps `currentHp` to the
+  (possibly changed) max and re-syncs — it does **not** preserve `currentHp`'s percentage of the
+  old max, same tradeoff vanilla Minecraft's own max-health attribute changes have.
+- **Vanilla healing** (food/natural regen, golden apples, potions) - `ScaledHealthRegenListener`
+  (`EntityRegainHealthEvent`, `MONITOR`, `ignoreCancelled`) leaves the vanilla amount untouched
+  (vanilla's own regen math is correct on its own terms) and mirrors the same *percentage* gain
+  into `currentHp`.
+- **Join/respawn** - `ScaledHealthJoinListener` re-syncs vanilla health on join (nothing updates
+  an offline player's vanilla health) and resets `currentHp` to max on respawn (Bukkit resets
+  vanilla health to full on respawn, but nothing else resets the *scaled* side - without this,
+  the next regen tick would read the stale near-0 `currentHp` from the killing blow and drag the
+  freshly-respawned player's vanilla health back down).
+
 ### Weapon level vs. enhancement (`rpg.item.service.WeaponIdentityService`)
 
 Two independent, PDC-backed per-instance counters live on a weapon `ItemStack`, both distinct

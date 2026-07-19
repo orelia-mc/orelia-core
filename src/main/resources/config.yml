@@ -21,6 +21,9 @@ database:
     use-ssl: false
 
 status:
+  # HP regen here (and any other HP change - damage taken, healing, ...) is applied to the
+  # "scaled" HP pool (growth.HP below), then mirrored proportionally onto the player's real
+  # vanilla health (which stays fixed near 20 hearts) - see ScaledHealthService.
   regen:
     hp-percent-per-tick: 0.5
     sp-percent-per-tick: 1.0
@@ -31,6 +34,8 @@ status:
     max-level: 100
   # Base value and per-level growth for each stat, used to compute base stats at a given level.
   growth:
+    # This is the "scaled" HP max - it can be in the hundreds/thousands, real vanilla health
+    # stays fixed near 20 hearts and is kept proportional to this instead (ScaledHealthService).
     HP:
       base: 100
       per-level: 10

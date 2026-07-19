@@ -20,6 +20,7 @@ import rpg.monster.service.MonsterSpawnService;
 import rpg.status.combat.DamageFormula;
 import rpg.status.model.StatSheet;
 import rpg.status.model.StatType;
+import rpg.status.service.ScaledHealthService;
 import rpg.status.service.StatusService;
 
 /**
@@ -72,8 +73,29 @@ public final class CombatDamageListener implements Listener {
                 attack.critRate(), attack.critMultiplier(), attack.critDmgPercent(),
                 weak, DamageFormula.DEFAULT_WEAKNESS_MULTIPLIER);
 
-        event.setDamage(result.amount());
+        event.setDamage(resolveFinalDamage(event.getEntity(), result.amount()));
         applyCritMetadata(event.getDamager(), result.crit());
+    }
+
+    /**
+     * {@code result.amount()} is in "scaled" units (a player's HP pool can be in the hundreds
+     * while their real vanilla health stays at ~20) - for a scaled victim, converts it to the
+     * vanilla-equivalent amount for {@code event.setDamage} (so Bukkit's own event resolution
+     * still applies knockback/hurt sound/death normally) and separately reduces the tracked
+     * scaled current HP by the original amount. Anything else (a tagged monster - see Phase 4,
+     * or an unrecognized victim) passes the amount through unchanged for now.
+     */
+    private double resolveFinalDamage(Entity victim, double scaledDamage) {
+        if (victim instanceof Player player) {
+            double scaledMax = statusService.getFinalStats(player.getUniqueId()).map(stats -> stats.get(StatType.HP)).orElse(0.0);
+            double vanillaDamage = ScaledHealthService.convertDamageToVanilla(player, scaledDamage, scaledMax);
+            statusService.applyScaledCombatDamage(player.getUniqueId(), scaledDamage);
+            // DamageDisplayListener reads this instead of event.getFinalDamage() so the
+            // floating number shows the meaningful scaled amount, not the tiny vanilla one.
+            player.setMetadata(DamageFormula.SCALED_DAMAGE_METADATA_KEY, new FixedMetadataValue(plugin, scaledDamage));
+            return vanillaDamage;
+        }
+        return scaledDamage;
     }
 
     /** Returns {@code null} if the event was cancelled and processing should stop here. */
