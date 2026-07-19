@@ -6,6 +6,7 @@ import rpg.core.module.RpgModule;
 import rpg.database.DatabaseModule;
 import rpg.status.config.LevelingConfig;
 import rpg.status.config.StatusGrowthConfig;
+import rpg.status.listener.ScaledHealthEnvironmentalDamageListener;
 import rpg.status.listener.ScaledHealthJoinListener;
 import rpg.status.listener.ScaledHealthRegenListener;
 import rpg.status.manager.StatusManager;
@@ -59,10 +60,11 @@ public final class StatusModule implements RpgModule {
 
         // Damage-computation logic (ATK%/DEF/crit/weakness) lives in
         // rpg.monster.listener.CombatDamageListener, registered by MonsterModule - see its
-        // Javadoc for why. These two just keep vanilla health in sync with scaled HP outside
+        // Javadoc for why. These three just keep vanilla health in sync with scaled HP outside
         // that combat-event pipeline (see rpg.status.service.ScaledHealthService).
         plugin.getServer().getPluginManager().registerEvents(new ScaledHealthJoinListener(statusService), plugin);
         plugin.getServer().getPluginManager().registerEvents(new ScaledHealthRegenListener(statusService), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new ScaledHealthEnvironmentalDamageListener(statusService), plugin);
 
         YamlConfiguration config = plugin.getConfigManager().get("config.yml").get();
         double hpRegen = config.getDouble("status.regen.hp-percent-per-tick", 0.5);

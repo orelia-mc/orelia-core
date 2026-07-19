@@ -85,6 +85,7 @@ public final class ItemCommand implements CommandExecutor, TabCompleter {
         if (newLevel < 0) {
             messages.send(player, "item.weapon-level-capped");
         } else {
+            itemManager.refreshWeaponLore(weapon, data);
             messages.send(player, "item.weapon-leveled-up", "level", newLevel);
         }
         return true;

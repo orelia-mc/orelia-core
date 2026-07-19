@@ -22,7 +22,7 @@ public final class MeleeAoeExecutor implements SkillExecutor {
     public void execute(Player caster, SkillData data, int skillLevel) {
         double amount = skillDamage.baseDamage(caster, data, skillLevel);
         try {
-            caster.getWorld().spawnParticle(Particle.valueOf(data.getEffectParticle()), caster.getLocation(), 40, data.getRadius() / 2, 0.5, data.getRadius() / 2);
+            caster.getWorld().spawnParticle(Particle.valueOf(data.getEffectParticle()), TargetFinder.visualCenter(caster), 40, data.getRadius() / 2, 0.5, data.getRadius() / 2);
         } catch (IllegalArgumentException ignored) {
         }
         for (LivingEntity target : TargetFinder.inRadius(caster, data.getRadius())) {

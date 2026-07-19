@@ -41,6 +41,11 @@ public final class ItemManager {
         return repository.getAll();
     }
 
+    /** Re-renders {@code stack}'s lore against its current weapon level/enhancement - call after {@link WeaponIdentityService#levelUp}/{@code #enhance}. */
+    public void refreshWeaponLore(ItemStack stack, WeaponData data) {
+        factory.refreshLore(stack, data, identityService);
+    }
+
     public WeaponIdentityService getIdentityService() {
         return identityService;
     }

@@ -27,7 +27,7 @@ public final class DashStrikeExecutor implements SkillExecutor {
         caster.setVelocity(dash);
 
         try {
-            caster.getWorld().spawnParticle(Particle.valueOf(data.getEffectParticle()), caster.getLocation(), 15);
+            caster.getWorld().spawnParticle(Particle.valueOf(data.getEffectParticle()), TargetFinder.visualCenter(caster), 15);
         } catch (IllegalArgumentException ignored) {
         }
 

@@ -130,6 +130,15 @@ Every place `currentHp` can change keeps vanilla health in step:
   (`EntityRegainHealthEvent`, `MONITOR`, `ignoreCancelled`) leaves the vanilla amount untouched
   (vanilla's own regen math is correct on its own terms) and mirrors the same *percentage* gain
   into `currentHp`.
+- **Environmental damage** (fall/fire/drowning/...) - these fire a plain `EntityDamageEvent`,
+  never an `EntityDamageByEntityEvent`, so `CombatDamageListener` never sees them and
+  `currentHp` would otherwise sit unchanged while vanilla health visibly drops - the next sync
+  from that stale `currentHp` would then push vanilla health right back up, looking like an
+  instant heal after fall damage. `ScaledHealthEnvironmentalDamageListener`
+  (`EntityDamageEvent`, `MONITOR`, `ignoreCancelled`, skips `EntityDamageByEntityEvent`) calls
+  `StatusService#applyEnvironmentalDamage` to mirror the vanilla percentage lost onto
+  `currentHp` - same idea as `MonsterSpawnService#applyEnvironmentalDamage` below, and does not
+  touch vanilla health itself since Bukkit already applied it naturally.
 - **Join/respawn** - `ScaledHealthJoinListener` re-syncs vanilla health on join (nothing updates
   an offline player's vanilla health) and resets `currentHp` to max on respawn (Bukkit resets
   vanilla health to full on respawn, but nothing else resets the *scaled* side - without this,

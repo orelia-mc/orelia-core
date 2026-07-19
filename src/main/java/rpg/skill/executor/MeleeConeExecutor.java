@@ -34,7 +34,7 @@ public final class MeleeConeExecutor implements SkillExecutor {
 
     private void spawnEffect(Player caster, SkillData data) {
         try {
-            caster.getWorld().spawnParticle(Particle.valueOf(data.getEffectParticle()), caster.getLocation().add(0, 1, 0), 20);
+            caster.getWorld().spawnParticle(Particle.valueOf(data.getEffectParticle()), TargetFinder.visualCenter(caster), 20);
         } catch (IllegalArgumentException ignored) {
         }
     }

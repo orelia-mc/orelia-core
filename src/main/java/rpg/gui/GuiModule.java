@@ -18,6 +18,7 @@ import rpg.gui.screen.ShopGuiScreen;
 import rpg.gui.screen.SkillGuiScreen;
 import rpg.gui.screen.StatusGuiScreen;
 import rpg.gui.screen.WarehouseGuiScreen;
+import rpg.gui.service.ActionBarService;
 import rpg.item.ItemModule;
 import rpg.job.JobModule;
 import rpg.skill.SkillModule;
@@ -44,6 +45,7 @@ public final class GuiModule implements RpgModule {
     private JobGuiScreen jobGuiScreen;
     private ShopGuiScreen shopGuiScreen;
     private WarehouseGuiScreen warehouseGuiScreen;
+    private ActionBarService actionBarService;
 
     @Override
     public String getName() {
@@ -80,6 +82,14 @@ public final class GuiModule implements RpgModule {
         }
         this.warehouseGuiScreen = new WarehouseGuiScreen(warehouseRepository, guiConfig);
 
+        this.actionBarService = new ActionBarService(statusModule.getStatusService(), itemModule.getItemManager().getIdentityService());
+        reloadActionBarConfig();
+        YamlConfiguration coreConfig = plugin.getConfigManager().get("config.yml").get();
+        long actionBarPeriodTicks = coreConfig.getLong("action-bar.period-ticks", 20L);
+        plugin.getSchedulerService().runTimer(() ->
+                plugin.getServer().getOnlinePlayers().forEach(actionBarService::send),
+                actionBarPeriodTicks, actionBarPeriodTicks);
+
         plugin.getServer().getPluginManager().registerEvents(new GuiListener(), plugin);
         plugin.getServer().getPluginManager().registerEvents(new WarehouseSaveListener(warehouseRepository), plugin);
         plugin.getPlayerCommandRegistry().register("status",
@@ -94,6 +104,14 @@ public final class GuiModule implements RpgModule {
     @Override
     public void onReload() {
         reloadGuiConfig();
+        reloadActionBarConfig();
+    }
+
+    /** period-ticks is only read once at startup (same limitation StatusModule's regen tick has). */
+    private void reloadActionBarConfig() {
+        YamlConfiguration coreConfig = plugin.getConfigManager().get("config.yml").get();
+        actionBarService.setEnabled(coreConfig.getBoolean("action-bar.enabled", true));
+        actionBarService.setFormat(coreConfig.getString("action-bar.format", ""));
     }
 
     private void reloadGuiConfig() {
@@ -133,5 +151,9 @@ public final class GuiModule implements RpgModule {
 
     public WarehouseGuiScreen getWarehouseGuiScreen() {
         return warehouseGuiScreen;
+    }
+
+    public ActionBarService getActionBarService() {
+        return actionBarService;
     }
 }

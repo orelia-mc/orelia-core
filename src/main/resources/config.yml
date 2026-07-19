@@ -5,7 +5,7 @@
 # added - on next startup, ConfigManager appends the new section (with its comments) to any
 # existing config.yml that's missing it, without touching anything you've already customized.
 # Never bump this for a value-only change (e.g. tweaking a default), only for new/removed keys.
-config-version: 2
+config-version: 3
 
 database:
   # SQLITE or MYSQL
@@ -96,6 +96,15 @@ combat:
     normal-color: "&f"
     crit-color: "&6"
     crit-scale: 1.3
+
+# Periodic HUD text shown in the action bar (the line just above the hotbar). {hp}/{max_hp}/
+# {sp}/{max_sp}/{atk} are the only placeholders - {atk} is the player's current effective
+# attack power (base attack power after ATK%, before the target's own DEF/crit/weakness -
+# see ActionBarService).
+action-bar:
+  enabled: true
+  period-ticks: 20
+  format: "&c♥ {hp}/{max_hp} &7| &b✦ {sp}/{max_sp} &7| &e⚔ {atk}"
 
 monster:
   # Cancels vanilla natural/spawner hostile mob spawning so every enemy in the world comes

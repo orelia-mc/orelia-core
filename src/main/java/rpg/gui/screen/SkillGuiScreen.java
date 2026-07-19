@@ -2,6 +2,7 @@ package rpg.gui.screen;
 
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import rpg.core.message.MessageManager;
 import rpg.gui.config.GuiConfig;
 import rpg.gui.framework.Gui;
@@ -56,17 +57,8 @@ public final class SkillGuiScreen {
         Map<String, SkillData> skills = skillRepository.getByWeaponType(weaponType);
         int slot = 10;
         for (SkillData skill : skills.values()) {
-            int level = progressService.getSkillLevel(player.getUniqueId(), skill.getId());
-            gui.set(slot++, new GuiButton(new ItemBuilder(Material.ENCHANTED_BOOK)
-                    .name("&e" + skill.getName())
-                    .lore(List.of(
-                            "&7Lv. " + level + " / " + skill.getMaxLevel(),
-                            "&7SP消費: " + skill.getSpCost(),
-                            "&7クールタイム: " + skill.getCooldownSeconds() + "s",
-                            "",
-                            "&a左クリック &7- 習得/レベルアップ",
-                            "&b右クリック &7- 武器に装着"))
-                    .build(), (clicker, clickType) -> {
+            int buttonSlot = slot++;
+            gui.set(buttonSlot, new GuiButton(skillIcon(player, skill), (clicker, clickType) -> {
                 if (clickType.contains("RIGHT")) {
                     boolean socketed = socketService.socket(clicker.getInventory().getItemInMainHand(), skill.getId(),
                             weaponIdentityService.dataOf(clicker.getInventory().getItemInMainHand())
@@ -75,9 +67,29 @@ public final class SkillGuiScreen {
                 } else {
                     boolean upgraded = progressService.upgradeSkill(clicker.getUniqueId(), skill.getId());
                     messages.send(clicker, upgraded ? "skill.upgraded" : "skill.upgrade-failed");
+                    if (upgraded) {
+                        // Without this, the book's "Lv. x / max" lore only reflects the new
+                        // level once the player closes and reopens the GUI - the button item
+                        // built in this loop is otherwise never re-rendered after a click.
+                        clicker.getOpenInventory().getTopInventory().setItem(buttonSlot, skillIcon(clicker, skill));
+                    }
                 }
             }));
         }
         return gui;
+    }
+
+    private ItemStack skillIcon(Player player, SkillData skill) {
+        int level = progressService.getSkillLevel(player.getUniqueId(), skill.getId());
+        return new ItemBuilder(Material.ENCHANTED_BOOK)
+                .name("&e" + skill.getName())
+                .lore(List.of(
+                        "&7Lv. " + level + " / " + skill.getMaxLevel(),
+                        "&7SP消費: " + skill.getSpCost(),
+                        "&7クールタイム: " + skill.getCooldownSeconds() + "s",
+                        "",
+                        "&a左クリック &7- 習得/レベルアップ",
+                        "&b右クリック &7- 武器に装着"))
+                .build();
     }
 }

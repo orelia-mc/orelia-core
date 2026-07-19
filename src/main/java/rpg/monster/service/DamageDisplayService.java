@@ -4,7 +4,6 @@ import org.bukkit.Location;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.entity.Display;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.Vector;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 import org.bukkit.util.Transformation;
@@ -19,12 +18,13 @@ import java.util.concurrent.atomic.AtomicReference;
  * before removing itself. Purely cosmetic combat feedback - works for any
  * {@link org.bukkit.entity.LivingEntity} taking damage, not just monsters.
  *
- * <p>Uses real entity physics ({@link org.bukkit.entity.Entity#setVelocity}) rather than
- * teleporting the display a fixed distance each tick: gravity is disabled
- * ({@link org.bukkit.entity.Entity#setGravity(boolean)}) so nothing else moves it, and a
- * downward velocity is accumulated by {@code gravity-per-tick} every tick and re-applied via
- * {@code setVelocity} - the display genuinely falls and accelerates, instead of drifting at a
- * constant speed.
+ * <p>Display entities (unlike mobs/items/arrows) don't participate in Minecraft's normal
+ * velocity/gravity physics simulation at all - their position is purely teleport-driven, so
+ * {@link org.bukkit.entity.Entity#setVelocity}/{@code setGravity} are silent no-ops here (an
+ * earlier version of this class tried exactly that and the display just sat still). The fall
+ * is instead simulated manually: an accumulated downward offset (increasing by
+ * {@code gravity-per-tick} every tick, so it accelerates like real gravity) is applied via
+ * {@link TextDisplay#teleport} each tick.
  */
 public final class DamageDisplayService {
 
@@ -51,7 +51,6 @@ public final class DamageDisplayService {
             d.text(ColorUtil.component(color + Math.round(amount)));
             d.setBillboard(Display.Billboard.CENTER);
             d.setPersistent(false);
-            d.setGravity(false);
             if (scale != 1.0f) {
                 d.setTransformation(new Transformation(new Vector3f(), new AxisAngle4f(), new Vector3f(scale), new AxisAngle4f()));
             }
@@ -59,15 +58,15 @@ public final class DamageDisplayService {
 
         AtomicReference<BukkitTask> taskRef = new AtomicReference<>();
         long[] ticksElapsed = {0};
-        double[] velocityY = {0.0};
+        double[] fallSpeed = {0.0};
         taskRef.set(plugin.getSchedulerService().runTimer(() -> {
             if (!display.isValid() || ticksElapsed[0] >= durationTicks) {
                 display.remove();
                 taskRef.get().cancel();
                 return;
             }
-            velocityY[0] -= gravityPerTick;
-            display.setVelocity(new Vector(0, velocityY[0], 0));
+            fallSpeed[0] += gravityPerTick;
+            display.teleport(display.getLocation().add(0, -fallSpeed[0], 0));
             ticksElapsed[0]++;
         }, 1L, 1L));
     }

@@ -26,11 +26,12 @@ public final class WeaponData {
     private final int customModelData;
     private final double sellPrice;
     private final int skillSlotCount;
+    private final boolean unbreakable;
 
     public WeaponData(String id, String name, WeaponType weaponType, int weaponLevel, Rarity rarity,
                        double attackPower, ElementType element, double critRate, double critMultiplier,
                        JobType requiredJob, int requiredLevel, List<String> description,
-                       int customModelData, double sellPrice, int skillSlotCount) {
+                       int customModelData, double sellPrice, int skillSlotCount, boolean unbreakable) {
         this.id = id;
         this.name = name;
         this.weaponType = weaponType;
@@ -46,6 +47,7 @@ public final class WeaponData {
         this.customModelData = customModelData;
         this.sellPrice = sellPrice;
         this.skillSlotCount = skillSlotCount;
+        this.unbreakable = unbreakable;
     }
 
     public String getId() {
@@ -106,5 +108,9 @@ public final class WeaponData {
 
     public int getSkillSlotCount() {
         return skillSlotCount;
+    }
+
+    public boolean isUnbreakable() {
+        return unbreakable;
     }
 }

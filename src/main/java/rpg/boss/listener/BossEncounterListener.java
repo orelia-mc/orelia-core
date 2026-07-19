@@ -16,6 +16,7 @@ import rpg.boss.model.BossPhase;
 import rpg.boss.repository.BossRepository;
 import rpg.boss.service.BossAbilityCastService;
 import rpg.core.message.MessageManager;
+import rpg.monster.model.MonsterData;
 import rpg.monster.service.MonsterSpawnService;
 import rpg.util.ColorUtil;
 
@@ -72,7 +73,11 @@ public final class BossEncounterListener implements Listener {
 
         if (percent <= boss.getEnrageHpPercent() && !state.isEnraged()) {
             state.setEnraged(true);
-            announce(entity, messages.format("boss.enraged", "boss", entity.getName()));
+            // entity.getName() is the live nametag, which doubles as the HP bar
+            // (MonsterHealthBarRenderer) - use the clean MonsterData name instead, same reason
+            // MonsterDeathListener does for the death message.
+            String cleanName = monsterSpawnService.dataOf(entity).map(MonsterData::getName).orElse(entity.getName());
+            announce(entity, messages.format("boss.enraged", "boss", cleanName));
         }
     }
 

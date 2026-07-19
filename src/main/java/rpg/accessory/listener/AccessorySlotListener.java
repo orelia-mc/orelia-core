@@ -16,6 +16,7 @@ import rpg.accessory.service.AccessoryIdentityService;
 import rpg.core.scheduler.SchedulerService;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -97,9 +98,14 @@ public final class AccessorySlotListener implements Listener {
         if (incoming == null || incoming.getType().isAir()) {
             return true;
         }
-        return AccessorySlotLayout.typeAtSlot(slot)
-                .map(type -> identityService.dataOf(incoming).map(data -> data.getType() == type).orElse(false))
-                .orElse(false);
+        // A slot in the accessory row with no AccessoryType assigned yet (31-35, "reserved for
+        // future accessory types") isn't an accessory slot at all - it's still plain storage
+        // until a type is assigned to it, so it must not block arbitrary items.
+        Optional<AccessoryType> type = AccessorySlotLayout.typeAtSlot(slot);
+        if (type.isEmpty()) {
+            return true;
+        }
+        return identityService.dataOf(incoming).map(data -> data.getType() == type.get()).orElse(false);
     }
 
     private void syncNextTick(HumanEntity human, int slot) {

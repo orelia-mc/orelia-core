@@ -39,7 +39,7 @@ class ColorUtilTest {
 
     @Test
     void colorizeExpandsMappedCustomCode() {
-        assertEquals("§x§e§7§4§c§3§ctest", ColorUtil.colorize("&%ctest"));
+        assertEquals("§x§d§6§6§f§6§ftest", ColorUtil.colorize("&%ctest"));
     }
 
     @Test

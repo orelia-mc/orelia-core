@@ -1,6 +1,7 @@
 package rpg.status.service;
 
 import org.bukkit.Bukkit;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import rpg.core.player.PlayerDataManager;
 import rpg.status.config.LevelingConfig;
@@ -127,6 +128,35 @@ public final class StatusService {
     public void applyScaledCombatDamage(UUID uuid, double scaledAmount) {
         statusComponent(uuid).ifPresent(component ->
                 component.setCurrentHp(Math.max(0, component.getCurrentHp() - scaledAmount)));
+    }
+
+    /**
+     * Reduces {@code currentHp} for damage that never passed through the combat event
+     * pipeline - fall/fire/drowning/... (see
+     * {@code rpg.status.listener.ScaledHealthEnvironmentalDamageListener}) - by mirroring the
+     * same vanilla percentage lost onto the scaled side. Deliberately does NOT touch vanilla
+     * health, since Bukkit already applied {@code vanillaAmount} to it naturally; without this,
+     * the next thing that re-syncs vanilla health from the (unchanged) scaled {@code currentHp}
+     * would restore it back up, looking like an instant heal after fall damage.
+     */
+    public void applyEnvironmentalDamage(UUID uuid, double vanillaAmount) {
+        Player player = Bukkit.getPlayer(uuid);
+        if (player == null) {
+            return;
+        }
+        var attribute = player.getAttribute(Attribute.MAX_HEALTH);
+        double vanillaMax = attribute != null ? attribute.getValue() : player.getHealth();
+        if (vanillaMax <= 0) {
+            return;
+        }
+        statusComponent(uuid).ifPresent(component -> {
+            double scaledMax = calculatorService.calculateFinal(component).get(StatType.HP);
+            if (scaledMax <= 0) {
+                return;
+            }
+            double scaledDamage = (vanillaAmount / vanillaMax) * scaledMax;
+            component.setCurrentHp(Math.max(0, component.getCurrentHp() - scaledDamage));
+        });
     }
 
     /**

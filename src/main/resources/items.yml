@@ -5,6 +5,8 @@
 # rarity: COMMON | UNCOMMON | RARE | EPIC | LEGENDARY
 # element: NONE | FIRE | WATER | EARTH | WIND | LIGHT | DARK
 # required-job: FENCER | WARRIOR | ARCHER (blank = any job may use it)
+# unbreakable: true | false (default false) - vanilla's own "Unbreakable" flag, the item never
+#   loses durability no matter how it's used.
 
 weapons:
   wooden_training_sword:

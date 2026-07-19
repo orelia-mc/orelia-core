@@ -55,7 +55,8 @@ public final class WeaponRepository {
                 section.getStringList("description"),
                 section.getInt("custom-model-data", 0),
                 section.getDouble("sell-price", 0.0),
-                section.getInt("skill-slot-count", 1));
+                section.getInt("skill-slot-count", 1),
+                section.getBoolean("unbreakable", false));
     }
 
     public Optional<WeaponData> findById(String id) {

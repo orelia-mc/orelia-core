@@ -51,6 +51,12 @@ public final class ItemBuilder {
         return this;
     }
 
+    /** Sets vanilla's own "Unbreakable" NBT flag - the item never loses durability, no matter how it's used. */
+    public ItemBuilder unbreakable(boolean unbreakable) {
+        meta.setUnbreakable(unbreakable);
+        return this;
+    }
+
     public <T, Z> ItemBuilder tag(NamespacedKey key, PersistentDataType<T, Z> type, Z value) {
         meta.getPersistentDataContainer().set(key, type, value);
         return this;

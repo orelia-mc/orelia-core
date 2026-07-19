@@ -34,9 +34,27 @@ public final class ColorUtil {
      * remove entries here freely - an unmapped {@code &%<char>} is left untouched as literal
      * text (visible in-game, easy to spot as a typo) rather than silently swallowed.
      */
-    private static final Map<Character, String> CUSTOM_COLORS = Map.of(
-            'c', "E74C3C" // example: a custom "red" distinct from vanilla &c (RED)
-            // add more here, e.g. 'x', "RRGGBB"
+    private static final Map<Character, String> CUSTOM_COLORS = Map.ofEntries(
+            // example: a custom "red" distinct from vanilla &c (RED)
+            // add more here, e.g. Map.entry('x', "RRGGBB")
+            Map.entry('0', "000000"), // black
+            Map.entry('1', "2D3DA8"), // blue
+            Map.entry('2', "339E33"), // green
+            Map.entry('3', "3BA1A1"), // cyan
+            Map.entry('4', "A62626"), // red
+            Map.entry('5', "AB52AB"), // purple
+            Map.entry('6', "E0A934"), // gold
+            Map.entry('7', "AAAAAA"), // gray
+            Map.entry('8', "4A4A4A"), // dark gray
+            Map.entry('9', "6969D7"), // light blue
+            Map.entry('a', "78D678"), // lime
+            Map.entry('b', "88DBDB"), // aqua
+            Map.entry('c', "D66F6F"), // light red
+            Map.entry('d', "DB91DB"), // pink
+            Map.entry('e', "EBEB7D"), // yellow
+            Map.entry('f', "FFFFFF"), // white
+            Map.entry('g', "EBB47D"), // orange
+            Map.entry('h', "875A2F") // brown
     );
 
     private static final LegacyComponentSerializer HEX_AWARE_SERIALIZER = LegacyComponentSerializer.builder()

@@ -1,5 +1,6 @@
 package rpg.skill.executor;
 
+import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -13,6 +14,15 @@ import java.util.stream.Collectors;
 final class TargetFinder {
 
     private TargetFinder() {
+    }
+
+    /**
+     * {@code caster.getLocation()} is the caster's feet - fine for range/targeting math, but a
+     * visual effect spawned there looks like it's coming out of the ground. This offsets up by
+     * half the caster's hitbox height, so effect particles appear at their visual center instead.
+     */
+    static Location visualCenter(LivingEntity caster) {
+        return caster.getLocation().add(0, caster.getHeight() / 2.0, 0);
     }
 
     /** Living entities within {@code range} blocks and roughly in front of the caster (within a ~70 degree cone). */
