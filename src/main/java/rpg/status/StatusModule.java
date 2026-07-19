@@ -6,7 +6,6 @@ import rpg.core.module.RpgModule;
 import rpg.database.DatabaseModule;
 import rpg.status.config.LevelingConfig;
 import rpg.status.config.StatusGrowthConfig;
-import rpg.status.listener.CombatStatusListener;
 import rpg.status.manager.StatusManager;
 import rpg.status.repository.StatusRepository;
 import rpg.status.service.LevelGrowthService;
@@ -56,7 +55,9 @@ public final class StatusModule implements RpgModule {
         StatusCalculatorService calculatorService = new StatusCalculatorService();
         this.statusService = new StatusService(plugin.getPlayerDataManager(), calculatorService, levelGrowthService, levelingConfig, repository);
 
-        plugin.getServer().getPluginManager().registerEvents(new CombatStatusListener(statusService), plugin);
+        // Damage-computation logic (ATK%/DEF/crit/weakness) lives in
+        // rpg.monster.listener.CombatDamageListener, registered by MonsterModule - see its
+        // Javadoc for why.
 
         YamlConfiguration config = plugin.getConfigManager().get("config.yml").get();
         double hpRegen = config.getDouble("status.regen.hp-percent-per-tick", 0.5);

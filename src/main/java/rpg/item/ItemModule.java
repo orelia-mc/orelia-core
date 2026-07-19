@@ -4,7 +4,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import rpg.core.OreliaPlugin;
 import rpg.core.module.RpgModule;
 import rpg.item.command.ItemCommand;
-import rpg.item.listener.WeaponUseListener;
 import rpg.item.manager.ItemManager;
 import rpg.item.repository.WeaponRepository;
 import rpg.item.service.WeaponFactory;
@@ -45,8 +44,10 @@ public final class ItemModule implements RpgModule {
         WeaponRequirementService requirementService = new WeaponRequirementService(jobModule.getJobService(), statusModule.getStatusService());
         this.itemManager = new ItemManager(repository, factory, identityService, requirementService);
 
-        plugin.getServer().getPluginManager().registerEvents(
-                new WeaponUseListener(plugin, identityService, requirementService, statusModule.getStatusService(), plugin.getMessageManager()), plugin);
+        // Damage-computation logic (weapon hit -> ATK% -> DEF -> crit -> weakness) lives in
+        // rpg.monster.listener.CombatDamageListener, registered by MonsterModule (which is
+        // the only module positioned after both this one and StatusModule in the enable
+        // order, so it can pull in WeaponIdentityService/WeaponRequirementService/StatusService).
         plugin.getPlayerCommandRegistry().register("item", new ItemCommand(itemManager, plugin.getMessageManager()),
                 "武器の付与など、アイテム関連の操作を行います。", "item give <player> <id> [amount]");
     }
