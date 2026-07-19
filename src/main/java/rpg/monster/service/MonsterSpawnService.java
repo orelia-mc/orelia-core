@@ -17,7 +17,7 @@ import java.util.UUID;
 /**
  * Spawns the vanilla entity backing a {@link MonsterData} definition, tags it with the
  * monster id, and applies its configured HP. Attack/defense are applied per-hit by
- * {@link rpg.monster.listener.MonsterCombatListener} instead of vanilla attributes, so
+ * {@link rpg.monster.listener.CombatDamageListener} instead of vanilla attributes, so
  * status-module ATK/DEF and monster defense compose the same way on both sides of a fight.
  * The nametag doubles as a live HP bar (see {@link MonsterHealthBarRenderer}) - set to full
  * HP here, updated after every hit by {@code MonsterHealthBarListener}.

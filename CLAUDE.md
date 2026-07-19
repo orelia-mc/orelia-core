@@ -72,15 +72,28 @@ There are exactly two top-level Bukkit commands, both dispatchers: `/ol` (player
 
 ### Combat damage math (`rpg.status.combat.DamageFormula`)
 
-Every damage-affecting listener (`WeaponUseListener`, `SkillDamage`, `MonsterCombatListener`,
-`CombatStatusListener`) computes damage through `DamageFormula` — `mitigate` (defense
-reduction), `applyAttackBonus` (ATK% scaling), `criticalMultiplier`/`rollCrit` (crit roll and
-its multiplier, folding a `CRT_DMG` stat bonus onto a weapon's/monster's own base crit
-multiplier). It's pure (no Bukkit dependency) and unit-tested — when changing how damage is
-calculated anywhere, add/extend a method here rather than duplicating the math inline in a
-listener. `DamageFormula.CRIT_METADATA_KEY` is the Bukkit metadata key a crit-rolling listener
-sets on the *attacker* (clearing it on a non-crit hit so a stale flag never leaks into the
-next attack) — `rpg.monster.listener.DamageDisplayListener` reads it to color/scale the
+`rpg.monster.listener.CombatDamageListener` is the single listener for every melee/monster
+`EntityDamageByEntityEvent` (`EventPriority.LOW`) — it replaced the old
+`WeaponUseListener`/`CombatStatusListener`/`MonsterCombatListener` trio, whose damage-setting
+logic was split across listeners at the same priority and relied on Bukkit's *undefined*
+same-priority ordering to land crit before ATK%/DEF instead of after. `DamageFormula.compute`
+is the fixed-order pipeline: base attack power → ATK% (`applyAttackBonus`) → DEF
+(`mitigate`) → crit roll/multiplier (`rollCrit`/`criticalMultiplier`, folding a `CRT_DMG` stat
+bonus onto a weapon's/monster's own base crit multiplier) → elemental weakness
+(`applyElementalWeakness`). It's pure (no Bukkit dependency) and unit-tested — when changing
+how damage is calculated anywhere, add/extend a method here rather than duplicating the math
+inline in a listener.
+
+`SkillDamage` computes only the base-attack-power stage once per cast (weapon attack power ×
+enhancement × the skill's own damage multiplier × ATK%) since AOE/cone skills apply the same
+amount to multiple targets — it sets `DamageFormula.SKILL_OVERRIDE_METADATA` on the caster and
+delivers that amount via `target.damage(amount, caster)`. `CombatDamageListener` detects that
+metadata and resolves the remaining per-target stages (DEF/crit/weakness) against *that*
+event's specific victim, rather than skipping the event entirely.
+
+`DamageFormula.CRIT_METADATA_KEY` is the Bukkit metadata key `CombatDamageListener` sets on
+the *attacker* after a crit (clearing it on a non-crit hit so a stale flag never leaks into
+the next attack) — `rpg.monster.listener.DamageDisplayListener` reads it to color/scale the
 floating damage number.
 
 ### Cross-module dependency conventions

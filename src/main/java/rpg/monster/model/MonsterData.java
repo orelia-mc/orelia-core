@@ -78,7 +78,7 @@ public final class MonsterData {
         return element;
     }
 
-    /** Element a weapon must carry to deal {@code MonsterCombatListener}'s weakness-multiplier damage; {@code NONE} means no weak point. */
+    /** Element a weapon must carry to deal {@code CombatDamageListener}'s weakness-multiplier damage; {@code NONE} means no weak point. */
     public ElementType getWeakness() {
         return weakness;
     }

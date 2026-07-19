@@ -6,8 +6,8 @@ import rpg.core.module.RpgModule;
 import rpg.database.DatabaseModule;
 import rpg.economy.EconomyModule;
 import rpg.item.ItemModule;
+import rpg.monster.listener.CombatDamageListener;
 import rpg.monster.listener.DamageDisplayListener;
-import rpg.monster.listener.MonsterCombatListener;
 import rpg.monster.listener.MonsterDeathListener;
 import rpg.monster.listener.MonsterHealthBarListener;
 import rpg.monster.listener.MonsterSunImmunityListener;
@@ -71,7 +71,9 @@ public final class MonsterModule implements RpgModule {
         spawnPointService.loadAll();
 
         plugin.getServer().getPluginManager().registerEvents(
-                new MonsterCombatListener(plugin, spawnService, itemModule.getItemManager().getIdentityService()), plugin);
+                new CombatDamageListener(plugin, itemModule.getItemManager().getIdentityService(),
+                        itemModule.getItemManager().getRequirementService(), statusModule.getStatusService(),
+                        spawnService, plugin.getMessageManager()), plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new MonsterDeathListener(spawnService, dropService, spawnPointService, plugin.getMessageManager()), plugin);
         plugin.getServer().getPluginManager().registerEvents(new MonsterHealthBarListener(spawnService), plugin);

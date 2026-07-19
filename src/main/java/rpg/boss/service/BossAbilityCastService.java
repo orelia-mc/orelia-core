@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Periodically casts a currently-tracked boss's {@link BossAbility}s at nearby players (SOW
  * follow-up: "スキルを発動するボス"). Damage is applied via {@code player.damage(amount)}
  * with no damager entity - deliberately sidesteps
- * {@code rpg.monster.listener.MonsterCombatListener}, which would otherwise overwrite an
+ * {@code rpg.monster.listener.CombatDamageListener}, which would otherwise overwrite an
  * ability's damage with the boss's plain melee attack power the same way it does for any
  * other monster hit.
  */
