@@ -6,6 +6,8 @@ import org.bukkit.entity.EntityType;
 import rpg.item.model.ElementType;
 import rpg.monster.model.AiType;
 import rpg.monster.model.DropEntry;
+import rpg.monster.model.MonsterAbility;
+import rpg.monster.model.MonsterAbilityType;
 import rpg.monster.model.MonsterData;
 
 import java.util.ArrayList;
@@ -56,6 +58,27 @@ public final class MonsterRepository {
             }
         }
 
+        List<MonsterAbility> abilities = new ArrayList<>();
+        ConfigurationSection abilitiesSection = section.getConfigurationSection("abilities");
+        if (abilitiesSection != null) {
+            for (String abilityId : abilitiesSection.getKeys(false)) {
+                ConfigurationSection abilitySection = abilitiesSection.getConfigurationSection(abilityId);
+                if (abilitySection == null) {
+                    continue;
+                }
+                abilities.add(new MonsterAbility(
+                        abilityId,
+                        abilitySection.getString("name", abilityId),
+                        MonsterAbilityType.valueOf(abilitySection.getString("type", "AOE_SLAM").trim().toUpperCase()),
+                        abilitySection.getDouble("damage", 10.0),
+                        abilitySection.getDouble("radius", 5.0),
+                        abilitySection.getInt("cooldown-seconds", 15),
+                        abilitySection.getString("particle", "EXPLOSION_EMITTER"),
+                        abilitySection.getString("sound", "ENTITY_WITHER_SHOOT"),
+                        abilitySection.getString("announce-message", "")));
+            }
+        }
+
         return new MonsterData(
                 id,
                 section.getString("name", id),
@@ -70,7 +93,7 @@ public final class MonsterRepository {
                 section.getLong("exp-reward", 10),
                 section.getDouble("money-min", 0),
                 section.getDouble("money-max", 0),
-                section.getStringList("skills"),
+                abilities,
                 section.getDouble("crit-rate", 0.0),
                 section.getDouble("crit-multiplier", 1.5));
     }

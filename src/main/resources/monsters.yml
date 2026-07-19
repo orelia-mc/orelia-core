@@ -6,6 +6,11 @@
 # Each drop entry sets either weapon-id (an items.yml id) or vanilla-material (a Material name).
 # crit-rate: optional percent chance (0-100) this monster's attacks crit (default 0 = never).
 # crit-multiplier: optional multiplier applied on a crit (default 1.5, only matters if crit-rate > 0).
+# abilities: optional periodic attacks cast at nearby players (MonsterAbilityCastService), same
+# shape as bosses.yml's own abilities block: type is AOE_SLAM or FIREBALL_BARRAGE, damage/radius/
+# cooldown-seconds/particle/sound/announce-message. Do not configure abilities here for a monster
+# id that's also referenced by bosses.yml's monster-id (goblin_king, flame_lord below) - that
+# entity spawns through the separate boss ability system instead when spawned as a boss.
 
 monsters:
   forest_slime:
@@ -26,7 +31,6 @@ monsters:
         chance-percent: 60
         min-amount: 1
         max-amount: 2
-    skills: []
 
   goblin_raider:
     name: "ゴブリンの略奪者"
@@ -50,7 +54,16 @@ monsters:
         chance-percent: 5
         min-amount: 1
         max-amount: 1
-    skills: []
+    abilities:
+      war_cry_slam:
+        name: "雄叫びの一撃"
+        type: AOE_SLAM
+        damage: 8
+        radius: 3
+        cooldown-seconds: 10
+        particle: SWEEP_ATTACK
+        sound: ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR
+        announce-message: "&%eゴブリンの略奪者が雄叫びを上げた！"
 
   skeletal_archer:
     name: "骸骨の弓兵"
@@ -69,7 +82,16 @@ monsters:
         chance-percent: 70
         min-amount: 2
         max-amount: 5
-    skills: []
+    abilities:
+      numbing_volley:
+        name: "痺れ矢の乱射"
+        type: AOE_SLAM
+        damage: 6
+        radius: 4
+        cooldown-seconds: 12
+        particle: CRIT
+        sound: ENTITY_SKELETON_SHOOT
+        announce-message: "&%7骸骨の弓兵が矢を乱射した！"
 
   goblin_king:
     name: "ゴブリンキング"
@@ -93,7 +115,6 @@ monsters:
         chance-percent: 100
         min-amount: 3
         max-amount: 8
-    skills: []
 
   flame_lord:
     name: "業火の王ブレイズロード"
@@ -117,4 +138,3 @@ monsters:
         chance-percent: 60
         min-amount: 5
         max-amount: 15
-    skills: []

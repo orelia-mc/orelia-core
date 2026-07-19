@@ -67,4 +67,16 @@ final class ItemApiImpl implements ItemApi {
         int playerLevel = statusService.component(playerId).map(PlayerStatusComponent::getLevel).orElse(1);
         return itemManager.getIdentityService().levelUp(stack, data, playerLevel);
     }
+
+    @Override
+    public int getWeaponLevelCap(UUID playerId) {
+        int playerLevel = statusService.component(playerId).map(PlayerStatusComponent::getLevel).orElse(1);
+        return itemManager.getIdentityService().weaponLevelCap(playerLevel);
+    }
+
+    @Override
+    public void refreshWeaponLore(ItemStack stack) {
+        itemManager.getIdentityService().dataOf(stack)
+                .ifPresent(data -> itemManager.refreshWeaponLore(stack, data));
+    }
 }

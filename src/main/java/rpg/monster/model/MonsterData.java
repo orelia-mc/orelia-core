@@ -7,8 +7,10 @@ import java.util.List;
 
 /**
  * Static monster definition loaded from {@code monsters.yml} (SOW section 13).
- * {@code skillIds} is a hook for future monster ability AI (not yet executed by the base
- * monster module - {@link rpg.boss.model.BossData} is where scripted attacks land first).
+ * {@code abilities} are periodically cast at nearby players by
+ * {@link rpg.monster.service.MonsterAbilityCastService} - the regular-monster counterpart to
+ * {@link rpg.boss.model.BossData}'s own abilities, kept as a fully separate system (see that
+ * service's Javadoc for why).
  */
 public final class MonsterData {
 
@@ -25,13 +27,13 @@ public final class MonsterData {
     private final long expReward;
     private final double moneyMin;
     private final double moneyMax;
-    private final List<String> skillIds;
+    private final List<MonsterAbility> abilities;
     private final double critRate;
     private final double critMultiplier;
 
     public MonsterData(String id, String name, EntityType entityType, double hp, double attackPower, double defense,
                         ElementType element, ElementType weakness, AiType aiType, List<DropEntry> drops, long expReward,
-                        double moneyMin, double moneyMax, List<String> skillIds, double critRate, double critMultiplier) {
+                        double moneyMin, double moneyMax, List<MonsterAbility> abilities, double critRate, double critMultiplier) {
         this.id = id;
         this.name = name;
         this.entityType = entityType;
@@ -45,7 +47,7 @@ public final class MonsterData {
         this.expReward = expReward;
         this.moneyMin = moneyMin;
         this.moneyMax = moneyMax;
-        this.skillIds = skillIds;
+        this.abilities = abilities;
         this.critRate = critRate;
         this.critMultiplier = critMultiplier;
     }
@@ -103,8 +105,8 @@ public final class MonsterData {
         return moneyMax;
     }
 
-    public List<String> getSkillIds() {
-        return skillIds;
+    public List<MonsterAbility> getAbilities() {
+        return abilities;
     }
 
     /** Percent chance (0-100) this monster's attacks land a critical hit. 0 = never crits (default). */

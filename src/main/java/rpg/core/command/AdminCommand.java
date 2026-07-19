@@ -120,8 +120,10 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             messages.send(sender, "admin.module-disabled", "module", "Monster");
             return;
         }
-        boolean spawned = monsterModule.getSpawnService().spawn(args[1], player.getLocation()).isPresent();
-        if (spawned) {
+        var spawned = monsterModule.getSpawnService().spawn(args[1], player.getLocation());
+        if (spawned.isPresent()) {
+            monsterModule.getRepository().findById(args[1])
+                    .ifPresent(data -> monsterModule.getAbilityCastService().registerIfAble(spawned.get(), data));
             messages.send(sender, "admin.spawned-monster", "id", args[1]);
         } else {
             messages.send(sender, "admin.unknown-monster", "id", args[1]);

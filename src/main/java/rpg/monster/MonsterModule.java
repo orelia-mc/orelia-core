@@ -14,6 +14,7 @@ import rpg.monster.listener.MonsterSunImmunityListener;
 import rpg.monster.listener.VanillaHostileSpawnBlockerListener;
 import rpg.monster.repository.MonsterRepository;
 import rpg.monster.service.DamageDisplayService;
+import rpg.monster.service.MonsterAbilityCastService;
 import rpg.monster.service.MonsterDropService;
 import rpg.monster.service.MonsterKeys;
 import rpg.monster.service.MonsterSpawnService;
@@ -31,10 +32,12 @@ import java.util.logging.Level;
 public final class MonsterModule implements RpgModule {
 
     private static final long SPAWN_POINT_TICK_PERIOD_TICKS = 20L;
+    private static final long ABILITY_TICK_PERIOD_TICKS = 20L;
 
     private final MonsterRepository repository = new MonsterRepository();
     private MonsterSpawnService spawnService;
     private MonsterSpawnPointService spawnPointService;
+    private MonsterAbilityCastService abilityCastService;
     private OreliaPlugin plugin;
 
     @Override
@@ -58,6 +61,7 @@ public final class MonsterModule implements RpgModule {
 
         MonsterKeys keys = new MonsterKeys(plugin);
         this.spawnService = new MonsterSpawnService(plugin, keys, repository);
+        this.abilityCastService = new MonsterAbilityCastService(plugin, spawnService);
         MonsterDropService dropService = new MonsterDropService(
                 itemModule.getItemManager(), economyModule.getEconomyService(), statusModule.getStatusService());
 
@@ -67,7 +71,7 @@ public final class MonsterModule implements RpgModule {
         } catch (Exception e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to initialize monster spawn point schema", e);
         }
-        this.spawnPointService = new MonsterSpawnPointService(spawnPointRepository, new MonsterSpawnPointManager(), spawnService, repository);
+        this.spawnPointService = new MonsterSpawnPointService(spawnPointRepository, new MonsterSpawnPointManager(), spawnService, repository, abilityCastService);
         spawnPointService.loadAll();
 
         plugin.getServer().getPluginManager().registerEvents(
@@ -93,6 +97,7 @@ public final class MonsterModule implements RpgModule {
         }
 
         plugin.getSchedulerService().runTimer(spawnPointService::tick, SPAWN_POINT_TICK_PERIOD_TICKS, SPAWN_POINT_TICK_PERIOD_TICKS);
+        plugin.getSchedulerService().runTimer(abilityCastService::tick, ABILITY_TICK_PERIOD_TICKS, ABILITY_TICK_PERIOD_TICKS);
     }
 
     @Override
@@ -120,5 +125,9 @@ public final class MonsterModule implements RpgModule {
 
     public MonsterSpawnPointService getSpawnPointService() {
         return spawnPointService;
+    }
+
+    public MonsterAbilityCastService getAbilityCastService() {
+        return abilityCastService;
     }
 }

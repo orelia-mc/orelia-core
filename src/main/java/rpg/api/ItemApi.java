@@ -38,4 +38,19 @@ public interface ItemApi {
      * enough to unlock the next weapon level yet.
      */
     int levelUpWeapon(UUID playerId, ItemStack stack);
+
+    /**
+     * Highest weapon level {@code playerId} is currently allowed to raise a weapon to
+     * ({@link rpg.item.service.WeaponIdentityService#weaponLevelCap}) - lets a caller (e.g. an
+     * NPC) check whether {@link #levelUpWeapon} would succeed before charging any cost for it.
+     */
+    int getWeaponLevelCap(UUID playerId);
+
+    /**
+     * Re-renders {@code stack}'s lore against its current weapon level/enhancement - call after
+     * {@link #levelUpWeapon}/{@link #enhanceWeapon} so a caller outside this module (e.g. an
+     * NPC interaction) sees the same immediate lore refresh {@code /ol item levelup} already
+     * gets internally. No-op if {@code stack} isn't a weapon this module recognizes.
+     */
+    void refreshWeaponLore(ItemStack stack);
 }

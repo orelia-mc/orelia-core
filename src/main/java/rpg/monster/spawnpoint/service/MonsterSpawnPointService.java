@@ -6,6 +6,7 @@ import org.bukkit.World;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import rpg.monster.repository.MonsterRepository;
+import rpg.monster.service.MonsterAbilityCastService;
 import rpg.monster.service.MonsterSpawnService;
 import rpg.monster.spawnpoint.manager.MonsterSpawnPointManager;
 import rpg.monster.spawnpoint.model.MonsterSpawnPoint;
@@ -27,13 +28,16 @@ public final class MonsterSpawnPointService {
     private final MonsterSpawnPointManager manager;
     private final MonsterSpawnService spawnService;
     private final MonsterRepository monsterRepository;
+    private final MonsterAbilityCastService abilityCastService;
 
     public MonsterSpawnPointService(MonsterSpawnPointRepository repository, MonsterSpawnPointManager manager,
-                                     MonsterSpawnService spawnService, MonsterRepository monsterRepository) {
+                                     MonsterSpawnService spawnService, MonsterRepository monsterRepository,
+                                     MonsterAbilityCastService abilityCastService) {
         this.repository = repository;
         this.manager = manager;
         this.spawnService = spawnService;
         this.monsterRepository = monsterRepository;
+        this.abilityCastService = abilityCastService;
     }
 
     public void loadAll() {
@@ -80,7 +84,11 @@ public final class MonsterSpawnPointService {
             }
             Location location = new Location(world, point.getX(), point.getY(), point.getZ());
             spawnService.spawn(point.getMonsterId(), location, point.getId())
-                    .ifPresent(entity -> manager.onSpawned(point.getId(), entity.getUniqueId()));
+                    .ifPresent(entity -> {
+                        manager.onSpawned(point.getId(), entity.getUniqueId());
+                        monsterRepository.findById(point.getMonsterId())
+                                .ifPresent(data -> abilityCastService.registerIfAble(entity, data));
+                    });
         }
     }
 
