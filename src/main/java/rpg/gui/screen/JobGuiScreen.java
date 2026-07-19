@@ -35,6 +35,9 @@ public final class JobGuiScreen {
 
         int slot = 10;
         for (JobType type : JobType.values()) {
+            if (slot >= 27) {
+                break; // more job types configured than the screen has room for
+            }
             boolean isCurrent = type == current;
             String displayName = displayName(type);
             gui.set(slot++, new GuiButton(new ItemBuilder(isCurrent ? Material.GOLDEN_HELMET : Material.LEATHER_HELMET)

@@ -5,8 +5,19 @@ package rpg.accessory.model;
  * player's bottom inventory row.
  */
 public enum AccessoryType {
-    CHARM,
-    RING,
-    NECKLACE,
-    WING
+    CHARM("お守り"),
+    RING("指輪"),
+    NECKLACE("ネックレス"),
+    WING("羽根");
+
+    private final String displayName;
+
+    AccessoryType(String displayName) {
+        this.displayName = displayName;
+    }
+
+    /** Japanese label for UI display (e.g. an empty accessory slot in {@code EquipmentGuiScreen}) - not used for config/PDC identity. */
+    public String getDisplayName() {
+        return displayName;
+    }
 }

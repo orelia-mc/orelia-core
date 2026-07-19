@@ -8,8 +8,10 @@ import rpg.database.DatabaseModule;
 import rpg.economy.EconomyModule;
 import rpg.gui.command.StatusCommand;
 import rpg.gui.config.GuiConfig;
+import rpg.gui.framework.GuiHolder;
 import rpg.gui.framework.GuiListener;
 import rpg.gui.framework.GuiManager;
+import rpg.gui.listener.EquipmentDisplayRefreshListener;
 import rpg.gui.listener.WarehouseSaveListener;
 import rpg.gui.repository.WarehouseRepository;
 import rpg.gui.screen.EquipmentGuiScreen;
@@ -35,6 +37,8 @@ import java.util.logging.Level;
  * 3-repo split.
  */
 public final class GuiModule implements RpgModule {
+
+    private static final long STATUS_REFRESH_PERIOD_TICKS = 20L;
 
     private final GuiConfig guiConfig = new GuiConfig();
     private OreliaPlugin plugin;
@@ -92,9 +96,23 @@ public final class GuiModule implements RpgModule {
 
         plugin.getServer().getPluginManager().registerEvents(new GuiListener(), plugin);
         plugin.getServer().getPluginManager().registerEvents(new WarehouseSaveListener(warehouseRepository), plugin);
+        plugin.getServer().getPluginManager().registerEvents(
+                new EquipmentDisplayRefreshListener(equipmentGuiScreen, plugin.getSchedulerService()), plugin);
         plugin.getPlayerCommandRegistry().register("status",
                 new StatusCommand(guiManager, statusGuiScreen, plugin.getMessageManager()),
                 "ステータス画面を開きます。", "status");
+
+        // Stats can change from many unrelated sources (level-up, buffs, equipment swap) while
+        // this screen is open, unlike equipment's held-item/click events - periodic refresh is
+        // simpler than hooking every mutation site.
+        plugin.getSchedulerService().runTimer(() ->
+                plugin.getServer().getOnlinePlayers().forEach(player -> {
+                    var top = player.getOpenInventory().getTopInventory();
+                    if (top.getHolder() instanceof GuiHolder holder && StatusGuiScreen.TAG.equals(holder.getGui().getTag())) {
+                        statusGuiScreen.refresh(player, top);
+                    }
+                }),
+                STATUS_REFRESH_PERIOD_TICKS, STATUS_REFRESH_PERIOD_TICKS);
     }
 
     @Override

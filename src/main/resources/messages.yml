@@ -52,7 +52,7 @@ quest:
 economy:
   insufficient-funds: "&%c所持金が足りません。"
   item-unavailable: "&%c商品を取得できませんでした。"
-  purchase-success: "&%a購入しました。"
+  purchase-success: "&%a{item}を{price}Gで購入しました。"
 
 dungeon:
   party-too-small: "&%cパーティ人数が足りません。"

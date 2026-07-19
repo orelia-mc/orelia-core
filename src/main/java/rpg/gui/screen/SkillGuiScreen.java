@@ -57,6 +57,9 @@ public final class SkillGuiScreen {
         Map<String, SkillData> skills = skillRepository.getByWeaponType(weaponType);
         int slot = 10;
         for (SkillData skill : skills.values()) {
+            if (slot >= 27) {
+                break; // more skills configured for this weapon type than the screen has room for
+            }
             int buttonSlot = slot++;
             gui.set(buttonSlot, new GuiButton(skillIcon(player, skill), (clicker, clickType) -> {
                 if (clickType.contains("RIGHT")) {
@@ -81,8 +84,9 @@ public final class SkillGuiScreen {
 
     private ItemStack skillIcon(Player player, SkillData skill) {
         int level = progressService.getSkillLevel(player.getUniqueId(), skill.getId());
-        return new ItemBuilder(Material.ENCHANTED_BOOK)
-                .name("&%e" + skill.getName())
+        boolean learned = level > 0;
+        return new ItemBuilder(learned ? Material.ENCHANTED_BOOK : Material.BOOK)
+                .name((learned ? "&%e" : "&%7") + skill.getName())
                 .lore(List.of(
                         "&%7Lv. " + level + " / " + skill.getMaxLevel(),
                         "&%7SP消費: " + skill.getSpCost(),
