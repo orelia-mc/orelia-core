@@ -16,7 +16,7 @@ commands:
     description: Orelia admin commands (reload, spawn, spawnpoint, and more registered by orelia-world/orelia-extra)
     usage: /oladmin <reload|spawn <monsterId>|spawnboss <bossId>|spawnpoint <add|remove|list>|...>
     permission: orelia.admin
-    permission-message: "&c権限がありません。このコマンドは運営(OP)専用です。"
+    permission-message: "&%c権限がありません。このコマンドは運営(OP)専用です。"
 
 permissions:
   orelia.admin:

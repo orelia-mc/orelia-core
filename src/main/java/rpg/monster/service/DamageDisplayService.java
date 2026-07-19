@@ -43,7 +43,7 @@ public final class DamageDisplayService {
         double gravityPerTick = config.getDouble("combat.damage-display.gravity-per-tick", 0.02);
         double yOffset = config.getDouble("combat.damage-display.y-offset", -0.3);
         String color = config.getString(isCrit ? "combat.damage-display.crit-color" : "combat.damage-display.normal-color",
-                isCrit ? "&e" : "&f");
+                isCrit ? "&%e" : "&%f");
         float scale = isCrit ? (float) config.getDouble("combat.damage-display.crit-scale", 1.3) : 1.0f;
 
         Location spawnLocation = origin.clone().add(0, yOffset, 0);

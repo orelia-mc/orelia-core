@@ -25,13 +25,13 @@ public final class StatusGuiScreen {
     }
 
     public Gui build(Player player) {
-        Gui gui = new Gui(guiConfig.title("status", "&8ステータス"), 27);
+        Gui gui = new Gui(guiConfig.title("status", "&%8ステータス"), 27);
         StatSheet stats = statusService.getFinalStats(player.getUniqueId()).orElse(StatSheet.empty());
         int level = statusService.component(player.getUniqueId()).map(PlayerStatusComponent::getLevel).orElse(1);
 
         gui.set(4, GuiButton.display(new ItemBuilder(Material.PLAYER_HEAD)
-                .name("&e" + player.getName())
-                .lore("&7Lv. " + level)
+                .name("&%e" + player.getName())
+                .lore("&%7Lv. " + level)
                 .build()));
 
         Material[] icons = {Material.REDSTONE, Material.LAPIS_LAZULI, Material.IRON_INGOT, Material.SHIELD,
@@ -39,8 +39,8 @@ public final class StatusGuiScreen {
         StatType[] types = StatType.values();
         for (int i = 0; i < types.length; i++) {
             gui.set(10 + i, GuiButton.display(new ItemBuilder(icons[i % icons.length])
-                    .name("&f" + types[i].name().replace('_', '-'))
-                    .lore("&7" + stats.get(types[i]))
+                    .name("&%f" + types[i].name().replace('_', '-'))
+                    .lore("&%7" + stats.get(types[i]))
                     .build()));
         }
         return gui;

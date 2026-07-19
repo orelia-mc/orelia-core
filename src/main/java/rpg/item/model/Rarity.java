@@ -5,11 +5,11 @@ package rpg.item.model;
  * {@code &}-codes used to prefix generated item names.
  */
 public enum Rarity {
-    COMMON("&f"),
-    UNCOMMON("&a"),
-    RARE("&b"),
-    EPIC("&d"),
-    LEGENDARY("&6");
+    COMMON("&%f"),
+    UNCOMMON("&%a"),
+    RARE("&%b"),
+    EPIC("&%d"),
+    LEGENDARY("&%6");
 
     private final String colorCode;
 

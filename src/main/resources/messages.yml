@@ -2,82 +2,82 @@
 # rpg.core.message.MessageManager, keyed by the dotted paths below - do not hardcode
 # ChatColor + literal strings in command/listener/service code, add a key here instead.
 
-prefix: "&8[&6Orelia&8] &r"
+prefix: "&%8[&%6Orelia&%8] &r"
 
 command:
-  player-only: "&cプレイヤーのみ実行できます。"
-  unknown-subcommand: "&c不明なサブコマンドです: {name}。/{label} help を試してください。"
+  player-only: "&%cプレイヤーのみ実行できます。"
+  unknown-subcommand: "&%c不明なサブコマンドです: {name}。/{label} help を試してください。"
 
 monster:
   # Overrides the vanilla "X was slain by <killer's live nametag>" message when a player is
   # killed by a tagged Orelia monster, so the monster's HP-bar-decorated nametag doesn't leak
   # into the death message. {monster} is always the clean monsters.yml name.
-  death-message: "&7{player} は {monster} に倒されました。"
+  death-message: "&%7{player} は {monster} に倒されました。"
 
 item:
-  requirement-not-met: "&cこの武器を使用する条件を満たしていません。"
-  unknown-weapon: "&c不明な武器IDです。"
-  usage-give: "&e使い方: /{label} give <player> <id> [amount]"
-  player-not-found: "&c対象のプレイヤーが見つかりません: {player}"
-  given: "&a{amount}個の{weapon}を{player}に渡しました。"
-  not-holding-weapon: "&c武器を持っていません。"
-  weapon-leveled-up: "&a武器のレベルが{level}になりました！"
-  weapon-level-capped: "&cこれ以上武器のレベルを上げるには、プレイヤーレベルが足りません。"
+  requirement-not-met: "&%cこの武器を使用する条件を満たしていません。"
+  unknown-weapon: "&%c不明な武器IDです。"
+  usage-give: "&%e使い方: /{label} give &%7<&%eplayer&%7>&%e &%7<&%eid&%7>&%e [amount]"
+  player-not-found: "&%c対象のプレイヤーが見つかりません: {player}"
+  given: "&%a{amount}個の{weapon}を{player}に渡しました。"
+  not-holding-weapon: "&%c武器を持っていません。"
+  weapon-leveled-up: "&%a武器のレベルが{level}になりました！"
+  weapon-level-capped: "&%cこれ以上武器のレベルを上げるには、プレイヤーレベルが足りません。"
 
 job:
-  not-chosen: "&e職業がまだ選択されていません。ギルドで職業を選びましょう。"
-  changed: "&a{job}に転職しました。"
-  change-failed: "&c転職に失敗しました。"
-  current: "&a職業: &f{job}"
-  list: "&a職業一覧: &f{jobs}"
+  not-chosen: "&%e職業がまだ選択されていません。ギルドで職業を選びましょう。"
+  changed: "&%a{job}に転職しました。"
+  change-failed: "&%c転職に失敗しました。"
+  current: "&%a職業: &%f{job}"
+  list: "&%a職業一覧: &%f{jobs}"
 
 skill:
-  wrong-weapon: "&cこの武器ではこのスキルを使用できません。"
-  not-socketed: "&c武器にスキルが装着されていません。"
-  not-learned: "&cこのスキルをまだ習得していません。"
-  on-cooldown: "&cスキルはクールタイム中です。"
-  not-enough-sp: "&cSPが足りません。"
-  unknown: "&cこのスキルは設定されていません。"
-  socketed: "&aスキルを装着しました。"
-  socket-failed: "&c空きスロットがありません。"
-  upgraded: "&aスキルレベルが上がりました。"
-  upgrade-failed: "&c習得できません（ポイント不足か最大レベル）。"
+  wrong-weapon: "&%cこの武器ではこのスキルを使用できません。"
+  not-socketed: "&%c武器にスキルが装着されていません。"
+  not-learned: "&%cこのスキルをまだ習得していません。"
+  on-cooldown: "&%cスキルはクールタイム中です。"
+  not-enough-sp: "&%cSPが足りません。"
+  unknown: "&%cこのスキルは設定されていません。"
+  socketed: "&%aスキルを装着しました。"
+  socket-failed: "&%c空きスロットがありません。"
+  upgraded: "&%aスキルレベルが上がりました。"
+  upgrade-failed: "&%c習得できません（ポイント不足か最大レベル）。"
 
 quest:
-  accepted: "&aクエストを受注しました。"
-  requirements-not-met: "&c受注条件を満たしていません。"
-  completed: "&aクエストを完了しました！"
-  report-failed: "&c報告に失敗しました。"
+  accepted: "&%aクエストを受注しました。"
+  requirements-not-met: "&%c受注条件を満たしていません。"
+  completed: "&%aクエストを完了しました！"
+  report-failed: "&%c報告に失敗しました。"
 
 economy:
-  insufficient-funds: "&c所持金が足りません。"
-  item-unavailable: "&c商品を取得できませんでした。"
-  purchase-success: "&a購入しました。"
+  insufficient-funds: "&%c所持金が足りません。"
+  item-unavailable: "&%c商品を取得できませんでした。"
+  purchase-success: "&%a購入しました。"
 
 dungeon:
-  party-too-small: "&cパーティ人数が足りません。"
-  party-too-large: "&cパーティ人数が多すぎます。"
-  already-in-dungeon: "&c既にダンジョンに入っています。"
+  party-too-small: "&%cパーティ人数が足りません。"
+  party-too-large: "&%cパーティ人数が多すぎます。"
+  already-in-dungeon: "&%c既にダンジョンに入っています。"
 
 boss:
-  enraged: "&c{boss} が狂暴化した！"
+  enraged: "&%c{boss} が狂暴化した！"
 
 admin:
-  reloaded: "&aOrelia の設定を再読み込みしました。"
-  usage-spawn: "&e使い方: /oladmin spawn <monsterId>"
-  module-disabled: "&c{module}モジュールは有効化されていません。"
-  spawned-monster: "&a{id}を召喚しました。"
-  unknown-monster: "&c不明なモンスターIDです: {id}"
-  usage-spawnboss: "&e使い方: /oladmin spawnboss <bossId>"
-  spawned-boss: "&aボス{id}を召喚しました。"
-  unknown-boss: "&c不明なボスIDです: {id}"
-  usage-spawnpoint: "&e使い方: /oladmin spawnpoint <add <monsterId> [intervalSeconds] [maxAlive]|remove <id>|list>"
-  usage-spawnpoint-add: "&e使い方: /oladmin spawnpoint add <monsterId> [intervalSeconds] [maxAlive]"
-  spawnpoint-registered: "&aスポーンポイント{id}（{monster}）をここに登録しました（{interval}秒毎、最大{max}体）。"
-  usage-spawnpoint-remove: "&e使い方: /oladmin spawnpoint remove <id>"
-  spawnpoint-removed: "&aスポーンポイント{id}を削除しました。"
-  spawnpoint-not-found: "&cスポーンポイント{id}は見つかりません。"
-  spawnpoint-invalid-id: "&c無効なスポーンポイントIDです: {id}"
-  spawnpoint-empty: "&e登録されているスポーンポイントはありません。"
-  spawnpoint-list-header: "&aスポーンポイント一覧:"
-  spawnpoint-list-entry: "&7- {id} {monster} @ {world} {x},{y},{z} ({interval}s, max {max})"
+  reloaded: "&%aOrelia の設定を再読み込みしました。"
+  usage-spawn: "&%e使い方: /oladmin spawn &%7<&%emonsterId&%7>&%e"
+  module-disabled: "&%c{module}モジュールは有効化されていません。"
+  spawned-monster: "&%a{id}を召喚しました。"
+  unknown-monster: "&%c不明なモンスターIDです: {id}"
+  usage-spawnboss: "&%e使い方: /oladmin spawnboss &%7<&%ebossId&%7>&%e"
+  spawned-boss: "&%aボス{id}を召喚しました。"
+  unknown-boss: "&%c不明なボスIDです: {id}"
+  usage-spawnpoint: "&%e使い方: /oladmin spawnpoint &%7<&%eadd &%7<&%emonsterId&%7>&%e [intervalSeconds] [maxAlive]&%7|&%eremove &%7<&%eid&%7>&%e&%7|&%elist&%7>&%e"
+  usage-spawnpoint-add: "&%e使い方: /oladmin spawnpoint add &%7<&%emonsterId&%7>&%e [intervalSeconds] [maxAlive]"
+  spawnpoint-registered: "&%aスポーンポイント{id}（{monster}）をここに登録しました（{interval}秒毎、最大{max}体）。"
+  usage-spawnpoint-remove: "&%e使い方: /oladmin spawnpoint remove &%7<&%eid&%7>&%e"
+  spawnpoint-removed: "&%aスポーンポイント{id}を削除しました。"
+  spawnpoint-not-found: "&%cスポーンポイント{id}は見つかりません。"
+  spawnpoint-invalid-id: "&%c無効なスポーンポイントIDです: {id}"
+  spawnpoint-empty: "&%e登録されているスポーンポイントはありません。"
+  spawnpoint-list-header: "&%aスポーンポイント一覧:"
+  spawnpoint-list-entry: "&%7- {id} {monster} @ {world} {x},{y},{z} ({interval}s, max {max})"

@@ -2,10 +2,10 @@
 # Any key left out falls back to the Japanese default baked into the matching screen class.
 
 titles:
-  status: "&8ステータス"
-  equipment: "&8装備"
-  skill: "&8武器スキル"
-  job: "&8職業変更"
-  quest: "&8クエスト"
-  shop: "&8NPCショップ"
-  warehouse: "&8倉庫"
+  status: "&%8ステータス"
+  equipment: "&%8装備"
+  skill: "&%8武器スキル"
+  job: "&%8職業変更"
+  quest: "&%8クエスト"
+  shop: "&%8NPCショップ"
+  warehouse: "&%8倉庫"

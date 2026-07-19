@@ -11,6 +11,7 @@ import rpg.util.ItemBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Builds the physical {@link ItemStack} for a {@link WeaponData} template: vanilla base
@@ -56,19 +57,22 @@ public final class WeaponFactory {
         List<String> lore = new ArrayList<>();
         lore.add(data.getRarity().getColor() + data.getRarity().name());
         lore.add(enhancementLevel > 0
-                ? "&7Lv. " + weaponLevel + " &7(強化+" + enhancementLevel + ")"
-                : "&7Lv. " + weaponLevel);
+                ? "&%7Lv. " + weaponLevel + " &%7(強化+" + enhancementLevel + ")"
+                : "&%7Lv. " + weaponLevel);
         lore.addAll(data.getDescription());
-        lore.add("&c攻撃力 &f" + attackPower);
+        // attackPower is a computed value (base * weapon-level factor * enhancement
+        // multiplier) and can carry floating-point noise (e.g. 37.699999999999996) -
+        // round to 1 decimal place for display only, the underlying double stays exact.
+        lore.add("&%c攻撃力 &%f" + String.format(Locale.ROOT, "%.1f", attackPower));
         if (data.getElement() != ElementType.NONE) {
-            lore.add("&b属性 &f" + data.getElement());
+            lore.add("&%b属性 &%f" + data.getElement());
         }
-        lore.add("&e会心率 &f" + data.getCritRate() + "%");
-        lore.add("&e会心倍率 &f" + data.getCritMultiplier() + "x");
+        lore.add("&%e会心率 &%f" + data.getCritRate() + "%");
+        lore.add("&%e会心倍率 &%f" + data.getCritMultiplier() + "x");
         if (data.getRequiredJob() != null) {
-            lore.add("&7必要職業 &f" + data.getRequiredJob());
+            lore.add("&%7必要職業 &%f" + data.getRequiredJob());
         }
-        lore.add("&7必要レベル &f" + data.getRequiredLevel());
+        lore.add("&%7必要レベル &%f" + data.getRequiredLevel());
 
         ItemMeta meta = stack.getItemMeta();
         meta.lore(lore.stream().map(ColorUtil::component).toList());

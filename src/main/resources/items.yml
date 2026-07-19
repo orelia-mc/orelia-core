@@ -21,7 +21,7 @@ weapons:
     required-job: FENCER
     required-level: 1
     description:
-      - "&7剣士見習いのための訓練用の剣。"
+      - "&%7剣士見習いのための訓練用の剣。"
     custom-model-data: 100001
     sell-price: 10.0
     skill-slot-count: 1
@@ -38,7 +38,7 @@ weapons:
     required-job: FENCER
     required-level: 10
     description:
-      - "&7刀身が常に紅蓮の炎を纏う長剣。"
+      - "&%7刀身が常に紅蓮の炎を纏う長剣。"
     custom-model-data: 100002
     sell-price: 500.0
     skill-slot-count: 2
@@ -57,7 +57,7 @@ weapons:
     required-job:
     required-level: 5
     description:
-      - "&7遠距離からの突きに優れた槍。"
+      - "&%7遠距離からの突きに優れた槍。"
     custom-model-data: 100101
     sell-price: 120.0
     skill-slot-count: 2
@@ -74,7 +74,7 @@ weapons:
     required-job: WARRIOR
     required-level: 8
     description:
-      - "&7重厚な一撃を放つ両手斧。"
+      - "&%7重厚な一撃を放つ両手斧。"
     custom-model-data: 100201
     sell-price: 300.0
     skill-slot-count: 2
@@ -91,7 +91,7 @@ weapons:
     required-job: ARCHER
     required-level: 6
     description:
-      - "&7風を読む狩人のための弓。"
+      - "&%7風を読む狩人のための弓。"
     custom-model-data: 100301
     sell-price: 180.0
     skill-slot-count: 2

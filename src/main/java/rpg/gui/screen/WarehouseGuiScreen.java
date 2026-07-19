@@ -23,7 +23,7 @@ public final class WarehouseGuiScreen {
     }
 
     public Gui build(Player player) {
-        Gui gui = new Gui(guiConfig.title("warehouse", "&8倉庫"), WarehouseRepository.SIZE).allowItemMovement().tag(TAG);
+        Gui gui = new Gui(guiConfig.title("warehouse", "&%8倉庫"), WarehouseRepository.SIZE).allowItemMovement().tag(TAG);
         var inventory = gui.toInventory();
         inventory.setContents(repository.load(player.getUniqueId()));
         return gui;
