@@ -3,9 +3,11 @@ package rpg.util;
 import java.util.Locale;
 
 /**
- * Formats a money amount into a compact {@code k}/{@code m}-suffixed string (e.g. {@code 1500}
- * -> {@code "1.5k"}, {@code 2000000} -> {@code "2m"}) for display in the GUI/scoreboard/chat/
- * placeholders. Values under 1000 are shown as-is (1 decimal place only if not a whole number).
+ * Formats a money amount into a compact {@code k}/{@code m}/{@code b}/{@code t}-suffixed
+ * string (e.g. {@code 1500} -> {@code "1.5k"}, {@code 2000000} -> {@code "2m"},
+ * {@code 3_000_000_000} -> {@code "3b"}, {@code 4_000_000_000_000} -> {@code "4t"}) for
+ * display in the GUI/scoreboard/chat/placeholders. Values under 1000 are shown as-is (1
+ * decimal place only if not a whole number).
  */
 public final class MoneyFormat {
 
@@ -15,6 +17,12 @@ public final class MoneyFormat {
     public static String format(double amount) {
         double abs = Math.abs(amount);
         String sign = amount < 0 ? "-" : "";
+        if (abs >= 1_000_000_000_000.0) {
+            return sign + trimTrailingZero(abs / 1_000_000_000_000.0) + "t";
+        }
+        if (abs >= 1_000_000_000.0) {
+            return sign + trimTrailingZero(abs / 1_000_000_000.0) + "b";
+        }
         if (abs >= 1_000_000) {
             return sign + trimTrailingZero(abs / 1_000_000) + "m";
         }
