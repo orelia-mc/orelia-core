@@ -51,7 +51,7 @@ public final class ItemModule implements RpgModule {
         // rpg.monster.listener.CombatDamageListener, registered by MonsterModule (which is
         // the only module positioned after both this one and StatusModule in the enable
         // order, so it can pull in WeaponIdentityService/WeaponRequirementService/StatusService).
-        plugin.getPlayerCommandRegistry().register("item",
+        plugin.getAdminCommandRegistry().register("item",
                 new ItemCommand(itemManager, statusModule.getStatusService(), plugin.getMessageManager()),
                 "武器の付与・武器レベルアップなど、アイテム関連の操作を行います。", "item give <player> <id> [amount] | item levelup");
     }

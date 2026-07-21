@@ -2,6 +2,7 @@ package rpg.gui;
 
 import rpg.accessory.AccessoryModule;
 import rpg.core.OreliaPlugin;
+import rpg.core.command.CommandAliasUtil;
 import rpg.core.module.RpgModule;
 import org.bukkit.configuration.file.YamlConfiguration;
 import rpg.database.DatabaseModule;
@@ -98,9 +99,9 @@ public final class GuiModule implements RpgModule {
         plugin.getServer().getPluginManager().registerEvents(new WarehouseSaveListener(warehouseRepository), plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new EquipmentDisplayRefreshListener(equipmentGuiScreen, plugin.getSchedulerService()), plugin);
-        plugin.getPlayerCommandRegistry().register("status",
-                new StatusCommand(guiManager, statusGuiScreen, plugin.getMessageManager()),
-                "ステータス画面を開きます。", "status");
+        StatusCommand statusCommand = new StatusCommand(guiManager, statusGuiScreen, plugin.getMessageManager());
+        plugin.getPlayerCommandRegistry().register("status", statusCommand, "ステータス画面を開きます。", "status");
+        CommandAliasUtil.registerAlias(plugin, "status", statusCommand, "ステータス画面を開きます。", "");
 
         // Stats can change from many unrelated sources (level-up, buffs, equipment swap) while
         // this screen is open, unlike equipment's held-item/click events - periodic refresh is
