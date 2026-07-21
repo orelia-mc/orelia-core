@@ -8,21 +8,22 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.command.CommandSender;
 import org.bukkit.inventory.ItemStack;
+import rpg.core.command.TabCompletions;
 import rpg.core.message.MessageManager;
 import rpg.item.manager.ItemManager;
 import rpg.item.model.WeaponData;
 import rpg.status.model.PlayerStatusComponent;
 import rpg.status.service.StatusService;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * {@code /ol item give <player> <id> [amount]} - admin-facing weapon spawner used for
+ * {@code /oladmin item give <player> <id> [amount]} - admin-facing weapon spawner used for
  * testing and manual reward grants until the shop/quest reward pipelines cover it.
- * {@code /ol item levelup} lets a player level up their held weapon themselves, gated by
+ * {@code /oladmin item levelup} lets a player level up their held weapon themselves, gated by
  * their own character level (see {@code rpg.item.service.WeaponIdentityService#levelUp}) -
- * a placeholder trigger until orelia-world wires this into an NPC/GUI.
+ * the normal in-game path is the weapon-levelup NPC (orelia-world), this command is a
+ * manual/testing entry point.
  */
 public final class ItemCommand implements CommandExecutor, TabCompleter {
 
@@ -102,30 +103,17 @@ public final class ItemCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
         if (args.length <= 1) {
-            return matching(List.of("give", "levelup"), args.length == 0 ? "" : args[0]);
+            return TabCompletions.matching(List.of("give", "levelup"), args.length == 0 ? "" : args[0]);
         }
         if (!args[0].equalsIgnoreCase("give")) {
             return List.of();
         }
         if (args.length == 2) {
-            List<String> names = new ArrayList<>();
-            Bukkit.getOnlinePlayers().forEach(p -> names.add(p.getName()));
-            return matching(names, args[1]);
+            return TabCompletions.onlinePlayerNames(args[1]);
         }
         if (args.length == 3) {
-            return matching(itemManager.getAllWeapons().keySet(), args[2]);
+            return TabCompletions.matching(itemManager.getAllWeapons().keySet(), args[2]);
         }
         return List.of();
-    }
-
-    private List<String> matching(Iterable<String> options, String prefix) {
-        String lower = prefix.toLowerCase();
-        List<String> result = new ArrayList<>();
-        for (String option : options) {
-            if (option.toLowerCase().startsWith(lower)) {
-                result.add(option);
-            }
-        }
-        return result;
     }
 }

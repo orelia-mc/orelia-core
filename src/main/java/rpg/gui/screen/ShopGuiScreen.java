@@ -16,6 +16,7 @@ import rpg.gui.framework.GuiButton;
 import rpg.item.manager.ItemManager;
 import rpg.item.model.WeaponData;
 import rpg.util.ItemBuilder;
+import rpg.util.MoneyFormat;
 
 import java.util.List;
 
@@ -54,7 +55,7 @@ public final class ShopGuiScreen {
             String displayName = displayNameOf(entry);
             ItemStack icon = new ItemBuilder(preview.getType())
                     .name(Component.text(displayName))
-                    .lore("&%7価格: " + formatPrice(entry.price()))
+                    .lore("&%7価格: " + MoneyFormat.format(entry.price()))
                     .build();
             gui.set(slot++, new GuiButton(icon, (clicker, clickType) -> buy(clicker, entry, displayName)));
         }
@@ -75,7 +76,7 @@ public final class ShopGuiScreen {
         ItemStack purchased = stack.get();
         player.getInventory().addItem(purchased).values()
                 .forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
-        messages.send(player, "economy.purchase-success", "item", displayName, "price", formatPrice(entry.price()));
+        messages.send(player, "economy.purchase-success", "item", displayName, "price", MoneyFormat.format(entry.price()));
     }
 
     /** Static label shown in the shop GUI/purchase message - avoids round-tripping the preview ItemStack's Component name into a String. */
@@ -103,10 +104,6 @@ public final class ShopGuiScreen {
             result.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
         }
         return result.toString();
-    }
-
-    private String formatPrice(double price) {
-        return price == Math.rint(price) ? String.valueOf((long) price) : String.valueOf(price);
     }
 
     private java.util.Optional<ItemStack> resolve(ShopEntry entry) {

@@ -1,6 +1,7 @@
 package rpg.util;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import java.util.Map;
@@ -43,7 +44,7 @@ public final class ColorUtil {
             Map.entry('3', "3BA1A1"), // cyan
             Map.entry('4', "A62626"), // red
             Map.entry('5', "AB52AB"), // purple
-            Map.entry('6', "E0A934"), // gold
+            Map.entry('6', "FFAA00"), // gold
             Map.entry('7', "AAAAAA"), // gray
             Map.entry('8', "4A4A4A"), // dark gray
             Map.entry('9', "6969D7"), // light blue
@@ -82,6 +83,16 @@ public final class ColorUtil {
     /** Deserializes {@code &}-coded text (legacy, hex, and custom codes alike) into a Component. */
     public static Component component(String input) {
         return HEX_AWARE_SERIALIZER.deserialize(colorize(input));
+    }
+
+    /** Same as {@link #component(String)}, but runs {@code command} when the player clicks the text. */
+    public static Component componentWithCommand(String input, String command) {
+        return component(input).clickEvent(ClickEvent.runCommand(command));
+    }
+
+    /** Same as {@link #component(String)}, but opens {@code url} when the player clicks the text. */
+    public static Component componentWithUrl(String input, String url) {
+        return component(input).clickEvent(ClickEvent.openUrl(url));
     }
 
     private static String expandHex(String input) {
