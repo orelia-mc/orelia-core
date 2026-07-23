@@ -40,8 +40,9 @@ skill:
   unknown: "&%cこのスキルは設定されていません。"
   socketed: "&%aスキルを装着しました。"
   socket-failed: "&%c空きスロットがありません。"
-  upgraded: "&%aスキルレベルが上がりました。"
-  upgrade-failed: "&%c習得できません（ポイント不足か最大レベル）。"
+  upgraded: "&%aスキルレベルが上がりました。&%7（残りスキル習得ポイント: {points}）"
+  upgrade-failed-max-level: "&%cこれ以上レベルを上げられません（最大レベルです）。"
+  upgrade-failed-points: "&%cスキル習得ポイントが足りません。&%7（残り: {points}）"
 
 quest:
   accepted: "&%aクエストを受注しました。"

@@ -44,6 +44,19 @@ public final class PlayerSkillComponent implements PlayerDataComponent {
         return true;
     }
 
+    /** Subtracts {@code amount}, failing (no change) rather than going negative. */
+    public boolean takeSkillPoints(int amount) {
+        if (skillPoints < amount) {
+            return false;
+        }
+        skillPoints -= amount;
+        return true;
+    }
+
+    public void setSkillPoints(int amount) {
+        this.skillPoints = Math.max(0, amount);
+    }
+
     public int getSkillLevel(String skillId) {
         return skillLevels.getOrDefault(skillId, 0);
     }

@@ -12,6 +12,7 @@ import rpg.item.service.WeaponIdentityService;
 import rpg.skill.model.SkillData;
 import rpg.skill.repository.SkillRepository;
 import rpg.skill.service.SkillProgressService;
+import rpg.skill.service.SkillProgressService.UpgradeResult;
 import rpg.skill.service.SkillSocketService;
 import rpg.util.ItemBuilder;
 
@@ -43,8 +44,11 @@ public final class SkillGuiScreen {
         this.messages = messages;
     }
 
+    private static final int POINTS_HEADER_SLOT = 4;
+
     public Gui build(Player player) {
         Gui gui = new Gui(guiConfig.title("skill", "&%8武器スキル"), 27);
+        gui.set(POINTS_HEADER_SLOT, GuiButton.display(pointsHeaderIcon(player)));
 
         WeaponType weaponType = weaponIdentityService.dataOf(player.getInventory().getItemInMainHand())
                 .map(w -> w.getWeaponType())
@@ -68,18 +72,35 @@ public final class SkillGuiScreen {
                                     .map(w -> w.getSkillSlotCount()).orElse(1));
                     messages.send(clicker, socketed ? "skill.socketed" : "skill.socket-failed");
                 } else {
-                    boolean upgraded = progressService.upgradeSkill(clicker.getUniqueId(), skill.getId());
-                    messages.send(clicker, upgraded ? "skill.upgraded" : "skill.upgrade-failed");
-                    if (upgraded) {
-                        // Without this, the book's "Lv. x / max" lore only reflects the new
-                        // level once the player closes and reopens the GUI - the button item
-                        // built in this loop is otherwise never re-rendered after a click.
-                        clicker.getOpenInventory().getTopInventory().setItem(buttonSlot, skillIcon(clicker, skill));
+                    UpgradeResult result = progressService.upgradeSkill(clicker.getUniqueId(), skill.getId());
+                    String key = switch (result) {
+                        case OK -> "skill.upgraded";
+                        case MAX_LEVEL -> "skill.upgrade-failed-max-level";
+                        case INSUFFICIENT_POINTS -> "skill.upgrade-failed-points";
+                        case UNKNOWN_SKILL -> "skill.unknown";
+                    };
+                    messages.send(clicker, key, "points", progressService.getSkillPoints(clicker.getUniqueId()));
+                    if (result == UpgradeResult.OK) {
+                        // Without this, the book's "Lv. x / max" lore and the remaining-points
+                        // header only reflect the new state once the player closes and reopens
+                        // the GUI - items built in this loop are otherwise never re-rendered
+                        // after a click.
+                        var topInventory = clicker.getOpenInventory().getTopInventory();
+                        topInventory.setItem(buttonSlot, skillIcon(clicker, skill));
+                        topInventory.setItem(POINTS_HEADER_SLOT, pointsHeaderIcon(clicker));
                     }
                 }
             }));
         }
         return gui;
+    }
+
+    private ItemStack pointsHeaderIcon(Player player) {
+        int points = progressService.getSkillPoints(player.getUniqueId());
+        return new ItemBuilder(Material.EXPERIENCE_BOTTLE)
+                .name("&%e&lスキル習得ポイント&%7: &%f" + points)
+                .lore("&%7スキルの習得・レベルアップに使います（消費: 1ポイント/回）。")
+                .build();
     }
 
     private ItemStack skillIcon(Player player, SkillData skill) {

@@ -24,6 +24,21 @@ final class SkillApiImpl implements SkillApi {
     }
 
     @Override
+    public int getSkillPoints(UUID playerId) {
+        return progressService.getSkillPoints(playerId);
+    }
+
+    @Override
+    public boolean takeSkillPoints(UUID playerId, int amount) {
+        return progressService.takeSkillPoints(playerId, amount);
+    }
+
+    @Override
+    public void setSkillPoints(UUID playerId, int amount) {
+        progressService.setSkillPoints(playerId, amount);
+    }
+
+    @Override
     public int getSkillLevel(UUID playerId, String skillId) {
         return progressService.getSkillLevel(playerId, skillId);
     }
