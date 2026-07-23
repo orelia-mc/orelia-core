@@ -26,5 +26,6 @@ Produces `build/libs/orelia-core-1.0.0.jar`. Requires network access to `repo.pa
 
 - Public API — other plugins (including orelia-world/orelia-extra) integrate through `rpg.api`, published via Bukkit's `ServicesManager` — never through this plugin's internal module classes. See `rpg.api.OreliaApi` and the narrower `StatusApi`/`JobApi`/`ItemApi`/`AccessoryApi`/`SkillApi`/`GuiApi`/`EffectApi`/`CombatApi` interfaces.
 - Config — every module reads its own file under `src/main/resources/` (`items.yml`, `skills.yml`, `jobs.yml`, `accessories.yml`, `monsters.yml`, `bosses.yml`, `effects.yml`, `gui.yml`, `config.yml`). Reload all of them with `/oladmin reload`.
+- Monster strength — `/oladmin spawnpoint add <monsterId> [intervalSeconds] [maxAlive] [targetLevel]` lets a spawn point carry an optional target level, scaling that spawned monster's `monsters.yml` hp/attack-power/defense using the factors in `config.yml: monster-level-scaling` (omitted = unchanged template values, same as before this feature).
 - See [DAMAGE_FORMULA.md](DAMAGE_FORMULA.md) (Japanese) for a detailed walkthrough of the combat damage calculation.
 - See [UNIMPLEMENTED_FEATURES.md](UNIMPLEMENTED_FEATURES.md) (Japanese) for a list of features not yet implemented across orelia-core/world/extra.

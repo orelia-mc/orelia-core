@@ -33,7 +33,7 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
     // alongside whatever orelia-world/orelia-extra/orelia-debug register.
     private static final List<OlCommandRegistry.Entry> BUILTIN_ENTRIES = List.of(
             new OlCommandRegistry.Entry("reload", null, "全モジュールの設定を再読み込みします。", "reload"),
-            new OlCommandRegistry.Entry("spawn", null, "自分の足元にモンスターを湧かせます。", "spawn <monsterId>"),
+            new OlCommandRegistry.Entry("spawn", null, "自分の足元にモンスターを湧かせます。", "spawn <monsterId> [targetLevel]"),
             new OlCommandRegistry.Entry("spawnboss", null, "自分の足元にボスを湧かせます。", "spawnboss <bossId>"),
             new OlCommandRegistry.Entry("spawnpoint", null, "モンスターの自動湧きポイントを管理します。", "spawnpoint <add|remove|list> ...")
     );
@@ -120,7 +120,8 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             messages.send(sender, "admin.module-disabled", "module", "Monster");
             return;
         }
-        var spawned = monsterModule.getSpawnService().spawn(args[1], player.getLocation());
+        Integer targetLevel = parseIntOrNull(args, 2);
+        var spawned = monsterModule.getSpawnService().spawn(args[1], player.getLocation(), null, targetLevel);
         if (spawned.isPresent()) {
             monsterModule.getRepository().findById(args[1])
                     .ifPresent(data -> monsterModule.getAbilityCastService().registerIfAble(spawned.get(), data));
@@ -176,13 +177,15 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
                 }
                 int intervalSeconds = parseIntOrDefault(args, 3, DEFAULT_SPAWN_POINT_INTERVAL_SECONDS);
                 int maxAlive = parseIntOrDefault(args, 4, DEFAULT_SPAWN_POINT_MAX_ALIVE);
-                var created = spawnPointService.add(player, args[2], intervalSeconds, maxAlive);
+                Integer targetLevel = parseIntOrNull(args, 5);
+                var created = spawnPointService.add(player, args[2], intervalSeconds, maxAlive, targetLevel);
                 if (created.isEmpty()) {
                     messages.send(sender, "admin.unknown-monster", "id", args[2]);
                     return;
                 }
                 messages.send(sender, "admin.spawnpoint-registered",
-                        "id", created.get().getId(), "monster", args[2], "interval", intervalSeconds, "max", maxAlive);
+                        "id", created.get().getId(), "monster", args[2], "interval", intervalSeconds, "max", maxAlive,
+                        "level", targetLevel != null ? targetLevel : "-");
             }
             case "remove" -> {
                 if (args.length < 3) {
@@ -211,7 +214,8 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
                     messages.sendRaw(sender, "admin.spawnpoint-list-entry",
                             "id", point.getId(), "monster", point.getMonsterId(), "world", point.getWorld(),
                             "x", (int) point.getX(), "y", (int) point.getY(), "z", (int) point.getZ(),
-                            "interval", point.getIntervalSeconds(), "max", point.getMaxAlive());
+                            "interval", point.getIntervalSeconds(), "max", point.getMaxAlive(),
+                            "level", point.getTargetLevel() != null ? point.getTargetLevel() : "-");
                 }
             }
             default -> messages.send(sender, "admin.usage-spawnpoint");
@@ -226,6 +230,17 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             return Integer.parseInt(args[index]);
         } catch (NumberFormatException e) {
             return defaultValue;
+        }
+    }
+
+    private Integer parseIntOrNull(String[] args, int index) {
+        if (args.length <= index) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(args[index]);
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 }

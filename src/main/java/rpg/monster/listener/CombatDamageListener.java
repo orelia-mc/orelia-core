@@ -99,7 +99,7 @@ public final class CombatDamageListener implements Listener {
         if (victim instanceof LivingEntity living) {
             MonsterData data = spawnService.dataOf(living).orElse(null);
             if (data != null) {
-                double vanillaDamage = ScaledHealthService.convertDamageToVanilla(living, scaledDamage, data.getHp());
+                double vanillaDamage = ScaledHealthService.convertDamageToVanilla(living, scaledDamage, spawnService.scaledMaxHpOf(living, data));
                 spawnService.applyScaledCombatDamage(living, data, scaledDamage);
                 living.setMetadata(DamageFormula.SCALED_DAMAGE_METADATA_KEY, new FixedMetadataValue(plugin, scaledDamage));
                 return vanillaDamage;
@@ -145,7 +145,7 @@ public final class CombatDamageListener implements Listener {
         if (event.getDamager() instanceof LivingEntity attacker) {
             MonsterData data = spawnService.dataOf(attacker).orElse(null);
             if (data != null) {
-                return new AttackInput(data.getAttackPower(), 0, data.getCritRate(), data.getCritMultiplier(), 0);
+                return new AttackInput(spawnService.scaledAttackPowerOf(attacker, data), 0, data.getCritRate(), data.getCritMultiplier(), 0);
             }
         }
 
@@ -159,7 +159,7 @@ public final class CombatDamageListener implements Listener {
             return statusService.getFinalStats(player.getUniqueId()).map(stats -> stats.get(StatType.DEF)).orElse(0.0);
         }
         if (victim instanceof LivingEntity living) {
-            return spawnService.dataOf(living).map(MonsterData::getDefense).orElse(0.0);
+            return spawnService.dataOf(living).map(data -> spawnService.scaledDefenseOf(living, data)).orElse(0.0);
         }
         return 0.0;
     }

@@ -9,6 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -37,9 +38,20 @@ public final class MonsterSpawnPointRepository implements SchemaOwner {
                         y DOUBLE NOT NULL,
                         z DOUBLE NOT NULL,
                         interval_seconds INT NOT NULL,
-                        max_alive INT NOT NULL
+                        max_alive INT NOT NULL,
+                        target_level INTEGER
                     )
                     """);
+            migrateTargetLevelColumn(connection, statement);
+        }
+    }
+
+    /** One-time migration for installs created before per-spawn-point level scaling existed. */
+    private void migrateTargetLevelColumn(Connection connection, Statement statement) throws SQLException {
+        try (ResultSet columns = connection.getMetaData().getColumns(null, null, "monster_spawn_point", "target_level")) {
+            if (!columns.next()) {
+                statement.execute("ALTER TABLE monster_spawn_point ADD COLUMN target_level INTEGER");
+            }
         }
     }
 
@@ -58,6 +70,8 @@ public final class MonsterSpawnPointRepository implements SchemaOwner {
     }
 
     private MonsterSpawnPoint fromRow(ResultSet resultSet) throws SQLException {
+        int rawTargetLevel = resultSet.getInt("target_level");
+        Integer targetLevel = resultSet.wasNull() ? null : rawTargetLevel;
         return new MonsterSpawnPoint(
                 UUID.fromString(resultSet.getString("id")),
                 resultSet.getString("monster_id"),
@@ -66,13 +80,14 @@ public final class MonsterSpawnPointRepository implements SchemaOwner {
                 resultSet.getDouble("y"),
                 resultSet.getDouble("z"),
                 resultSet.getInt("interval_seconds"),
-                resultSet.getInt("max_alive"));
+                resultSet.getInt("max_alive"),
+                targetLevel);
     }
 
     public void save(MonsterSpawnPoint point) {
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "INSERT INTO monster_spawn_point (id, monster_id, world, x, y, z, interval_seconds, max_alive) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
+                     "INSERT INTO monster_spawn_point (id, monster_id, world, x, y, z, interval_seconds, max_alive, target_level) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             statement.setString(1, point.getId().toString());
             statement.setString(2, point.getMonsterId());
             statement.setString(3, point.getWorld());
@@ -81,6 +96,11 @@ public final class MonsterSpawnPointRepository implements SchemaOwner {
             statement.setDouble(6, point.getZ());
             statement.setInt(7, point.getIntervalSeconds());
             statement.setInt(8, point.getMaxAlive());
+            if (point.getTargetLevel() != null) {
+                statement.setInt(9, point.getTargetLevel());
+            } else {
+                statement.setNull(9, Types.INTEGER);
+            }
             statement.executeUpdate();
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to save monster spawn point " + point.getId(), e);

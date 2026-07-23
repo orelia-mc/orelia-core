@@ -5,7 +5,7 @@
 # added - on next startup, ConfigManager appends the new section (with its comments) to any
 # existing config.yml that's missing it, without touching anything you've already customized.
 # Never bump this for a value-only change (e.g. tweaking a default), only for new/removed keys.
-config-version: 3
+config-version: 4
 
 database:
   # SQLITE or MYSQL
@@ -123,3 +123,14 @@ monster:
     format: "{name} &%7[{bar}&%7] &%f{current}/{max}"
     filled-color: "&%a"
     empty-color: "&%8"
+
+# Optional per-spawn-point monster stat scaling (/oladmin spawnpoint add ... [targetLevel]).
+# A spawn point's targetLevel scales a spawned monster's monsters.yml hp/attack-power/defense
+# up or down from its template values, using the same multiplicative shape as weapon leveling
+# (WeaponIdentityService#baseAttackPower): scaled = base * (1 + factor * (targetLevel - 1)).
+# targetLevel 1, or leaving it unset (the default for every existing spawn point), leaves the
+# monster exactly as its monsters.yml template - fully backward compatible.
+monster-level-scaling:
+  hp-factor: 0.1
+  attack-factor: 0.1
+  defense-factor: 0.1

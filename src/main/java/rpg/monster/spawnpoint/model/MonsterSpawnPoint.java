@@ -17,9 +17,10 @@ public final class MonsterSpawnPoint {
     private final double z;
     private final int intervalSeconds;
     private final int maxAlive;
+    private final Integer targetLevel;
 
     public MonsterSpawnPoint(UUID id, String monsterId, String world, double x, double y, double z,
-                              int intervalSeconds, int maxAlive) {
+                              int intervalSeconds, int maxAlive, Integer targetLevel) {
         this.id = id;
         this.monsterId = monsterId;
         this.world = world;
@@ -28,6 +29,7 @@ public final class MonsterSpawnPoint {
         this.z = z;
         this.intervalSeconds = intervalSeconds;
         this.maxAlive = maxAlive;
+        this.targetLevel = targetLevel;
     }
 
     public UUID getId() {
@@ -60,5 +62,10 @@ public final class MonsterSpawnPoint {
 
     public int getMaxAlive() {
         return maxAlive;
+    }
+
+    /** Scales spawned monsters' hp/attack-power/defense (see {@code MonsterLevelScalingConfig}); {@code null} means "no scaling". */
+    public Integer getTargetLevel() {
+        return targetLevel;
     }
 }

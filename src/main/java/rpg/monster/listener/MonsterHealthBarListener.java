@@ -39,6 +39,6 @@ public final class MonsterHealthBarListener implements Listener {
             spawnService.applyEnvironmentalDamage(entity, data, event.getFinalDamage());
         }
         double scaledCurrent = spawnService.scaledCurrentHpOf(entity, data);
-        spawnService.updateHealthBar(entity, data, scaledCurrent, data.getHp());
+        spawnService.updateHealthBar(entity, data, scaledCurrent, spawnService.scaledMaxHpOf(entity, data));
     }
 }

@@ -12,11 +12,13 @@ public final class MonsterKeys {
     private final NamespacedKey monsterId;
     private final NamespacedKey spawnPointId;
     private final NamespacedKey scaledCurrentHp;
+    private final NamespacedKey targetLevel;
 
     public MonsterKeys(Plugin plugin) {
         this.monsterId = new NamespacedKey(plugin, "monster_id");
         this.spawnPointId = new NamespacedKey(plugin, "spawn_point_id");
         this.scaledCurrentHp = new NamespacedKey(plugin, "scaled_current_hp");
+        this.targetLevel = new NamespacedKey(plugin, "target_level");
     }
 
     public NamespacedKey monsterId() {
@@ -35,5 +37,15 @@ public final class MonsterKeys {
      */
     public NamespacedKey scaledCurrentHp() {
         return scaledCurrentHp;
+    }
+
+    /**
+     * The target level a spawn point tagged this instance with (SOW: per-spawn-point monster
+     * level scaling), used to scale its hp/attack-power/defense from the {@code monsters.yml}
+     * template via {@link rpg.monster.config.MonsterLevelScalingConfig}. Absent means "no
+     * scaling" - use the template value as-is.
+     */
+    public NamespacedKey targetLevel() {
+        return targetLevel;
     }
 }

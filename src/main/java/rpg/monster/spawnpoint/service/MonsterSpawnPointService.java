@@ -44,14 +44,14 @@ public final class MonsterSpawnPointService {
         manager.loadAll(repository.loadAll());
     }
 
-    /** Empty if {@code monsterId} doesn't exist in monsters.yml. */
-    public Optional<MonsterSpawnPoint> add(Player admin, String monsterId, int intervalSeconds, int maxAlive) {
+    /** Empty if {@code monsterId} doesn't exist in monsters.yml. {@code targetLevel} scales spawned monsters' hp/attack/defense - null means no scaling. */
+    public Optional<MonsterSpawnPoint> add(Player admin, String monsterId, int intervalSeconds, int maxAlive, Integer targetLevel) {
         if (monsterRepository.findById(monsterId).isEmpty()) {
             return Optional.empty();
         }
         Location location = admin.getLocation();
         MonsterSpawnPoint point = new MonsterSpawnPoint(UUID.randomUUID(), monsterId, location.getWorld().getName(),
-                location.getX(), location.getY(), location.getZ(), intervalSeconds, maxAlive);
+                location.getX(), location.getY(), location.getZ(), intervalSeconds, maxAlive, targetLevel);
         manager.add(point);
         repository.save(point);
         return Optional.of(point);
@@ -83,7 +83,7 @@ public final class MonsterSpawnPointService {
                 continue;
             }
             Location location = new Location(world, point.getX(), point.getY(), point.getZ());
-            spawnService.spawn(point.getMonsterId(), location, point.getId())
+            spawnService.spawn(point.getMonsterId(), location, point.getId(), point.getTargetLevel())
                     .ifPresent(entity -> {
                         manager.onSpawned(point.getId(), entity.getUniqueId());
                         monsterRepository.findById(point.getMonsterId())

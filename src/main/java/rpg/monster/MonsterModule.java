@@ -6,6 +6,7 @@ import rpg.core.module.RpgModule;
 import rpg.database.DatabaseModule;
 import rpg.economy.EconomyModule;
 import rpg.item.ItemModule;
+import rpg.monster.config.MonsterLevelScalingConfig;
 import rpg.monster.listener.CombatDamageListener;
 import rpg.monster.listener.DamageDisplayListener;
 import rpg.monster.listener.MonsterDeathListener;
@@ -35,6 +36,7 @@ public final class MonsterModule implements RpgModule {
     private static final long ABILITY_TICK_PERIOD_TICKS = 20L;
 
     private final MonsterRepository repository = new MonsterRepository();
+    private final MonsterLevelScalingConfig levelScalingConfig = new MonsterLevelScalingConfig();
     private MonsterSpawnService spawnService;
     private MonsterSpawnPointService spawnPointService;
     private MonsterAbilityCastService abilityCastService;
@@ -58,9 +60,10 @@ public final class MonsterModule implements RpgModule {
                 .orElseThrow(() -> new IllegalStateException("monster module requires database module"));
 
         reloadMonsters();
+        levelScalingConfig.load(plugin.getConfigManager().get("config.yml").get());
 
         MonsterKeys keys = new MonsterKeys(plugin);
-        this.spawnService = new MonsterSpawnService(plugin, keys, repository);
+        this.spawnService = new MonsterSpawnService(plugin, keys, repository, levelScalingConfig);
         this.abilityCastService = new MonsterAbilityCastService(plugin, spawnService);
         MonsterDropService dropService = new MonsterDropService(
                 itemModule.getItemManager(), economyModule.getEconomyService(), statusModule.getStatusService());
@@ -107,6 +110,7 @@ public final class MonsterModule implements RpgModule {
     @Override
     public void onReload() {
         reloadMonsters();
+        levelScalingConfig.load(plugin.getConfigManager().get("config.yml").get());
     }
 
     private void reloadMonsters() {

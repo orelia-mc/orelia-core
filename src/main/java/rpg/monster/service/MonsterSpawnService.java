@@ -6,6 +6,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.persistence.PersistentDataType;
 import rpg.core.OreliaPlugin;
+import rpg.monster.config.MonsterLevelScalingConfig;
 import rpg.monster.model.AiType;
 import rpg.monster.model.MonsterData;
 import rpg.monster.repository.MonsterRepository;
@@ -36,20 +37,32 @@ public final class MonsterSpawnService {
     private final OreliaPlugin plugin;
     private final MonsterKeys keys;
     private final MonsterRepository repository;
+    private final MonsterLevelScalingConfig levelScalingConfig;
     private final MonsterHealthBarRenderer healthBarRenderer = new MonsterHealthBarRenderer();
 
-    public MonsterSpawnService(OreliaPlugin plugin, MonsterKeys keys, MonsterRepository repository) {
+    public MonsterSpawnService(OreliaPlugin plugin, MonsterKeys keys, MonsterRepository repository,
+                                MonsterLevelScalingConfig levelScalingConfig) {
         this.plugin = plugin;
         this.keys = keys;
         this.repository = repository;
+        this.levelScalingConfig = levelScalingConfig;
     }
 
     public Optional<LivingEntity> spawn(String monsterId, Location location) {
-        return spawn(monsterId, location, null);
+        return spawn(monsterId, location, null, null);
     }
 
     /** Also tags the entity with {@code spawnPointId} so {@link rpg.monster.spawnpoint.manager.MonsterSpawnPointManager} can track/cap it. */
     public Optional<LivingEntity> spawn(String monsterId, Location location, UUID spawnPointId) {
+        return spawn(monsterId, location, spawnPointId, null);
+    }
+
+    /**
+     * {@code targetLevel} scales this instance's hp/attack-power/defense from the
+     * {@code monsters.yml} template via {@link MonsterLevelScalingConfig} (SOW: per-spawn-point
+     * monster level scaling) - {@code null} means "no scaling", the template value as-is.
+     */
+    public Optional<LivingEntity> spawn(String monsterId, Location location, UUID spawnPointId, Integer targetLevel) {
         MonsterData data = repository.findById(monsterId).orElse(null);
         if (data == null) {
             return Optional.empty();
@@ -60,18 +73,22 @@ public final class MonsterSpawnService {
         if (spawnPointId != null) {
             entity.getPersistentDataContainer().set(keys.spawnPointId(), PersistentDataType.STRING, spawnPointId.toString());
         }
+        if (targetLevel != null) {
+            entity.getPersistentDataContainer().set(keys.targetLevel(), PersistentDataType.INTEGER, targetLevel);
+        }
         entity.setCustomNameVisible(true);
 
+        double scaledHp = levelScalingConfig.scaledHp(data.getHp(), targetLevel);
         double vanillaCap = vanillaHealthCap();
-        double vanillaMax = Math.min(data.getHp(), vanillaCap);
+        double vanillaMax = Math.min(scaledHp, vanillaCap);
         var maxHealthAttribute = entity.getAttribute(Attribute.MAX_HEALTH);
         if (maxHealthAttribute != null) {
             maxHealthAttribute.setBaseValue(vanillaMax);
             vanillaMax = maxHealthAttribute.getValue();
         }
         entity.setHealth(vanillaMax);
-        setScaledCurrentHp(entity, data.getHp());
-        updateHealthBar(entity, data, data.getHp(), data.getHp());
+        setScaledCurrentHp(entity, scaledHp);
+        updateHealthBar(entity, data, scaledHp, scaledHp);
 
         if (entity instanceof Mob mob) {
             mob.setAware(data.getAiType() != AiType.PASSIVE);
@@ -95,10 +112,30 @@ public final class MonsterSpawnService {
         entity.customName(ColorUtil.component(rendered));
     }
 
-    /** This monster instance's true current HP - defaults to {@code data.getHp()} (full) for a legacy entity spawned before this PDC value existed. */
+    /** This monster instance's true current HP - defaults to {@link #scaledMaxHpOf} (full) for a legacy entity spawned before this PDC value existed. */
     public double scaledCurrentHpOf(LivingEntity entity, MonsterData data) {
         Double value = entity.getPersistentDataContainer().get(keys.scaledCurrentHp(), PersistentDataType.DOUBLE);
-        return value == null ? data.getHp() : value;
+        return value == null ? scaledMaxHpOf(entity, data) : value;
+    }
+
+    /** This monster instance's target level (SOW: per-spawn-point monster level scaling), or empty if it wasn't spawned with one. */
+    public Optional<Integer> targetLevelOf(LivingEntity entity) {
+        return Optional.ofNullable(entity.getPersistentDataContainer().get(keys.targetLevel(), PersistentDataType.INTEGER));
+    }
+
+    /** This monster instance's true max HP, scaled from {@code data.getHp()} by its target level (if any). */
+    public double scaledMaxHpOf(LivingEntity entity, MonsterData data) {
+        return levelScalingConfig.scaledHp(data.getHp(), targetLevelOf(entity).orElse(null));
+    }
+
+    /** This monster instance's attack power, scaled from {@code data.getAttackPower()} by its target level (if any). */
+    public double scaledAttackPowerOf(LivingEntity entity, MonsterData data) {
+        return levelScalingConfig.scaledAttackPower(data.getAttackPower(), targetLevelOf(entity).orElse(null));
+    }
+
+    /** This monster instance's defense, scaled from {@code data.getDefense()} by its target level (if any). */
+    public double scaledDefenseOf(LivingEntity entity, MonsterData data) {
+        return levelScalingConfig.scaledDefense(data.getDefense(), targetLevelOf(entity).orElse(null));
     }
 
     private void setScaledCurrentHp(LivingEntity entity, double value) {
@@ -130,7 +167,7 @@ public final class MonsterSpawnService {
         if (vanillaMax <= 0) {
             return;
         }
-        double scaledMax = data.getHp();
+        double scaledMax = scaledMaxHpOf(entity, data);
         double scaledDamage = (vanillaDamage / vanillaMax) * scaledMax;
         double current = scaledCurrentHpOf(entity, data);
         setScaledCurrentHp(entity, MathUtil.clamp(current - scaledDamage, 0, scaledMax));
