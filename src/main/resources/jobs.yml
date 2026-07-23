@@ -22,3 +22,12 @@ jobs:
     display-name: "アーチャー"
     allowed-weapons:
       - BOW
+
+  MINER:
+    display-name: "採掘師"
+
+  FARMER:
+    display-name: "農民"
+
+  WOODCUTTER:
+    display-name: "木こり"

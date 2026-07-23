@@ -17,6 +17,7 @@ import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import rpg.gathering.config.LevelRadiusConfig;
 import rpg.gathering.model.CropTemplate;
+import rpg.gathering.model.GatherActionType;
 import rpg.gathering.repository.GatheringDefinitionRepository;
 import rpg.gathering.service.GatheringLevelService;
 import rpg.gathering.service.RegionProtectionService;
@@ -65,7 +66,7 @@ public final class FarmingListener implements Listener {
         if (cropType == null) {
             return;
         }
-        int radius = radiusConfig.radiusForLevel(levelService.getLevel(player.getUniqueId()));
+        int radius = radiusConfig.radiusForLevel(levelService.getLevel(player.getUniqueId(), GatherActionType.FARMING));
         if (radius <= 0) {
             return;
         }
@@ -113,13 +114,13 @@ public final class FarmingListener implements Listener {
         }
         Player player = event.getPlayer();
         block.getWorld().playSound(block.getLocation(), Sound.BLOCK_CROP_BREAK, 1f, 1f);
-        levelService.addExperience(player.getUniqueId(), template.xpGain());
+        levelService.addExperience(player.getUniqueId(), GatherActionType.FARMING, template.xpGain());
 
         ItemStack tool = player.getInventory().getItemInMainHand();
         if (!player.isSneaking() || !isHoe(tool.getType())) {
             return;
         }
-        int radius = radiusConfig.radiusForLevel(levelService.getLevel(player.getUniqueId()));
+        int radius = radiusConfig.radiusForLevel(levelService.getLevel(player.getUniqueId(), GatherActionType.FARMING));
         int durability = remainingDurability(tool);
         if (radius <= 0 || durability <= 0) {
             return;
@@ -149,7 +150,7 @@ public final class FarmingListener implements Listener {
             CropTemplate targetTemplate = definitions.getCrops().get(target.getType());
             target.breakNaturally(tool);
             target.getWorld().playSound(target.getLocation(), Sound.BLOCK_CROP_BREAK, 1f, 1f);
-            levelService.addExperience(player.getUniqueId(), targetTemplate.xpGain());
+            levelService.addExperience(player.getUniqueId(), GatherActionType.FARMING, targetTemplate.xpGain());
             harvested++;
         }
         if (harvested > 0) {

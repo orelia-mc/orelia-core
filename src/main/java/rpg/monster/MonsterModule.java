@@ -6,6 +6,7 @@ import rpg.core.module.RpgModule;
 import rpg.database.DatabaseModule;
 import rpg.economy.EconomyModule;
 import rpg.item.ItemModule;
+import rpg.job.JobModule;
 import rpg.monster.config.MonsterLevelScalingConfig;
 import rpg.monster.listener.CombatDamageListener;
 import rpg.monster.listener.DamageDisplayListener;
@@ -56,6 +57,8 @@ public final class MonsterModule implements RpgModule {
                 .orElseThrow(() -> new IllegalStateException("monster module requires economy module"));
         StatusModule statusModule = plugin.getModuleManager().get(StatusModule.class)
                 .orElseThrow(() -> new IllegalStateException("monster module requires status module"));
+        JobModule jobModule = plugin.getModuleManager().get(JobModule.class)
+                .orElseThrow(() -> new IllegalStateException("monster module requires job module"));
         DatabaseModule databaseModule = plugin.getModuleManager().get(DatabaseModule.class)
                 .orElseThrow(() -> new IllegalStateException("monster module requires database module"));
 
@@ -66,7 +69,8 @@ public final class MonsterModule implements RpgModule {
         this.spawnService = new MonsterSpawnService(plugin, keys, repository, levelScalingConfig);
         this.abilityCastService = new MonsterAbilityCastService(plugin, spawnService);
         MonsterDropService dropService = new MonsterDropService(
-                itemModule.getItemManager(), economyModule.getEconomyService(), statusModule.getStatusService());
+                itemModule.getItemManager(), economyModule.getEconomyService(), statusModule.getStatusService(),
+                jobModule.getJobService(), jobModule.getJobManager());
 
         MonsterSpawnPointRepository spawnPointRepository = new MonsterSpawnPointRepository(databaseModule.getDatabaseManager());
         try {

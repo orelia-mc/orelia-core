@@ -2,22 +2,27 @@ package rpg.gathering.model;
 
 import rpg.core.player.PlayerDataComponent;
 
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
- * Per-player gathering level and experience, shared by mining, woodcutting, and farming
- * (SOW 3.3 - one leveling/radius system feeding all three activities).
+ * Per-player gathering level and experience, tracked independently per
+ * {@link GatherActionType} (mining/woodcutting/farming each level their own job -
+ * SOW 3.3 update) rather than one level shared across all three.
  */
 public final class PlayerGatheringComponent implements PlayerDataComponent {
 
     private final UUID owner;
-    private int level;
-    private long experience;
+    private final Map<GatherActionType, Integer> levels = new EnumMap<>(GatherActionType.class);
+    private final Map<GatherActionType, Long> experience = new EnumMap<>(GatherActionType.class);
 
-    public PlayerGatheringComponent(UUID owner, int level, long experience) {
+    public PlayerGatheringComponent(UUID owner, Map<GatherActionType, Integer> levels, Map<GatherActionType, Long> experience) {
         this.owner = owner;
-        this.level = level;
-        this.experience = experience;
+        for (GatherActionType type : GatherActionType.values()) {
+            this.levels.put(type, levels.getOrDefault(type, 1));
+            this.experience.put(type, experience.getOrDefault(type, 0L));
+        }
     }
 
     @Override
@@ -25,19 +30,19 @@ public final class PlayerGatheringComponent implements PlayerDataComponent {
         return owner;
     }
 
-    public int getLevel() {
-        return level;
+    public int getLevel(GatherActionType type) {
+        return levels.get(type);
     }
 
-    public long getExperience() {
-        return experience;
+    public long getExperience(GatherActionType type) {
+        return experience.get(type);
     }
 
-    public void setLevel(int level) {
-        this.level = level;
+    public void setLevel(GatherActionType type, int level) {
+        levels.put(type, level);
     }
 
-    public void setExperience(long experience) {
-        this.experience = experience;
+    public void setExperience(GatherActionType type, long amount) {
+        experience.put(type, amount);
     }
 }

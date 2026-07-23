@@ -16,6 +16,8 @@ import rpg.gathering.repository.GatheringDefinitionRepository;
 import rpg.gathering.service.BlockRegenService;
 import rpg.gathering.service.GatheringLevelService;
 import rpg.gathering.service.RegionProtectionService;
+import rpg.job.manager.JobManager;
+import rpg.job.model.Job;
 
 /**
  * Hooks ore/log breaks (SOW 3.1): every configured block always regenerates after its
@@ -36,15 +38,17 @@ public final class GatherBlockBreakListener implements Listener {
     private final GatheringLevelService levelService;
     private final LevelRadiusConfig radiusConfig;
     private final RegionProtectionService protectionService;
+    private final JobManager jobManager;
 
     public GatherBlockBreakListener(GatheringDefinitionRepository definitions, BlockRegenService regenService,
                                      GatheringLevelService levelService, LevelRadiusConfig radiusConfig,
-                                     RegionProtectionService protectionService) {
+                                     RegionProtectionService protectionService, JobManager jobManager) {
         this.definitions = definitions;
         this.regenService = regenService;
         this.levelService = levelService;
         this.radiusConfig = radiusConfig;
         this.protectionService = protectionService;
+        this.jobManager = jobManager;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -55,10 +59,12 @@ public final class GatherBlockBreakListener implements Listener {
             return;
         }
         Player player = event.getPlayer();
-        int playerLevel = levelService.getLevel(player.getUniqueId());
+        int playerLevel = levelService.getLevel(player.getUniqueId(), template.actionType());
         if (playerLevel < template.minLevel()) {
             event.setCancelled(true);
-            player.sendMessage(Component.text("採取レベルが不足しています。(必要Lv: " + template.minLevel() + ")", NamedTextColor.RED));
+            String jobName = jobManager.getDefinition(template.actionType().jobType()).map(Job::getDisplayName)
+                    .orElse(template.actionType().jobType().name());
+            player.sendMessage(Component.text(jobName + "レベルが不足しています。(必要Lv: " + template.minLevel() + ")", NamedTextColor.RED));
             return;
         }
         if (!protectionService.canModify(player, block)) {
@@ -72,7 +78,7 @@ public final class GatherBlockBreakListener implements Listener {
         // the replace-block swap for the block the event fired on has to wait a tick.
         regenService.scheduleNextTick(block.getWorld(), block.getX(), block.getY(), block.getZ(),
                 template.blockType(), template.replaceBlock(), template.cooldownSeconds());
-        levelService.addExperience(player.getUniqueId(), template.xpGain());
+        levelService.addExperience(player.getUniqueId(), template.actionType(), template.xpGain());
 
         if (player.isSneaking()) {
             bulkBreak(player, block, template);
@@ -80,7 +86,7 @@ public final class GatherBlockBreakListener implements Listener {
     }
 
     private void bulkBreak(Player player, Block center, GatherBlockTemplate template) {
-        int radius = radiusConfig.radiusForLevel(levelService.getLevel(player.getUniqueId()));
+        int radius = radiusConfig.radiusForLevel(levelService.getLevel(player.getUniqueId(), template.actionType()));
         if (radius <= 0) {
             return;
         }
@@ -107,7 +113,7 @@ public final class GatherBlockBreakListener implements Listener {
                     target.getWorld().playSound(target.getLocation(), breakSound(template.actionType()), 1f, 1f);
                     regenService.schedule(target.getWorld(), target.getX(), target.getY(), target.getZ(),
                             template.blockType(), template.replaceBlock(), template.cooldownSeconds());
-                    levelService.addExperience(player.getUniqueId(), template.xpGain());
+                    levelService.addExperience(player.getUniqueId(), template.actionType(), template.xpGain());
                 }
             }
         }

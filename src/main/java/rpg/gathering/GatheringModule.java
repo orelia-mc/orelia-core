@@ -23,8 +23,9 @@ import java.util.logging.Level;
 
 /**
  * Gathering/farming module (SOW: 採取・農業拡張システム). Owns mining/woodcutting block
- * regeneration, bulk crop plant/harvest, and the shared level-based bulk-radius system
- * that governs both (SOW 3.1-3.3).
+ * regeneration, bulk crop plant/harvest, and the level-based bulk-radius system (SOW
+ * 3.1-3.3) - each of mining/woodcutting/farming levels its own {@link rpg.job.model.JobType}
+ * (miner/woodcutter/farmer) independently, sharing only the same experience curve shape.
  */
 public final class GatheringModule implements RpgModule {
 
@@ -66,7 +67,7 @@ public final class GatheringModule implements RpgModule {
         plugin.getPlayerDataManager().registerLoader(gatheringManager);
 
         this.levelService = new GatheringLevelService(plugin.getPlayerDataManager(), levelingConfig,
-                jobModule.getJobService(), jobModule.getJobManager());
+                jobModule.getJobManager());
 
         this.regenService = new BlockRegenService(plugin, plugin.getSchedulerService(), regenRepository);
         regenService.loadPending();
@@ -76,13 +77,15 @@ public final class GatheringModule implements RpgModule {
         RegionProtectionService protectionService = new RegionProtectionService(plugin);
 
         plugin.getServer().getPluginManager().registerEvents(
-                new GatherBlockBreakListener(definitions, regenService, levelService, radiusConfig, protectionService), plugin);
+                new GatherBlockBreakListener(definitions, regenService, levelService, radiusConfig, protectionService,
+                        jobModule.getJobManager()), plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new FarmingListener(definitions, levelService, radiusConfig, protectionService), plugin);
         plugin.getServer().getPluginManager().registerEvents(new GatherChunkLoadListener(regenService), plugin);
 
-        plugin.getPlayerCommandRegistry().register("gathering", new GatheringCommand(levelService, radiusConfig),
-                "採取/農業レベルと一括範囲を確認します。", "gathering");
+        plugin.getPlayerCommandRegistry().register("gathering",
+                new GatheringCommand(levelService, radiusConfig, jobModule.getJobManager()),
+                "採掘/伐採/農業レベルと一括範囲を確認します。", "gathering");
     }
 
     @Override

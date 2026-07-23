@@ -8,5 +8,8 @@ package rpg.job.model;
 public enum JobType {
     FENCER,
     WARRIOR,
-    ARCHER
+    ARCHER,
+    MINER,
+    FARMER,
+    WOODCUTTER
 }
