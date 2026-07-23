@@ -1,12 +1,18 @@
 # Weapon definitions (SOW section 6). Add a new weapon by adding a new key under
 # `weapons:` - no code change required.
 #
-# weapon-type: SWORD | SPEAR | AXE | BOW
+# weapon-type: SWORD | SPEAR | AXE | BOW | PICKAXE | HOE | HATCHET
 # rarity: COMMON | UNCOMMON | RARE | EPIC | LEGENDARY
 # element: NONE | FIRE | WATER | EARTH | WIND | LIGHT | DARK
-# required-job: FENCER | WARRIOR | ARCHER (blank = any job may use it)
+# required-job: FENCER | WARRIOR | ARCHER | MINER | FARMER | WOODCUTTER (blank = any job may use it)
 # unbreakable: true | false (default false) - vanilla's own "Unbreakable" flag, the item never
 #   loses durability no matter how it's used.
+#
+# Note: AXE (warrior) and HATCHET (woodcutter) are deliberately separate weapon-types even
+# though they render with the same vanilla axe materials - what a given ItemStack "is" comes
+# entirely from the id (this section's key) stamped onto it as a hidden tag when created, not
+# from its visible Material, so the two never get confused with each other or with a plain
+# vanilla axe/pickaxe/hoe a player is holding for ordinary block-breaking.
 
 weapons:
   wooden_training_sword:
@@ -95,3 +101,54 @@ weapons:
     custom-model-data: 100301
     sell-price: 180.0
     skill-slot-count: 2
+
+  apprentice_pickaxe:
+    name: "見習いのつるはし"
+    weapon-type: PICKAXE
+    level: 1
+    rarity: COMMON
+    attack-power: 4.0
+    element: NONE
+    crit-rate: 5.0
+    crit-multiplier: 1.5
+    required-job: MINER
+    required-level: 1
+    description:
+      - "&%7採掘師見習いのための訓練用のつるはし。"
+    custom-model-data: 100401
+    sell-price: 10.0
+    skill-slot-count: 1
+
+  apprentice_hoe:
+    name: "見習いの鍬"
+    weapon-type: HOE
+    level: 1
+    rarity: COMMON
+    attack-power: 4.0
+    element: NONE
+    crit-rate: 5.0
+    crit-multiplier: 1.5
+    required-job: FARMER
+    required-level: 1
+    description:
+      - "&%7農民見習いのための訓練用の鍬。"
+    custom-model-data: 100501
+    sell-price: 10.0
+    skill-slot-count: 1
+
+  lumberjacks_hatchet:
+    name: "木こりの斧"
+    weapon-type: HATCHET
+    level: 1
+    rarity: COMMON
+    attack-power: 4.0
+    element: NONE
+    crit-rate: 5.0
+    crit-multiplier: 1.5
+    required-job: WOODCUTTER
+    required-level: 1
+    description:
+      - "&%7木こり見習いのための訓練用の斧。"
+    custom-model-data: 100202
+    sell-price: 10.0
+    skill-slot-count: 1

@@ -25,9 +25,15 @@ jobs:
 
   MINER:
     display-name: "採掘師"
+    allowed-weapons:
+      - PICKAXE
 
   FARMER:
     display-name: "農民"
+    allowed-weapons:
+      - HOE
 
   WOODCUTTER:
     display-name: "木こり"
+    allowed-weapons:
+      - HATCHET

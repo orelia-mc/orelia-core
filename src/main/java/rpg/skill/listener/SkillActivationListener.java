@@ -18,13 +18,14 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Skill activation triggers for melee weapons (SWORD/SPEAR/AXE): right-click casts the
- * weapon's first socketed skill, shift+right-click the second, and the swap-hands key (F)
- * the third. Each trigger only cancels its underlying vanilla event (block interaction /
- * hand swap) when a skill actually occupied that socket, so an empty slot falls back to
- * normal behavior. BOW is excluded from the right-click triggers - right-click is vanilla's
- * draw-and-shoot action, and bow skill activation is being redesigned separately to fire
- * off the normal shot instead; the F-key trigger still works for bows in the meantime.
+ * Skill activation triggers for melee weapons (SWORD/SPEAR/AXE/PICKAXE/HATCHET): right-click
+ * casts the weapon's first socketed skill, shift+right-click the second, and the swap-hands
+ * key (F) the third. Each trigger only cancels its underlying vanilla event (block
+ * interaction / hand swap) when a skill actually occupied that socket, so an empty slot
+ * falls back to normal behavior. BOW and HOE are excluded from the right-click triggers -
+ * right-click is vanilla's draw-and-shoot action for a bow (bow skill activation is being
+ * redesigned separately to fire off the normal shot instead) and vanilla's till-farmland
+ * action for a hoe; the F-key trigger still works for both in the meantime.
  */
 public final class SkillActivationListener implements Listener {
 
@@ -52,7 +53,7 @@ public final class SkillActivationListener implements Listener {
         Player player = event.getPlayer();
         ItemStack mainHand = player.getInventory().getItemInMainHand();
         WeaponType weaponType = weaponIdentityService.dataOf(mainHand).map(w -> w.getWeaponType()).orElse(null);
-        if (weaponType == null || weaponType == WeaponType.BOW) {
+        if (weaponType == null || weaponType == WeaponType.BOW || weaponType == WeaponType.HOE) {
             return;
         }
 
