@@ -27,11 +27,14 @@ public final class WeaponData {
     private final double sellPrice;
     private final int skillSlotCount;
     private final boolean unbreakable;
+    private final int bulkChopRadius;
+    private final int gatherRequiredLevel;
 
     public WeaponData(String id, String name, WeaponType weaponType, int weaponLevel, Rarity rarity,
                        double attackPower, ElementType element, double critRate, double critMultiplier,
                        JobType requiredJob, int requiredLevel, List<String> description,
-                       int customModelData, double sellPrice, int skillSlotCount, boolean unbreakable) {
+                       int customModelData, double sellPrice, int skillSlotCount, boolean unbreakable,
+                       int bulkChopRadius, int gatherRequiredLevel) {
         this.id = id;
         this.name = name;
         this.weaponType = weaponType;
@@ -48,6 +51,8 @@ public final class WeaponData {
         this.sellPrice = sellPrice;
         this.skillSlotCount = skillSlotCount;
         this.unbreakable = unbreakable;
+        this.bulkChopRadius = bulkChopRadius;
+        this.gatherRequiredLevel = gatherRequiredLevel;
     }
 
     public String getId() {
@@ -112,5 +117,22 @@ public final class WeaponData {
 
     public boolean isUnbreakable() {
         return unbreakable;
+    }
+
+    /**
+     * (HATCHET only) radius of the automatic bulk-chop sweep this axe grants on every break -
+     * 0 disables bulk chop (single-block only). Ignored for other weapon types.
+     */
+    public int getBulkChopRadius() {
+        return bulkChopRadius;
+    }
+
+    /**
+     * (HATCHET only) minimum woodcutting job level (see {@code GatheringLevelService}, not
+     * character level) required to chop with this axe at all - 0 means no restriction. Ignored
+     * for other weapon types.
+     */
+    public int getGatherRequiredLevel() {
+        return gatherRequiredLevel;
     }
 }

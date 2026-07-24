@@ -7,6 +7,13 @@
 # required-job: FENCER | WARRIOR | ARCHER | MINER | FARMER | WOODCUTTER (blank = any job may use it)
 # unbreakable: true | false (default false) - vanilla's own "Unbreakable" flag, the item never
 #   loses durability no matter how it's used.
+# bulk-chop-radius: (HATCHET only, default 0) radius of the automatic bulk-chop sweep this axe
+#   grants on every break - no sneaking required. 0 = no bulk chop (single-block only),
+#   1 = 3x3, 2 = 5x5, etc. Ignored for other weapon-types.
+# gather-required-level: (HATCHET only, default 0) minimum 木こり(WOODCUTTING) job level
+#   (the gathering module's own level, not character level) required to chop with this axe at
+#   all - below this, breaking any configured wood block while holding this axe is blocked
+#   entirely (single-block break included). 0 = no restriction. Ignored for other weapon-types.
 #
 # Note: AXE (warrior) and HATCHET (woodcutter) are deliberately separate weapon-types even
 # though they render with the same vanilla axe materials - what a given ItemStack "is" comes
@@ -152,3 +159,43 @@ weapons:
     custom-model-data: 100202
     sell-price: 10.0
     skill-slot-count: 1
+    bulk-chop-radius: 0
+    gather-required-level: 1
+
+  skilled_lumberjacks_hatchet:
+    name: "熟練木こりの斧"
+    weapon-type: HATCHET
+    level: 10
+    rarity: UNCOMMON
+    attack-power: 10.0
+    element: NONE
+    crit-rate: 6.0
+    crit-multiplier: 1.6
+    required-job: WOODCUTTER
+    required-level: 10
+    description:
+      - "&%7手慣れた木こりが愛用する斧。周囲の木も一度に伐採できる。"
+    custom-model-data: 100203
+    sell-price: 150.0
+    skill-slot-count: 1
+    bulk-chop-radius: 1
+    gather-required-level: 10
+
+  master_lumberjacks_hatchet:
+    name: "達人木こりの斧"
+    weapon-type: HATCHET
+    level: 25
+    rarity: RARE
+    attack-power: 18.0
+    element: NONE
+    crit-rate: 8.0
+    crit-multiplier: 1.8
+    required-job: WOODCUTTER
+    required-level: 25
+    description:
+      - "&%7森を切り開く達人だけが扱える一振り。広範囲の木々を一度に伐採する。"
+    custom-model-data: 100204
+    sell-price: 600.0
+    skill-slot-count: 2
+    bulk-chop-radius: 2
+    gather-required-level: 25
