@@ -9,13 +9,16 @@ import rpg.gathering.config.GatheringLevelingConfig;
 import rpg.gathering.config.LevelRadiusConfig;
 import rpg.gathering.listener.FarmingListener;
 import rpg.gathering.listener.GatherBlockBreakListener;
+import rpg.gathering.listener.GatherBlockPlaceListener;
 import rpg.gathering.listener.GatherChunkLoadListener;
 import rpg.gathering.manager.GatheringManager;
 import rpg.gathering.repository.BlockRegenRepository;
 import rpg.gathering.repository.GatheringDefinitionRepository;
+import rpg.gathering.repository.PlacedBlockRepository;
 import rpg.gathering.repository.PlayerGatheringRepository;
 import rpg.gathering.service.BlockRegenService;
 import rpg.gathering.service.GatheringLevelService;
+import rpg.gathering.service.PlacedBlockTrackingService;
 import rpg.gathering.service.RegionProtectionService;
 import rpg.job.JobModule;
 
@@ -56,9 +59,11 @@ public final class GatheringModule implements RpgModule {
 
         PlayerGatheringRepository playerRepository = new PlayerGatheringRepository(databaseModule.getDatabaseManager());
         BlockRegenRepository regenRepository = new BlockRegenRepository(databaseModule.getDatabaseManager());
+        PlacedBlockRepository placedBlockRepository = new PlacedBlockRepository(databaseModule.getDatabaseManager());
         try {
             playerRepository.createSchemaIfNotExists();
             regenRepository.createSchemaIfNotExists();
+            placedBlockRepository.createSchemaIfNotExists();
         } catch (Exception e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to initialize gathering schema", e);
         }
@@ -76,9 +81,15 @@ public final class GatheringModule implements RpgModule {
 
         RegionProtectionService protectionService = new RegionProtectionService(plugin);
 
+        PlacedBlockTrackingService trackingService = new PlacedBlockTrackingService(plugin, plugin.getSchedulerService(),
+                placedBlockRepository);
+        trackingService.loadPlaced();
+
         plugin.getServer().getPluginManager().registerEvents(
                 new GatherBlockBreakListener(definitions, regenService, levelService, radiusConfig, protectionService,
-                        jobModule.getJobManager()), plugin);
+                        jobModule.getJobManager(), trackingService, plugin), plugin);
+        plugin.getServer().getPluginManager().registerEvents(
+                new GatherBlockPlaceListener(definitions, trackingService), plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new FarmingListener(definitions, levelService, radiusConfig, protectionService), plugin);
         plugin.getServer().getPluginManager().registerEvents(new GatherChunkLoadListener(regenService), plugin);
