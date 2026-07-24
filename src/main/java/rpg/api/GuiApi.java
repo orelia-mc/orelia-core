@@ -23,4 +23,6 @@ public interface GuiApi {
     void openWarehouse(Player player);
 
     void openShop(Player player, List<ShopEntry> stock);
+
+    void openCrafting(Player player);
 }

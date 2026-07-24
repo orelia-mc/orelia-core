@@ -44,6 +44,10 @@ skill:
   upgrade-failed-max-level: "&%cこれ以上レベルを上げられません（最大レベルです）。"
   upgrade-failed-points: "&%cスキル習得ポイントが足りません。&%7（残り: {points}）"
 
+crafting:
+  success: "&%a{item}を作成しました！"
+  missing-materials: "&%c必要な素材が足りません。"
+
 quest:
   accepted: "&%aクエストを受注しました。"
   requirements-not-met: "&%c受注条件を満たしていません。"

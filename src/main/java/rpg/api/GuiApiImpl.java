@@ -45,4 +45,9 @@ final class GuiApiImpl implements GuiApi {
     public void openShop(Player player, List<ShopEntry> stock) {
         guiManager.open(player, guiModule.getShopGuiScreen().build(player, stock));
     }
+
+    @Override
+    public void openCrafting(Player player) {
+        guiManager.open(player, guiModule.getCraftingGuiScreen().build(player));
+    }
 }

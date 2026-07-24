@@ -1,0 +1,16 @@
+# Crafting recipes (SOW follow-up "合成"). Add a new recipe by adding a new key under
+# `recipes:` - no code change required. result-weapon-id must exist in items.yml's weapons:
+# map (v1 only supports crafting weapons, no generic material output). ingredients are raw
+# vanilla Material enum names.
+
+recipes:
+  wooden_training_sword_recipe:
+    name: "見習いの剣"
+    result-weapon-id: wooden_training_sword
+    ingredients:
+      - material: OAK_PLANKS
+        amount: 3
+      - material: STICK
+        amount: 1
+    description:
+      - "&%7木材と棒で作れる、剣士見習いのための訓練用の剣。"

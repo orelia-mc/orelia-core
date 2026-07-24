@@ -7,6 +7,7 @@ import rpg.core.module.RpgModule;
 import org.bukkit.configuration.file.YamlConfiguration;
 import rpg.database.DatabaseModule;
 import rpg.economy.EconomyModule;
+import rpg.gui.command.CraftCommand;
 import rpg.gui.command.StatusCommand;
 import rpg.gui.config.GuiConfig;
 import rpg.gui.framework.GuiHolder;
@@ -15,6 +16,7 @@ import rpg.gui.framework.GuiManager;
 import rpg.gui.listener.EquipmentDisplayRefreshListener;
 import rpg.gui.listener.WarehouseSaveListener;
 import rpg.gui.repository.WarehouseRepository;
+import rpg.gui.screen.CraftingGuiScreen;
 import rpg.gui.screen.EquipmentGuiScreen;
 import rpg.gui.screen.JobGuiScreen;
 import rpg.gui.screen.ShopGuiScreen;
@@ -50,6 +52,7 @@ public final class GuiModule implements RpgModule {
     private JobGuiScreen jobGuiScreen;
     private ShopGuiScreen shopGuiScreen;
     private WarehouseGuiScreen warehouseGuiScreen;
+    private CraftingGuiScreen craftingGuiScreen;
     private ActionBarService actionBarService;
 
     @Override
@@ -78,6 +81,8 @@ public final class GuiModule implements RpgModule {
         this.jobGuiScreen = new JobGuiScreen(jobModule.getJobService(), jobModule.getJobManager(), guiConfig, plugin.getMessageManager());
         this.shopGuiScreen = new ShopGuiScreen(itemModule.getItemManager(), accessoryModule.getRepository(),
                 accessoryModule.getFactory(), economyModule.getEconomyService(), guiConfig, plugin.getMessageManager());
+        this.craftingGuiScreen = new CraftingGuiScreen(itemModule.getCraftingRepository(), itemModule.getCraftingService(),
+                itemModule.getItemManager(), guiConfig, plugin.getMessageManager());
 
         WarehouseRepository warehouseRepository = new WarehouseRepository(databaseModule.getDatabaseManager());
         try {
@@ -102,6 +107,10 @@ public final class GuiModule implements RpgModule {
         StatusCommand statusCommand = new StatusCommand(guiManager, statusGuiScreen, plugin.getMessageManager());
         plugin.getPlayerCommandRegistry().register("status", statusCommand, "ステータス画面を開きます。", "status");
         CommandAliasUtil.registerAlias(plugin, "status", statusCommand, "ステータス画面を開きます。", "");
+
+        CraftCommand craftCommand = new CraftCommand(guiManager, craftingGuiScreen, plugin.getMessageManager());
+        plugin.getPlayerCommandRegistry().register("craft", craftCommand, "合成画面を開きます。", "craft");
+        CommandAliasUtil.registerAlias(plugin, "craft", craftCommand, "合成画面を開きます。", "");
 
         // Stats can change from many unrelated sources (level-up, buffs, equipment swap) while
         // this screen is open, unlike equipment's held-item/click events - periodic refresh is
@@ -170,6 +179,10 @@ public final class GuiModule implements RpgModule {
 
     public WarehouseGuiScreen getWarehouseGuiScreen() {
         return warehouseGuiScreen;
+    }
+
+    public CraftingGuiScreen getCraftingGuiScreen() {
+        return craftingGuiScreen;
     }
 
     public ActionBarService getActionBarService() {
