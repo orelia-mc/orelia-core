@@ -52,6 +52,16 @@ public final class SkillSocketService {
         return true;
     }
 
+    /** Removes {@code skillId} from the weapon's sockets. Returns false (no change) if it wasn't socketed. */
+    public boolean unsocket(ItemStack weapon, String skillId) {
+        List<String> current = new ArrayList<>(getSocketedSkills(weapon));
+        if (!current.remove(skillId)) {
+            return false;
+        }
+        write(weapon, current);
+        return true;
+    }
+
     private void write(ItemStack weapon, List<String> skillIds) {
         ItemMeta meta = weapon.getItemMeta();
         meta.getPersistentDataContainer().set(socketedSkillsKey, PersistentDataType.STRING, String.join(";", skillIds));

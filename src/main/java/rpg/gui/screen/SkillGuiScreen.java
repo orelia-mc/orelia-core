@@ -16,6 +16,7 @@ import rpg.skill.service.SkillProgressService.UpgradeResult;
 import rpg.skill.service.SkillSocketService;
 import rpg.util.ItemBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -66,11 +67,16 @@ public final class SkillGuiScreen {
             }
             int buttonSlot = slot++;
             gui.set(buttonSlot, new GuiButton(skillIcon(player, skill), (clicker, clickType) -> {
-                if (clickType.contains("RIGHT")) {
+                if (clickType.equals("SHIFT_RIGHT")) {
+                    boolean unsocketed = socketService.unsocket(clicker.getInventory().getItemInMainHand(), skill.getId());
+                    messages.send(clicker, unsocketed ? "skill.unsocketed" : "skill.unsocket-failed");
+                    clicker.getOpenInventory().getTopInventory().setItem(buttonSlot, skillIcon(clicker, skill));
+                } else if (clickType.contains("RIGHT")) {
                     boolean socketed = socketService.socket(clicker.getInventory().getItemInMainHand(), skill.getId(),
                             weaponIdentityService.dataOf(clicker.getInventory().getItemInMainHand())
                                     .map(w -> w.getSkillSlotCount()).orElse(1));
                     messages.send(clicker, socketed ? "skill.socketed" : "skill.socket-failed");
+                    clicker.getOpenInventory().getTopInventory().setItem(buttonSlot, skillIcon(clicker, skill));
                 } else {
                     UpgradeResult result = progressService.upgradeSkill(clicker.getUniqueId(), skill.getId());
                     String key = switch (result) {
@@ -99,22 +105,36 @@ public final class SkillGuiScreen {
         int points = progressService.getSkillPoints(player.getUniqueId());
         return new ItemBuilder(Material.EXPERIENCE_BOTTLE)
                 .name("&%e&lスキル習得ポイント&%7: &%f" + points)
-                .lore("&%7スキルの習得・レベルアップに使います（消費: 1ポイント/回）。")
+                .lore(List.of(
+                        "&%7スキルの習得・レベルアップに使います（消費: 1ポイント/回）。",
+                        "",
+                        "&%e装着したスキルの発動方法:",
+                        "&%7右クリック &%f→ 1番目のスキル発動",
+                        "&%7Shift+右クリック &%f→ 2番目のスキル発動",
+                        "&%7持ち替え(Fキー) &%f→ 3番目のスキル発動"))
                 .build();
     }
 
     private ItemStack skillIcon(Player player, SkillData skill) {
         int level = progressService.getSkillLevel(player.getUniqueId(), skill.getId());
         boolean learned = level > 0;
+        List<String> socketed = socketService.getSocketedSkills(player.getInventory().getItemInMainHand());
+        int socketIndex = socketed.indexOf(skill.getId());
+
+        List<String> lore = new ArrayList<>(List.of(
+                "&%7Lv. " + level + " / " + skill.getMaxLevel(),
+                "&%7SP消費: " + skill.getSpCost(),
+                "&%7クールタイム: " + skill.getCooldownSeconds() + "s",
+                ""));
+        if (socketIndex >= 0) {
+            lore.add("&%b装着中: &%f" + (socketIndex + 1) + "番目のスロット");
+        }
+        lore.add("&%a左クリック &%7- 習得/レベルアップ");
+        lore.add(socketIndex >= 0 ? "&%cShift+右クリック &%7- 装着を解除" : "&%b右クリック &%7- 武器に装着");
+
         return new ItemBuilder(learned ? Material.ENCHANTED_BOOK : Material.BOOK)
                 .name((learned ? "&%e" : "&%7") + skill.getName())
-                .lore(List.of(
-                        "&%7Lv. " + level + " / " + skill.getMaxLevel(),
-                        "&%7SP消費: " + skill.getSpCost(),
-                        "&%7クールタイム: " + skill.getCooldownSeconds() + "s",
-                        "",
-                        "&%a左クリック &%7- 習得/レベルアップ",
-                        "&%b右クリック &%7- 武器に装着"))
+                .lore(lore)
                 .build();
     }
 }

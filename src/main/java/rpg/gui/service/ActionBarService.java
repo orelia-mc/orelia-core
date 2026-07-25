@@ -11,18 +11,30 @@ import rpg.status.model.StatType;
 import rpg.status.service.StatusService;
 import rpg.util.ColorUtil;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Renders the periodic HP/SP/current-attack-power action bar HUD. "Current attack power" is
  * the same base-attack-power-after-ATK% value {@code rpg.monster.listener.CombatDamageListener}
  * feeds into {@link DamageFormula#compute} - what the player would actually swing for before
  * the opponent's own DEF/crit/weakness are factored in.
+ *
+ * <p>Also carries short-lived skill-activation feedback ({@link #showTransient}) appended next
+ * to the HP/SP/ATK line, so {@code rpg.skill.listener.SkillActivationListener} doesn't have to
+ * spam chat on every cast (success, on-cooldown, etc. - see the relic system's Part Q follow-up).
  */
 public final class ActionBarService {
 
     private final StatusService statusService;
     private final WeaponIdentityService weaponIdentityService;
+    private final Map<UUID, TransientStatus> transientStatuses = new ConcurrentHashMap<>();
     private String format = "";
     private boolean enabled = true;
+
+    private record TransientStatus(String text, long expiresAtMillis) {
+    }
 
     public ActionBarService(StatusService statusService, WeaponIdentityService weaponIdentityService) {
         this.statusService = statusService;
@@ -35,6 +47,11 @@ public final class ActionBarService {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    /** Shows {@code text} appended to the next {@link #send} calls for {@code durationMillis}, then reverts to plain HP/SP/ATK. */
+    public void showTransient(Player player, String text, long durationMillis) {
+        transientStatuses.put(player.getUniqueId(), new TransientStatus(text, System.currentTimeMillis() + durationMillis));
     }
 
     /** Called every {@code config.yml: action-bar.period-ticks} for each online player. */
@@ -55,7 +72,23 @@ public final class ActionBarService {
                 .replace("{sp}", format(component.getCurrentSp()))
                 .replace("{max_sp}", format(maxSp))
                 .replace("{atk}", format(currentAttackPower(player, stats)));
+        String skillStatus = currentTransientText(player.getUniqueId());
+        if (!skillStatus.isEmpty()) {
+            message = message + " &%7| " + skillStatus;
+        }
         player.sendActionBar(ColorUtil.component(message));
+    }
+
+    private String currentTransientText(UUID uuid) {
+        TransientStatus status = transientStatuses.get(uuid);
+        if (status == null) {
+            return "";
+        }
+        if (System.currentTimeMillis() > status.expiresAtMillis()) {
+            transientStatuses.remove(uuid);
+            return "";
+        }
+        return status.text();
     }
 
     private double currentAttackPower(Player player, StatSheet stats) {

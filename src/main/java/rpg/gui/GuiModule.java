@@ -27,6 +27,7 @@ import rpg.gui.service.ActionBarService;
 import rpg.item.ItemModule;
 import rpg.job.JobModule;
 import rpg.skill.SkillModule;
+import rpg.skill.listener.SkillActivationListener;
 import rpg.status.StatusModule;
 
 import java.util.logging.Level;
@@ -99,6 +100,13 @@ public final class GuiModule implements RpgModule {
         plugin.getSchedulerService().runTimer(() ->
                 plugin.getServer().getOnlinePlayers().forEach(actionBarService::send),
                 actionBarPeriodTicks, actionBarPeriodTicks);
+
+        // Registered here rather than in SkillModule since it needs actionBarService, which
+        // doesn't exist until this module enables (see SkillModule.onEnable's comment).
+        plugin.getServer().getPluginManager().registerEvents(
+                new SkillActivationListener(skillModule.getCastService(), skillModule.getSocketService(),
+                        itemModule.getItemManager().getIdentityService(), skillModule.getSkillRepository(),
+                        actionBarService, plugin.getMessageManager()), plugin);
 
         plugin.getServer().getPluginManager().registerEvents(new GuiListener(), plugin);
         plugin.getServer().getPluginManager().registerEvents(new WarehouseSaveListener(warehouseRepository), plugin);
