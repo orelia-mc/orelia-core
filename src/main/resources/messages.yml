@@ -31,6 +31,7 @@ job:
   change-failed: "&%c転職に失敗しました。"
   current: "&%a職業: &%f{job}"
   list: "&%a職業一覧: &%f{jobs}"
+  rod-requires-fisherman: "&%cこの釣りざおは釣り人でないと使用できません。"
 
 skill:
   wrong-weapon: "&%cこの武器ではこのスキルを使用できません。"
