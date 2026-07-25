@@ -1,5 +1,6 @@
 package rpg.gathering.model;
 
+import org.bukkit.Sound;
 import rpg.job.model.JobType;
 
 /**
@@ -10,17 +11,23 @@ import rpg.job.model.JobType;
  * feeding one shared "gathering level" pool.
  */
 public enum GatherActionType {
-    MINING(JobType.MINER),
-    WOODCUTTING(JobType.WOODCUTTER),
-    FARMING(JobType.FARMER);
+    MINING(JobType.MINER, Sound.BLOCK_STONE_BREAK),
+    WOODCUTTING(JobType.WOODCUTTER, Sound.BLOCK_WOOD_BREAK),
+    FARMING(JobType.FARMER, Sound.BLOCK_CROP_BREAK);
 
     private final JobType jobType;
+    private final Sound breakSound;
 
-    GatherActionType(JobType jobType) {
+    GatherActionType(JobType jobType, Sound breakSound) {
         this.jobType = jobType;
+        this.breakSound = breakSound;
     }
 
     public JobType jobType() {
         return jobType;
+    }
+
+    public Sound breakSound() {
+        return breakSound;
     }
 }

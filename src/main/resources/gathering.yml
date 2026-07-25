@@ -29,7 +29,14 @@
 #
 # level-ranges: level band -> bulk-action radius (SOW 3.3), applied per-activity against
 # that activity's own level. radius 0 = 1x1 (vanilla), radius 1 = 3x3, radius 2 = 5x5,
-# etc. A level above every listed band keeps the highest band's radius.
+# etc. A level above every listed band keeps the highest band's radius. Farming is the only
+# activity that still uses this - mining has no bulk-break, and woodcutting's bulk-chop
+# radius comes from the equipped hatchet's own items.yml fields instead.
+#
+# mining-luck: bonus mining drop chance, rolled once per luck-level (a pickaxe's own
+# items.yml field, see items.yml's comment header) per ore block broken.
+#   bonus-chance-per-level : percent chance (0-100) per luck level to add +1 to a random
+#                            drop from the broken block.
 config-version: 1
 
 regen-tick-period-ticks: 100 # 100 ticks = 5 seconds
@@ -88,6 +95,9 @@ farm-settings:
   POTATOES:
     seed-item: POTATO
     xp-gain: 8
+
+mining-luck:
+  bonus-chance-per-level: 15.0
 
 leveling:
   mode: FORMULA

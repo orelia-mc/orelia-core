@@ -2,7 +2,7 @@ package rpg.gathering.listener;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Sound;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -10,11 +10,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
 import rpg.core.OreliaPlugin;
-import rpg.gathering.config.LevelRadiusConfig;
+import rpg.gathering.config.MiningLuckConfig;
 import rpg.gathering.model.GatherActionType;
 import rpg.gathering.model.GatherBlockTemplate;
 import rpg.gathering.repository.GatheringDefinitionRepository;
 import rpg.gathering.service.BlockRegenService;
+import rpg.gathering.service.BulkRadiusResolver;
 import rpg.gathering.service.GatheringLevelService;
 import rpg.gathering.service.PlacedBlockTrackingService;
 import rpg.gathering.service.RegionProtectionService;
@@ -23,17 +24,22 @@ import rpg.item.model.WeaponData;
 import rpg.item.model.WeaponType;
 import rpg.job.manager.JobManager;
 import rpg.job.model.Job;
+import rpg.util.MathUtil;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Hooks ore/log breaks (SOW 3.1): every configured block always regenerates after its
- * cooldown. Mining keeps the original sneak-triggered bulk sweep, sized by the player's
- * job-level radius (SOW 3.3). Woodcutting instead triggers its bulk-chop sweep from the
- * equipped axe (see {@link #resolveAxeData}): no sneaking required, and the radius/level-gate
- * come from the {@code HATCHET}-type weapon's own {@code items.yml} configuration rather than
- * from {@link LevelRadiusConfig}. A plain vanilla axe (or any tool with no recognized axe
- * identity) never triggers a bulk sweep - single-block breaks only.
+ * cooldown. Woodcutting triggers its bulk sweep from the equipped hatchet (see
+ * {@link #resolveToolData}) - no sneaking required, and the radius/level-gate come from the
+ * {@code HATCHET}-type weapon's own {@code items.yml} configuration. Mining has no bulk-break
+ * - it always breaks a single block, but an equipped pickaxe's own level-gate (also read via
+ * {@link #resolveToolData}) still blocks use entirely below its required level, and its
+ * {@code luck-level} rolls a bonus-drop chance per break (see {@link #applyMiningLuckBonus}).
+ * A plain vanilla tool (or any tool with no recognized identity) triggers neither mechanic.
  *
  * <p>Blocks a player placed by hand (tracked by {@link PlacedBlockTrackingService}, populated
  * by {@link GatherBlockPlaceListener}) are excluded entirely from this listener - no regen, no
@@ -50,23 +56,23 @@ public final class GatherBlockBreakListener implements Listener {
     private final GatheringDefinitionRepository definitions;
     private final BlockRegenService regenService;
     private final GatheringLevelService levelService;
-    private final LevelRadiusConfig radiusConfig;
     private final RegionProtectionService protectionService;
     private final JobManager jobManager;
     private final PlacedBlockTrackingService trackingService;
+    private final MiningLuckConfig miningLuckConfig;
     private final OreliaPlugin plugin;
 
     public GatherBlockBreakListener(GatheringDefinitionRepository definitions, BlockRegenService regenService,
-                                     GatheringLevelService levelService, LevelRadiusConfig radiusConfig,
-                                     RegionProtectionService protectionService, JobManager jobManager,
-                                     PlacedBlockTrackingService trackingService, OreliaPlugin plugin) {
+                                     GatheringLevelService levelService, RegionProtectionService protectionService,
+                                     JobManager jobManager, PlacedBlockTrackingService trackingService,
+                                     MiningLuckConfig miningLuckConfig, OreliaPlugin plugin) {
         this.definitions = definitions;
         this.regenService = regenService;
         this.levelService = levelService;
-        this.radiusConfig = radiusConfig;
         this.protectionService = protectionService;
         this.jobManager = jobManager;
         this.trackingService = trackingService;
+        this.miningLuckConfig = miningLuckConfig;
         this.plugin = plugin;
     }
 
@@ -83,11 +89,12 @@ public final class GatherBlockBreakListener implements Listener {
         }
 
         Player player = event.getPlayer();
-        int playerLevel = levelService.getLevel(player.getUniqueId(), template.actionType());
+        GatherActionType actionType = template.actionType();
+        int playerLevel = levelService.getLevel(player.getUniqueId(), actionType);
         if (playerLevel < template.minLevel()) {
             event.setCancelled(true);
-            String jobName = jobManager.getDefinition(template.actionType().jobType()).map(Job::getDisplayName)
-                    .orElse(template.actionType().jobType().name());
+            String jobName = jobManager.getDefinition(actionType.jobType()).map(Job::getDisplayName)
+                    .orElse(actionType.jobType().name());
             player.sendMessage(Component.text(jobName + "レベルが不足しています。(必要Lv: " + template.minLevel() + ")", NamedTextColor.RED));
             return;
         }
@@ -96,54 +103,92 @@ public final class GatherBlockBreakListener implements Listener {
             return;
         }
 
-        Optional<WeaponData> axeData = Optional.empty();
-        if (template.actionType() == GatherActionType.WOODCUTTING) {
-            axeData = resolveAxeData(player);
-            if (axeData.isPresent() && playerLevel < axeData.get().getGatherRequiredLevel()) {
-                event.setCancelled(true);
-                player.sendMessage(Component.text("この斧を使うには木こりレベルが不足しています。(必要Lv: "
-                        + axeData.get().getGatherRequiredLevel() + ")", NamedTextColor.RED));
-                return;
-            }
+        Optional<WeaponData> toolData = resolveToolData(player, requiredToolType(actionType));
+        if (toolData.isPresent() && playerLevel < toolData.get().getGatherRequiredLevel()) {
+            event.setCancelled(true);
+            player.sendMessage(Component.text("この" + toolLabel(actionType) + "を使うには" + jobLevelLabel(actionType)
+                    + "が不足しています。(必要Lv: " + toolData.get().getGatherRequiredLevel() + ")", NamedTextColor.RED));
+            return;
         }
 
-        block.getWorld().playSound(block.getLocation(), breakSound(template.actionType()), 1f, 1f);
+        block.getWorld().playSound(block.getLocation(), actionType.breakSound(), 1f, 1f);
+
+        if (actionType == GatherActionType.MINING) {
+            ItemStack tool = player.getInventory().getItemInMainHand();
+            applyMiningLuckBonus(event, tool, toolData.map(WeaponData::getLuckLevel).orElse(0));
+        }
 
         // Vanilla removes the block and spawns drops only after this handler returns, so
         // the replace-block swap for the block the event fired on has to wait a tick.
         regenService.scheduleNextTick(block.getWorld(), block.getX(), block.getY(), block.getZ(),
                 template.blockType(), template.replaceBlock(), template.cooldownSeconds());
-        levelService.addExperience(player.getUniqueId(), template.actionType(), template.xpGain());
+        levelService.addExperience(player.getUniqueId(), actionType, template.xpGain());
 
-        if (template.actionType() == GatherActionType.WOODCUTTING) {
-            axeData.filter(data -> data.getBulkChopRadius() > 0)
-                    .ifPresent(data -> sweepAndBreak(player, block, template, data.getBulkChopRadius()));
-        } else if (player.isSneaking()) {
-            bulkBreak(player, block, template);
+        if (actionType == GatherActionType.WOODCUTTING) {
+            int radius = BulkRadiusResolver.equippedToolRadius(playerLevel,
+                    toolData.map(WeaponData::getBulkChopRadius).orElse(0),
+                    toolData.map(WeaponData::getGatherRequiredLevel).orElse(0));
+            if (radius > 0) {
+                sweepAndBreak(player, block, template, radius);
+            }
         }
     }
 
     /**
-     * Resolves the equipped tool to its {@code HATCHET}-type weapon template, if any. {@code
-     * ItemModule} is registered after {@code GatheringModule} (see {@code OreliaPlugin.onEnable}
-     * ordering), so it can't be looked up during this module's own {@code onEnable} - this
-     * lookup happens lazily here, at block-break time, by which point every module is already
-     * enabled.
+     * Rolls {@code luckLevel} times (0 = no-op) at {@link MiningLuckConfig#getBonusChancePercent()}
+     * each, adding +1 to a random drop from the broken block per success. {@code
+     * BlockBreakEvent} has no way to override its drop list directly ({@code setDropItems}
+     * only takes a boolean), so vanilla's own drops are suppressed and the bonus-adjusted list
+     * is dropped manually instead. Must run before the block is actually removed (i.e. while
+     * still inside this handler) since {@link Block#getDrops(ItemStack)} reads live block state.
      */
-    private Optional<WeaponData> resolveAxeData(Player player) {
+    private void applyMiningLuckBonus(BlockBreakEvent event, ItemStack tool, int luckLevel) {
+        if (luckLevel <= 0) {
+            return;
+        }
+        List<ItemStack> drops = new ArrayList<>(event.getBlock().getDrops(tool));
+        if (drops.isEmpty()) {
+            return;
+        }
+        for (int i = 0; i < luckLevel; i++) {
+            if (!MathUtil.rollChance(miningLuckConfig.getBonusChancePercent())) {
+                continue;
+            }
+            ItemStack boosted = drops.get(ThreadLocalRandom.current().nextInt(drops.size()));
+            boosted.setAmount(boosted.getAmount() + 1);
+        }
+        event.setDropItems(false);
+        Location location = event.getBlock().getLocation();
+        for (ItemStack drop : drops) {
+            location.getWorld().dropItemNaturally(location, drop);
+        }
+    }
+
+    private WeaponType requiredToolType(GatherActionType actionType) {
+        return actionType == GatherActionType.WOODCUTTING ? WeaponType.HATCHET : WeaponType.PICKAXE;
+    }
+
+    private String toolLabel(GatherActionType actionType) {
+        return actionType == GatherActionType.WOODCUTTING ? "斧" : "つるはし";
+    }
+
+    private String jobLevelLabel(GatherActionType actionType) {
+        return actionType == GatherActionType.WOODCUTTING ? "木こりレベル" : "採掘レベル";
+    }
+
+    /**
+     * Resolves the equipped tool to its {@code requiredType}-type weapon template, if any.
+     * {@code ItemModule} is registered after {@code GatheringModule} (see
+     * {@code OreliaPlugin.onEnable} ordering), so it can't be looked up during this module's
+     * own {@code onEnable} - this lookup happens lazily here, at block-break time, by which
+     * point every module is already enabled.
+     */
+    private Optional<WeaponData> resolveToolData(Player player, WeaponType requiredType) {
         ItemStack tool = player.getInventory().getItemInMainHand();
         return plugin.getModuleManager().get(ItemModule.class)
                 .map(ItemModule::getItemManager)
                 .flatMap(itemManager -> itemManager.getIdentityService().dataOf(tool))
-                .filter(data -> data.getWeaponType() == WeaponType.HATCHET);
-    }
-
-    private void bulkBreak(Player player, Block center, GatherBlockTemplate template) {
-        int radius = radiusConfig.radiusForLevel(levelService.getLevel(player.getUniqueId(), template.actionType()));
-        if (radius <= 0) {
-            return;
-        }
-        sweepAndBreak(player, center, template, radius);
+                .filter(data -> data.getWeaponType() == requiredType);
     }
 
     private void sweepAndBreak(Player player, Block center, GatherBlockTemplate template, int radius) {
@@ -170,16 +215,12 @@ public final class GatherBlockBreakListener implements Listener {
                     // breakNaturally() does not play a break sound on its own, so it is
                     // added explicitly here.
                     target.breakNaturally(tool);
-                    target.getWorld().playSound(target.getLocation(), breakSound(template.actionType()), 1f, 1f);
+                    target.getWorld().playSound(target.getLocation(), template.actionType().breakSound(), 1f, 1f);
                     regenService.schedule(target.getWorld(), target.getX(), target.getY(), target.getZ(),
                             template.blockType(), template.replaceBlock(), template.cooldownSeconds());
                     levelService.addExperience(player.getUniqueId(), template.actionType(), template.xpGain());
                 }
             }
         }
-    }
-
-    private Sound breakSound(GatherActionType actionType) {
-        return actionType == GatherActionType.WOODCUTTING ? Sound.BLOCK_WOOD_BREAK : Sound.BLOCK_STONE_BREAK;
     }
 }

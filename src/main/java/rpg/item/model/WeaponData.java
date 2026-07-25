@@ -29,12 +29,13 @@ public final class WeaponData {
     private final boolean unbreakable;
     private final int bulkChopRadius;
     private final int gatherRequiredLevel;
+    private final int luckLevel;
 
     public WeaponData(String id, String name, WeaponType weaponType, int weaponLevel, Rarity rarity,
                        double attackPower, ElementType element, double critRate, double critMultiplier,
                        JobType requiredJob, int requiredLevel, List<String> description,
                        int customModelData, double sellPrice, int skillSlotCount, boolean unbreakable,
-                       int bulkChopRadius, int gatherRequiredLevel) {
+                       int bulkChopRadius, int gatherRequiredLevel, int luckLevel) {
         this.id = id;
         this.name = name;
         this.weaponType = weaponType;
@@ -53,6 +54,7 @@ public final class WeaponData {
         this.unbreakable = unbreakable;
         this.bulkChopRadius = bulkChopRadius;
         this.gatherRequiredLevel = gatherRequiredLevel;
+        this.luckLevel = luckLevel;
     }
 
     public String getId() {
@@ -128,11 +130,20 @@ public final class WeaponData {
     }
 
     /**
-     * (HATCHET only) minimum woodcutting job level (see {@code GatheringLevelService}, not
-     * character level) required to chop with this axe at all - 0 means no restriction. Ignored
-     * for other weapon types.
+     * (HATCHET/PICKAXE only) minimum woodcutting/mining job level (see
+     * {@code GatheringLevelService}, not character level) required to use this tool at all -
+     * 0 means no restriction. Ignored for other weapon types.
      */
     public int getGatherRequiredLevel() {
         return gatherRequiredLevel;
+    }
+
+    /**
+     * (PICKAXE only, default 0) each level rolls a chance (see {@code MiningLuckConfig}) per
+     * ore block broken to add +1 to a random drop from that block. 0 = no bonus. Ignored for
+     * other weapon types.
+     */
+    public int getLuckLevel() {
+        return luckLevel;
     }
 }

@@ -33,12 +33,17 @@ public final class GatheringCommand implements CommandExecutor {
         }
         for (GatherActionType activity : GatherActionType.values()) {
             int level = levelService.getLevel(player.getUniqueId(), activity);
-            int radius = radiusConfig.radiusForLevel(level);
             String jobName = jobManager.getDefinition(activity.jobType()).map(Job::getDisplayName).orElse(activity.jobType().name());
-            sender.sendMessage(Component.text(jobName + "レベル: ", NamedTextColor.GREEN)
-                    .append(Component.text(String.valueOf(level), NamedTextColor.WHITE))
-                    .append(Component.text(" / 一括範囲(半径): ", NamedTextColor.GREEN))
-                    .append(Component.text(String.valueOf(radius), NamedTextColor.WHITE)));
+            Component line = Component.text(jobName + "レベル: ", NamedTextColor.GREEN)
+                    .append(Component.text(String.valueOf(level), NamedTextColor.WHITE));
+            if (activity == GatherActionType.FARMING) {
+                int radius = radiusConfig.radiusForLevel(level);
+                line = line.append(Component.text(" / 一括範囲(半径): ", NamedTextColor.GREEN))
+                        .append(Component.text(String.valueOf(radius), NamedTextColor.WHITE));
+            } else if (activity == GatherActionType.WOODCUTTING) {
+                line = line.append(Component.text(" / 一括範囲: 装備中のツール次第", NamedTextColor.GRAY));
+            }
+            sender.sendMessage(line);
         }
         return true;
     }

@@ -58,7 +58,8 @@ public final class WeaponRepository {
                 section.getInt("skill-slot-count", 1),
                 section.getBoolean("unbreakable", false),
                 section.getInt("bulk-chop-radius", 0),
-                section.getInt("gather-required-level", 0));
+                section.getInt("gather-required-level", 0),
+                section.getInt("luck-level", 0));
     }
 
     public Optional<WeaponData> findById(String id) {
