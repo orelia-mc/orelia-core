@@ -2,6 +2,7 @@ package rpg.gathering.listener;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -135,8 +136,10 @@ public final class GatherBlockBreakListener implements Listener {
 
     /**
      * Rolls {@code luckLevel} times (0 = no-op) at {@link MiningLuckConfig#getBonusChancePercent()}
-     * each, adding +1 to a random drop from the broken block per success, and overrides the
-     * event's drops with the result. Must run before the block is actually removed (i.e. while
+     * each, adding +1 to a random drop from the broken block per success. {@code
+     * BlockBreakEvent} has no way to override its drop list directly ({@code setDropItems}
+     * only takes a boolean), so vanilla's own drops are suppressed and the bonus-adjusted list
+     * is dropped manually instead. Must run before the block is actually removed (i.e. while
      * still inside this handler) since {@link Block#getDrops(ItemStack)} reads live block state.
      */
     private void applyMiningLuckBonus(BlockBreakEvent event, ItemStack tool, int luckLevel) {
@@ -154,7 +157,11 @@ public final class GatherBlockBreakListener implements Listener {
             ItemStack boosted = drops.get(ThreadLocalRandom.current().nextInt(drops.size()));
             boosted.setAmount(boosted.getAmount() + 1);
         }
-        event.setDropItems(drops);
+        event.setDropItems(false);
+        Location location = event.getBlock().getLocation();
+        for (ItemStack drop : drops) {
+            location.getWorld().dropItemNaturally(location, drop);
+        }
     }
 
     private WeaponType requiredToolType(GatherActionType actionType) {
