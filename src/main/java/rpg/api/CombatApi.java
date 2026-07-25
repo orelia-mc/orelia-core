@@ -19,8 +19,18 @@ public interface CombatApi {
     Optional<String> identifyBoss(String monsterId);
 
     /** Spawns a plain monsters.yml-defined monster (no boss phases/abilities) at the given location. */
-    Optional<LivingEntity> spawnMonster(String monsterId, Location location);
+    default Optional<LivingEntity> spawnMonster(String monsterId, Location location) {
+        return spawnMonster(monsterId, location, null);
+    }
+
+    /** {@code targetLevel} scales the spawned monster's hp/attack-power/defense (see {@code config.yml: monster-level-scaling}) - {@code null} means unscaled, same as the template. */
+    Optional<LivingEntity> spawnMonster(String monsterId, Location location, Integer targetLevel);
 
     /** Spawns a bosses.yml-defined boss at the given location (resolves its underlying monster, registers phases/abilities). */
-    Optional<LivingEntity> spawnBoss(String bossId, Location location);
+    default Optional<LivingEntity> spawnBoss(String bossId, Location location) {
+        return spawnBoss(bossId, location, null);
+    }
+
+    /** {@code targetLevel} scales the boss's underlying monster the same way {@link #spawnMonster(String, Location, Integer)} does. */
+    Optional<LivingEntity> spawnBoss(String bossId, Location location, Integer targetLevel);
 }
