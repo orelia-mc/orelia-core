@@ -23,7 +23,7 @@ public final class EquipmentGuiScreen {
     public static final String TAG = "equipment";
 
     private static final int WEAPON_SLOT = 13;
-    private static final int[] ACCESSORY_SLOTS = {19, 20, 21, 22};
+    private static final int[] ACCESSORY_SLOTS = {19, 20, 21, 22, 23, 24};
 
     private final GuiConfig guiConfig;
 

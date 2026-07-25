@@ -8,7 +8,9 @@ public enum AccessoryType {
     CHARM("お守り"),
     RING("指輪"),
     NECKLACE("ネックレス"),
-    WING("羽根");
+    WING("羽根"),
+    EARRING("耳飾り"),
+    BELT("ベルト");
 
     private final String displayName;
 

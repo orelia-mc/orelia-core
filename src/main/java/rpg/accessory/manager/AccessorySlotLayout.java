@@ -10,7 +10,7 @@ import java.util.Optional;
  * Fixed mapping between {@link AccessoryType} and a slot index in
  * {@link org.bukkit.inventory.PlayerInventory#getStorageContents()} (SOW section 8: the
  * bottom row of the main inventory, i.e. indices 27-35, the row directly above the
- * hotbar). Slots 31-35 are reserved for future accessory types.
+ * hotbar). Slots 33-35 remain reserved for future accessory types.
  */
 public final class AccessorySlotLayout {
 
@@ -22,6 +22,8 @@ public final class AccessorySlotLayout {
         TYPE_TO_SLOT.put(AccessoryType.RING, 28);
         TYPE_TO_SLOT.put(AccessoryType.NECKLACE, 29);
         TYPE_TO_SLOT.put(AccessoryType.WING, 30);
+        TYPE_TO_SLOT.put(AccessoryType.EARRING, 31);
+        TYPE_TO_SLOT.put(AccessoryType.BELT, 32);
         TYPE_TO_SLOT.forEach((type, slot) -> SLOT_TO_TYPE.put(slot, type));
     }
 

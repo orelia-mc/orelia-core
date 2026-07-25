@@ -82,9 +82,11 @@ public final class OreliaPlugin extends JavaPlugin {
         moduleManager.register(new GatheringModule());
         moduleManager.register(new ItemModule());
         moduleManager.register(new SkillModule());
-        moduleManager.register(new AccessoryModule());
         moduleManager.register(new EffectModule());
         moduleManager.register(new EconomyModule());
+        // Registered after EconomyModule (not alphabetically) - relics' upgrade cost needs
+        // Vault's Economy, which EconomyModule only registers with Vault once it enables.
+        moduleManager.register(new AccessoryModule());
         moduleManager.register(new MonsterModule());
         moduleManager.register(new BossModule());
         moduleManager.register(new GuiModule());

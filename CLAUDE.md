@@ -34,7 +34,7 @@ In-game: `/oladmin reload` reloads every module's config file without a server r
 
 `OreliaPlugin` (`rpg/core/OreliaPlugin.java`) is the single entry point. It owns process-wide singletons — `ConfigManager`, `SchedulerService`, `PlayerDataManager`, `ModuleManager` — and registers every top-level feature as an `RpgModule` (`rpg/core/module/RpgModule.java`) in a fixed order in `onEnable()`.
 
-- **Registration order is dependency order.** A module may look up an earlier-registered module via `ModuleManager#get(Class)`, never a later one. Current order: Database → Status → Job → Gathering → Item → Skill → Accessory → Effect → Economy → Monster → Boss → Gui → **Api (always last)**.
+- **Registration order is dependency order.** A module may look up an earlier-registered module via `ModuleManager#get(Class)`, never a later one. Current order: Database → Status → Job → Gathering → Item → Skill → Effect → Economy → Accessory → Monster → Boss → Gui → **Api (always last)**. (Accessory sits after Economy, not alphabetically - relics' upgrade cost needs Vault's `Economy`, which `EconomyModule` only registers with Vault once it enables.)
 - Modules are enabled in registration order, **disabled in reverse order**.
 - Each module's `onEnable` typically: registers its config file with `ConfigManager`, loads a repository from that YAML, builds its services/managers, registers Bukkit listeners, and registers its player-facing subcommand into `PlayerCommandRegistry`.
 - `onReload()` is optional (default no-op); implement it to re-read config and rebuild repositories in place — see `ItemModule.reloadWeapons()` for the pattern.

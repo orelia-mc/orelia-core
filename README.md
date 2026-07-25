@@ -8,7 +8,7 @@
 
 Orelia は以下のプラグイン群で構成されています。
 
-- **orelia-core**(本リポジトリ) — Core, Item, Skill, Job, Status, Accessory, Monster, Boss, Effect, Economy, GUI, Gathering, Database, API, Util
+- **orelia-core**(本リポジトリ) — Core, Item, Skill, Job, Status, Accessory, Relic, Monster, Boss, Effect, Economy, GUI, Gathering, Database, API, Util
 - [orelia-world](https://github.com/orelia-mc/orelia-world) — Quest, NPC, Dialogue, Story, Dungeon, Region, CutScene, Event
 - [orelia-extra](https://github.com/orelia-mc/orelia-extra) — 後発の MMORPG 系機能(Party, Guild, Trade, ...)
 - [orelia-debug](https://github.com/orelia-mc/orelia-debug) — orelia-core/world/extra のテストプレイを助ける管理者向けデバッグツール
@@ -24,8 +24,9 @@ Orelia は以下のプラグイン群で構成されています。
 
 ## Structure
 
-- 公開 API — 他プラグイン(orelia-world / orelia-extra を含む)は `rpg.api` 経由(Bukkit の `ServicesManager` で公開)でのみ本プラグインと連携します。内部モジュールクラスへ直接アクセスすることはありません。`rpg.api.OreliaApi` と、より narrow な `StatusApi` / `JobApi` / `ItemApi` / `AccessoryApi` / `SkillApi` / `GuiApi` / `EffectApi` / `CombatApi` を参照してください。
-- 設定ファイル — 各モジュールが `src/main/resources/` 配下の専用ファイル(`items.yml`, `skills.yml`, `jobs.yml`, `accessories.yml`, `monsters.yml`, `bosses.yml`, `effects.yml`, `gui.yml`, `crafting.yml`, `gathering.yml`, `messages.yml`, `config.yml`)を読み込みます。`/oladmin reload` で一括リロードできます。全ファイルが先頭の `config-version` で管理されており、新しいjarで起動すると新規追加されたキー(ネストした階層のキーも含む)は既存ファイルの正しい位置へ自動で追記されます(`rpg.core.config.ConfigMigrator`)。新しいトップレベルセクション・キーを追加したら、そのファイルの `config-version` を1つ上げてください。
+- 公開 API — 他プラグイン(orelia-world / orelia-extra を含む)は `rpg.api` 経由(Bukkit の `ServicesManager` で公開)でのみ本プラグインと連携します。内部モジュールクラスへ直接アクセスすることはありません。`rpg.api.OreliaApi` と、より narrow な `StatusApi` / `JobApi` / `ItemApi` / `AccessoryApi` / `SkillApi` / `GuiApi` / `EffectApi` / `CombatApi` / `RelicApi` を参照してください。
+- 設定ファイル — 各モジュールが `src/main/resources/` 配下の専用ファイル(`items.yml`, `skills.yml`, `jobs.yml`, `accessories.yml`, `relics.yml`, `monsters.yml`, `bosses.yml`, `effects.yml`, `gui.yml`, `crafting.yml`, `gathering.yml`, `messages.yml`, `config.yml`)を読み込みます。`/oladmin reload` で一括リロードできます。全ファイルが先頭の `config-version` で管理されており、新しいjarで起動すると新規追加されたキー(ネストした階層のキーも含む)は既存ファイルの正しい位置へ自動で追記されます(`rpg.core.config.ConfigMigrator`)。新しいトップレベルセクション・キーを追加したら、そのファイルの `config-version` を1つ上げてください。
+- レリック(厳選アクセサリー) — `accessories.yml`の完全固定ステータスとは別に、ダンジョンのボス討伐でランダムな部位・メインステータスを1本持って生成される個体差ありのアクセサリー(`rpg.api.RelicApi#generateRelic`、orelia-worldから利用)。アクセサリー枠は4→6種(お守り/指輪/ネックリス/羽根/耳飾り/ベルト)に拡張。メインステータスは部位ごとの固定プール(`relics.yml`)からランダムに1本、最大4本のサブステータスは初期状態では0本で、`/ol relic upgrade`で3レベル毎(最大15、計5回)にプレイヤー自身が「新規追加するステータス」または「強化する既存ステータス」を選んで伸ばせます(値の増加量のみ1〜2のランダム — 完全ランダム厳選との差別化)。同じダンジョン産のレリックを2つ以上装備すると、そのダンジョン専用のセットボーナスが自動で付与されます(`relics.yml`の`dungeon-set-bonuses`)。
 - バージョン管理 — `main` への push(=PRマージ)ごとに `.github/workflows/version-bump.yml` が `build.gradle.kts` の `version` を自動でPATCHインクリメントし、タグを打ちます。互換性が壊れる変更は `bump:minor`、大規模な改修は `bump:major` ラベルをPRに付けてからマージしてください。
 - モンスターの強さ — `/oladmin spawnpoint add <monsterId> [intervalSeconds] [maxAlive] [targetLevel]` でスポーンポイントごとに目安レベルを設定でき、そのレベルに応じて `monsters.yml` の HP・攻撃力・防御力が `config.yml: monster-level-scaling` の係数でスケールします(未指定なら従来通りテンプレート値のまま)。
 - 合成 — `/ol craft` で `crafting.yml` に定義されたレシピの一覧を開き、素材を消費して武器を1個作成できます。

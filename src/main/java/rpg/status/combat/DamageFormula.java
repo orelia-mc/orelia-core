@@ -72,24 +72,36 @@ public final class DamageFormula {
         return weak ? damage * multiplier : damage;
     }
 
+    /** {@code damage * (1 + elementalDamageBonusPercent/100)} - a relic's "elemental damage increase" bonus. */
+    public static double applyElementalDamageBonus(double damage, double elementalDamageBonusPercent) {
+        return damage * (1 + elementalDamageBonusPercent / 100.0);
+    }
+
     public record DamageResult(double amount, boolean crit) {
     }
 
     /**
      * The single, decisive-order combat pipeline: base attack power -&gt; ATK% -&gt; DEF
-     * mitigation -&gt; crit roll/multiplier -&gt; elemental weakness. Every damage-dealing hit
-     * (weapon, bare hand, monster, skill) should compute through this one method rather than
-     * applying these steps piecemeal across multiple listeners, so the order is never left to
-     * Bukkit's undefined same-priority listener ordering.
+     * mitigation -&gt; crit roll/multiplier -&gt; elemental weakness -&gt; elemental damage bonus.
+     * Every damage-dealing hit (weapon, bare hand, monster, skill) should compute through this
+     * one method rather than applying these steps piecemeal across multiple listeners, so the
+     * order is never left to Bukkit's undefined same-priority listener ordering.
+     *
+     * @param elementalDamageBonusPercent the attacker's relic-granted damage bonus for the
+     *                                    weapon's own element (0 for an elementless weapon or an
+     *                                    attacker with no such bonus) - distinct from
+     *                                    {@code weaknessMultiplier}, which depends on the
+     *                                    victim's configured weakness, not the attacker's gear.
      */
     public static DamageResult compute(double baseAttackPower, double atkPercent, double defense,
                                         double critRatePercent, double baseCritMultiplier, double critDmgPercent,
-                                        boolean elementalWeak, double weaknessMultiplier) {
+                                        boolean elementalWeak, double weaknessMultiplier, double elementalDamageBonusPercent) {
         double afterAtk = applyAttackBonus(baseAttackPower, atkPercent);
         double afterDef = mitigate(afterAtk, defense);
         boolean crit = rollCrit(critRatePercent);
         double afterCrit = crit ? afterDef * criticalMultiplier(baseCritMultiplier, critDmgPercent) : afterDef;
         double afterWeakness = applyElementalWeakness(afterCrit, elementalWeak, weaknessMultiplier);
-        return new DamageResult(Math.max(0, afterWeakness), crit);
+        double afterElemental = applyElementalDamageBonus(afterWeakness, elementalDamageBonusPercent);
+        return new DamageResult(Math.max(0, afterElemental), crit);
     }
 }
