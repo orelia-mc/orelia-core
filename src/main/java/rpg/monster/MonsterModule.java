@@ -26,6 +26,7 @@ import rpg.monster.spawnpoint.manager.MonsterSpawnPointManager;
 import rpg.monster.spawnpoint.repository.MonsterSpawnPointRepository;
 import rpg.monster.spawnpoint.service.MonsterSpawnPointService;
 import rpg.status.StatusModule;
+import rpg.town.TownModule;
 
 import java.util.logging.Level;
 
@@ -63,12 +64,14 @@ public final class MonsterModule implements RpgModule {
                 .orElseThrow(() -> new IllegalStateException("monster module requires job module"));
         DatabaseModule databaseModule = plugin.getModuleManager().get(DatabaseModule.class)
                 .orElseThrow(() -> new IllegalStateException("monster module requires database module"));
+        TownModule townModule = plugin.getModuleManager().get(TownModule.class)
+                .orElseThrow(() -> new IllegalStateException("monster module requires town module"));
 
         reloadMonsters();
         levelScalingConfig.load(plugin.getConfigManager().get("config.yml").get());
 
         MonsterKeys keys = new MonsterKeys(plugin);
-        this.spawnService = new MonsterSpawnService(plugin, keys, repository, levelScalingConfig);
+        this.spawnService = new MonsterSpawnService(plugin, keys, repository, levelScalingConfig, townModule.getDetectionService());
         this.abilityCastService = new MonsterAbilityCastService(plugin, spawnService);
         MonsterDropService dropService = new MonsterDropService(
                 itemModule.getItemManager(), economyModule.getEconomyService(), statusModule.getStatusService(),

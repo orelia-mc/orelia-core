@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `orelia-core` is a Paper 1.21.x (Java 21) Minecraft plugin — the foundation of a 3-plugin RPG suite:
 
-- **orelia-core** (this repo): Core, Item, Skill, Job, Status, Accessory, Monster, Boss, Effect, Economy, GUI, Gathering, Database, API, Util
+- **orelia-core** (this repo): Core, Item, Skill, Job, Status, Accessory, Monster, Boss, Effect, Economy, GUI, Gathering, Region, Town, Database, API, Util
 - `orelia-world` (separate repo): Quest, NPC, Dialogue, Story, Dungeon, Region, CutScene, Event
 - `orelia-extra` (separate repo, not yet implemented): Party, Guild, Trade, ...
 
@@ -34,7 +34,7 @@ In-game: `/oladmin reload` reloads every module's config file without a server r
 
 `OreliaPlugin` (`rpg/core/OreliaPlugin.java`) is the single entry point. It owns process-wide singletons — `ConfigManager`, `SchedulerService`, `PlayerDataManager`, `ModuleManager` — and registers every top-level feature as an `RpgModule` (`rpg/core/module/RpgModule.java`) in a fixed order in `onEnable()`.
 
-- **Registration order is dependency order.** A module may look up an earlier-registered module via `ModuleManager#get(Class)`, never a later one. Current order: Database → Status → Job → Gathering → Item → Skill → Effect → Economy → Accessory → Monster → Boss → Gui → **Api (always last)**. (Accessory sits after Economy, not alphabetically - relics' upgrade cost needs Vault's `Economy`, which `EconomyModule` only registers with Vault once it enables.)
+- **Registration order is dependency order.** A module may look up an earlier-registered module via `ModuleManager#get(Class)`, never a later one. Current order: Database → Region → Status → Job → Gathering → Item → Skill → Effect → Economy → Accessory → Town → Monster → Boss → Gui → **Api (always last)**. (Accessory sits after Economy, not alphabetically - relics' upgrade cost needs Vault's `Economy`, which `EconomyModule` only registers with Vault once it enables. Region sits right after Database since Gathering's fishing-area detection needs its `RegionQueryService` before it exists as a module dependency; Town sits right before Monster since monster spawn suppression needs `TownDetectionService` already built.)
 - Modules are enabled in registration order, **disabled in reverse order**.
 - Each module's `onEnable` typically: registers its config file with `ConfigManager`, loads a repository from that YAML, builds its services/managers, registers Bukkit listeners, and registers its player-facing subcommand into `PlayerCommandRegistry`.
 - `onReload()` is optional (default no-op); implement it to re-read config and rebuild repositories in place — see `ItemModule.reloadWeapons()` for the pattern.
@@ -68,7 +68,37 @@ There are exactly two top-level Bukkit commands, both dispatchers: `/ol` (player
 
 ### Public API (`rpg.api`)
 
-`ApiModule` is always the last module enabled. It wraps each module's service in a narrow `*Api`/`*ApiImpl` pair (`OreliaApi`, `StatusApi`, `JobApi`, `ItemApi`, `AccessoryApi`, `SkillApi`, `GuiApi`, `EffectApi`, `CombatApi`) and publishes them — plus the generic `PlayerDataManager` and `DatabaseManager` — through Bukkit's `ServicesManager`. This is the **only** integration surface for other plugins; when adding a new cross-plugin capability, add/extend an `*Api` interface here rather than exposing an internal manager class.
+`ApiModule` is always the last module enabled. It wraps each module's service in a narrow `*Api`/`*ApiImpl` pair (`OreliaApi`, `StatusApi`, `JobApi`, `ItemApi`, `AccessoryApi`, `SkillApi`, `GuiApi`, `EffectApi`, `CombatApi`, `TownApi`) and publishes them — plus the generic `PlayerDataManager` and `DatabaseManager` — through Bukkit's `ServicesManager`. This is the **only** integration surface for other plugins; when adding a new cross-plugin capability, add/extend an `*Api` interface here rather than exposing an internal manager class.
+
+### WorldGuard region lookup (`rpg.region.service.RegionQueryService`) and town detection (`rpg.town`)
+
+`RegionQueryService` is the one place orelia-core talks to WorldGuard to find out *which*
+region IDs apply at a `Location` (`getRegionIds`, highest priority first) - reflection-only,
+same rationale as `rpg.gathering.service.RegionProtectionService` (this build environment
+can't reach WorldGuard's Maven repo, so there's no compile-time dependency on its jar/API):
+fail-open, an empty list if WorldGuard isn't installed, its API doesn't match, or nothing
+applies there. `RegionModule` owns it and registers right after `DatabaseModule` since
+`GatheringModule` (fishing's area-based loot, see below) needs it before `TownModule` exists.
+
+`rpg.town.service.TownDetectionService` builds "is this location inside a town" on top of
+`RegionQueryService`: a location counts as a town if any applicable region ID is listed in
+`config.yml: town-detection.town-regions` (a flat, case-insensitive allow-list). A single
+logical town spread across disjoint areas just needs one WorldGuard region per area, with all
+of their IDs listed - WorldGuard region IDs are unique per world, so there's no way to make
+two separate shapes share one ID. `TownModule` registers right before `MonsterModule` and
+publishes `TownDetectionService` via `getDetectionService()`; `MonsterSpawnService#spawn`
+refuses to spawn at all inside a town (the single choke point every caller - spawn points,
+`/oladmin spawn` - goes through), and `TownApi` publishes `isInTown(Location)` for
+orelia-world/orelia-extra.
+
+Fishing's per-area loot table (`rpg.gathering.listener.FishingListener`,
+`rpg.gathering.repository.FishingLootRepository`) is a separate, lower-level consumer of the
+same `RegionQueryService` - it doesn't go through `rpg.town` at all, since a fishing spot
+doesn't have to be a "town". `fishing.yml`'s `towns:` section keys are free-form strings tried
+in order by `FishingLootRepository#lootFor(List)`: WorldGuard region IDs at the bobber's
+location (most specific), then the fishing world's name, then `default`. No schema change was
+needed - a WorldGuard region ID is just another string key under `towns:`, and the whole chain
+degrades to the original world-name-only behavior when WorldGuard isn't installed.
 
 ### Combat damage math (`rpg.status.combat.DamageFormula`)
 

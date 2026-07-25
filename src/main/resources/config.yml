@@ -5,7 +5,7 @@
 # added - on next startup, ConfigManager appends the new section (with its comments) to any
 # existing config.yml that's missing it, without touching anything you've already customized.
 # Never bump this for a value-only change (e.g. tweaking a default), only for new/removed keys.
-config-version: 4
+config-version: 5
 
 database:
   # SQLITE or MYSQL
@@ -106,10 +106,29 @@ action-bar:
   period-ticks: 20
   format: "&%c♥ {hp}/{max_hp} &%7| &%b✦ {sp}/{max_sp} &%7| &%e⚔ {atk}"
 
+# Whether a Location is "inside a town" (rpg.town.service.TownDetectionService), used to
+# suppress Orelia monster spawns there (see monster: below) and published as rpg.api.TownApi
+# for orelia-world/orelia-extra. Detection is WorldGuard-region-based: this plugin never
+# defines its own region shapes, it only reads region IDs WorldGuard already knows about
+# (soft-depend, reflection-only - see RegionQueryService). No effect if WorldGuard isn't
+# installed.
+town-detection:
+  enabled: true
+  # WorldGuard region IDs that count as "a town". A single logical town spread across
+  # disjoint areas needs one WorldGuard region per area (region IDs are unique per world) -
+  # list every one of them here, e.g.:
+  #   town-regions:
+  #     - town1_areaA
+  #     - town1_areaB
+  #     - town2_center
+  town-regions: []
+
 monster:
   # Cancels vanilla natural/spawner hostile mob spawning so every enemy in the world comes
   # from an Orelia monster spawn point (/oladmin spawnpoint) instead of random vanilla
-  # spawns. Does not affect passive animals or Orelia's own spawns.
+  # spawns. Does not affect passive animals or Orelia's own spawns. Orelia's own spawns
+  # (spawn points, /oladmin spawn) never spawn inside a town-detection region regardless of
+  # this setting - see town-detection above.
   disable-vanilla-hostile-spawning: true
   # Prevents tagged monsters (zombies etc.) from burning in daylight, without affecting
   # other ignition sources (lava, fire blocks, fire-elemental skills).
