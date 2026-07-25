@@ -28,7 +28,7 @@ public final class WeaponFactory {
     }
 
     public ItemStack create(WeaponData data) {
-        Material baseMaterial = data.getWeaponType().materialForRarity(data.getRarity());
+        Material baseMaterial = data.resolveBaseMaterial();
         ItemStack stack = new ItemBuilder(baseMaterial)
                 .name(data.getRarity().getColor() + data.getName())
                 .customModelData(data.getCustomModelData())

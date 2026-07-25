@@ -99,7 +99,7 @@ public final class GatheringModule implements RpgModule {
 
         plugin.getPlayerCommandRegistry().register("gathering",
                 new GatheringCommand(levelService, radiusConfig, jobModule.getJobManager()),
-                "採掘/伐採/農業レベルと一括範囲を確認します。", "gathering");
+                "採掘/伐採/農業のレベルを確認します。", "gathering");
     }
 
     @Override

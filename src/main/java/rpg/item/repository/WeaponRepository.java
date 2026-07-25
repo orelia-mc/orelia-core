@@ -1,5 +1,6 @@
 package rpg.item.repository;
 
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import rpg.item.model.ElementType;
@@ -40,6 +41,10 @@ public final class WeaponRepository {
         String requiredJobRaw = section.getString("required-job", "");
         JobType requiredJob = requiredJobRaw.isBlank() ? null : JobType.valueOf(requiredJobRaw.trim().toUpperCase());
 
+        String baseMaterialRaw = section.getString("base-material", "");
+        Material baseMaterial = baseMaterialRaw.isBlank()
+                ? null : Material.valueOf(baseMaterialRaw.trim().toUpperCase());
+
         return new WeaponData(
                 id,
                 section.getString("name", id),
@@ -59,7 +64,8 @@ public final class WeaponRepository {
                 section.getBoolean("unbreakable", false),
                 section.getInt("bulk-chop-radius", 0),
                 section.getInt("gather-required-level", 0),
-                section.getInt("luck-level", 0));
+                section.getInt("luck-level", 0),
+                baseMaterial);
     }
 
     public Optional<WeaponData> findById(String id) {

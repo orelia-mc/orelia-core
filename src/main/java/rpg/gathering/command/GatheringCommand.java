@@ -12,7 +12,11 @@ import rpg.gathering.service.GatheringLevelService;
 import rpg.job.manager.JobManager;
 import rpg.job.model.Job;
 
-/** {@code /ol gathering} - shows the sender's mining/woodcutting/farming levels and bulk radii. */
+/**
+ * {@code /ol gathering} - shows the sender's mining/woodcutting/farming levels, plus a bulk
+ * radius for the two activities that still have one (farming's is level-based, woodcutting's
+ * comes from the equipped hatchet; mining has no bulk break at all).
+ */
 public final class GatheringCommand implements CommandExecutor {
 
     private final GatheringLevelService levelService;

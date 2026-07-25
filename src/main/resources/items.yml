@@ -7,6 +7,11 @@
 # required-job: FENCER | WARRIOR | ARCHER | MINER | FARMER | WOODCUTTER (blank = any job may use it)
 # unbreakable: true | false (default false) - vanilla's own "Unbreakable" flag, the item never
 #   loses durability no matter how it's used.
+# base-material: (optional) the vanilla item this weapon is stamped onto, e.g. IRON_PICKAXE.
+#   When omitted it is derived from `rarity` instead. Set it explicitly on gathering tools:
+#   a vanilla material's harvest tier decides which ore/log it can actually collect, and that
+#   is unrelated to how rare the weapon is meant to feel (a golden pickaxe harvests no more
+#   than a wooden one, so deriving it from rarity would make an EPIC tool worse than a RARE).
 # bulk-chop-radius: (HATCHET only, default 0) radius of the automatic bulk-chop sweep this axe
 #   grants on every break - no sneaking required. 0 = no bulk chop (single-block only),
 #   1 = 3x3, 2 = 5x5, etc. Ignored for other weapon-types.
@@ -205,6 +210,10 @@ weapons:
   skilled_miners_pickaxe:
     name: "熟練採掘師のつるはし"
     weapon-type: PICKAXE
+    # Iron rather than the stone a rarity of UNCOMMON would give: stone cannot collect gold or
+    # diamond ore at all, which would leave this tier's luck-level dead on the two ores that
+    # matter most.
+    base-material: IRON_PICKAXE
     level: 10
     rarity: UNCOMMON
     attack-power: 10.0

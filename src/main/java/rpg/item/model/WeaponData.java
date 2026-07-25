@@ -1,5 +1,6 @@
 package rpg.item.model;
 
+import org.bukkit.Material;
 import rpg.job.model.JobType;
 
 import java.util.List;
@@ -30,12 +31,13 @@ public final class WeaponData {
     private final int bulkChopRadius;
     private final int gatherRequiredLevel;
     private final int luckLevel;
+    private final Material baseMaterial;
 
     public WeaponData(String id, String name, WeaponType weaponType, int weaponLevel, Rarity rarity,
                        double attackPower, ElementType element, double critRate, double critMultiplier,
                        JobType requiredJob, int requiredLevel, List<String> description,
                        int customModelData, double sellPrice, int skillSlotCount, boolean unbreakable,
-                       int bulkChopRadius, int gatherRequiredLevel, int luckLevel) {
+                       int bulkChopRadius, int gatherRequiredLevel, int luckLevel, Material baseMaterial) {
         this.id = id;
         this.name = name;
         this.weaponType = weaponType;
@@ -55,6 +57,7 @@ public final class WeaponData {
         this.bulkChopRadius = bulkChopRadius;
         this.gatherRequiredLevel = gatherRequiredLevel;
         this.luckLevel = luckLevel;
+        this.baseMaterial = baseMaterial;
     }
 
     public String getId() {
@@ -145,5 +148,20 @@ public final class WeaponData {
      */
     public int getLuckLevel() {
         return luckLevel;
+    }
+
+    /** The explicit {@code items.yml} base-material override, or null to derive it from rarity. */
+    public Material getBaseMaterial() {
+        return baseMaterial;
+    }
+
+    /**
+     * The vanilla item this weapon is stamped onto. An explicit {@code base-material} wins;
+     * otherwise it falls back to {@link WeaponType#materialForRarity(Rarity)}. Gathering tools
+     * generally want the explicit form, since a vanilla material's harvest tier (which decides
+     * what ore it can actually collect) is unrelated to how rare the weapon is meant to feel.
+     */
+    public Material resolveBaseMaterial() {
+        return baseMaterial != null ? baseMaterial : weaponType.materialForRarity(rarity);
     }
 }
