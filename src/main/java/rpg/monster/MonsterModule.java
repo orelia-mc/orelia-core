@@ -13,6 +13,8 @@ import rpg.monster.listener.DamageDisplayListener;
 import rpg.monster.listener.MonsterDeathListener;
 import rpg.monster.listener.MonsterHealthBarListener;
 import rpg.monster.listener.MonsterSunImmunityListener;
+import rpg.monster.listener.ProjectileAttackPowerListener;
+import rpg.monster.listener.ProjectileKeys;
 import rpg.monster.listener.VanillaHostileSpawnBlockerListener;
 import rpg.monster.repository.MonsterRepository;
 import rpg.monster.service.DamageDisplayService;
@@ -81,10 +83,13 @@ public final class MonsterModule implements RpgModule {
         this.spawnPointService = new MonsterSpawnPointService(spawnPointRepository, new MonsterSpawnPointManager(), spawnService, repository, abilityCastService);
         spawnPointService.loadAll();
 
+        ProjectileKeys projectileKeys = new ProjectileKeys(plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new CombatDamageListener(plugin, itemModule.getItemManager().getIdentityService(),
                         itemModule.getItemManager().getRequirementService(), statusModule.getStatusService(),
-                        spawnService, plugin.getMessageManager()), plugin);
+                        spawnService, plugin.getMessageManager(), projectileKeys), plugin);
+        plugin.getServer().getPluginManager().registerEvents(
+                new ProjectileAttackPowerListener(itemModule.getItemManager().getIdentityService(), projectileKeys), plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new MonsterDeathListener(spawnService, dropService, spawnPointService, plugin.getMessageManager()), plugin);
         plugin.getServer().getPluginManager().registerEvents(new MonsterHealthBarListener(spawnService), plugin);

@@ -3,12 +3,14 @@ package rpg.monster.listener;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import rpg.core.message.MessageManager;
 import rpg.item.model.ElementType;
@@ -47,15 +49,18 @@ public final class CombatDamageListener implements Listener {
     private final StatusService statusService;
     private final MonsterSpawnService spawnService;
     private final MessageManager messages;
+    private final ProjectileKeys projectileKeys;
 
     public CombatDamageListener(Plugin plugin, WeaponIdentityService identityService, WeaponRequirementService requirementService,
-                                 StatusService statusService, MonsterSpawnService spawnService, MessageManager messages) {
+                                 StatusService statusService, MonsterSpawnService spawnService, MessageManager messages,
+                                 ProjectileKeys projectileKeys) {
         this.plugin = plugin;
         this.identityService = identityService;
         this.requirementService = requirementService;
         this.statusService = statusService;
         this.spawnService = spawnService;
         this.messages = messages;
+        this.projectileKeys = projectileKeys;
     }
 
     @EventHandler(priority = EventPriority.LOW)
@@ -75,6 +80,7 @@ public final class CombatDamageListener implements Listener {
 
         event.setDamage(resolveFinalDamage(event.getEntity(), result.amount()));
         applyCritMetadata(event.getDamager(), result.crit());
+        applyElementMetadata(event.getEntity(), attack.element());
     }
 
     /**
@@ -120,11 +126,13 @@ public final class CombatDamageListener implements Listener {
 
             double elementalDamageBonus = elementalDamageBonusPercentFor(data != null ? data.getElement() : ElementType.NONE, stats);
 
+            ElementType weaponElement = data != null ? data.getElement() : ElementType.NONE;
+
             if (attacker.hasMetadata(DamageFormula.SKILL_OVERRIDE_METADATA)) {
                 // SkillDamage already folded base attack power + ATK% into event.getDamage()
                 // (once per cast, not per target) - only DEF/crit/weakness are left to resolve
                 // against this specific victim.
-                return new AttackInput(event.getDamage(), 0, weaponCritRate, critMultiplier, critDmg, elementalDamageBonus);
+                return new AttackInput(event.getDamage(), 0, weaponCritRate, critMultiplier, critDmg, elementalDamageBonus, weaponElement);
             }
 
             double atkPercent = stats != null ? stats.get(StatType.ATK) : 0;
@@ -135,25 +143,57 @@ public final class CombatDamageListener implements Listener {
                     return null;
                 }
                 double baseAttackPower = identityService.baseAttackPower(weapon, data);
-                return new AttackInput(baseAttackPower, atkPercent, weaponCritRate, critMultiplier, critDmg, elementalDamageBonus);
+                return new AttackInput(baseAttackPower, atkPercent, weaponCritRate, critMultiplier, critDmg, elementalDamageBonus, weaponElement);
             }
 
             // Bare hand: the player's own ATK stat IS the base attack power directly - no
             // separate ATK% layer on top of itself (that would double-count the same stat).
             double critRate = stats != null ? stats.get(StatType.CRT) : 0;
-            return new AttackInput(atkPercent, 0, critRate, DamageFormula.DEFAULT_CRIT_MULTIPLIER, critDmg, 0);
+            return new AttackInput(atkPercent, 0, critRate, DamageFormula.DEFAULT_CRIT_MULTIPLIER, critDmg, 0, ElementType.NONE);
         }
 
         if (event.getDamager() instanceof LivingEntity attacker) {
             MonsterData data = spawnService.dataOf(attacker).orElse(null);
             if (data != null) {
-                return new AttackInput(spawnService.scaledAttackPowerOf(attacker, data), 0, data.getCritRate(), data.getCritMultiplier(), 0, 0);
+                return new AttackInput(spawnService.scaledAttackPowerOf(attacker, data), 0, data.getCritRate(), data.getCritMultiplier(), 0, 0, data.getElement());
             }
         }
 
-        // Unrecognized attacker (vanilla mob, projectile, environmental damage, ...) - keep
-        // vanilla damage as the base and skip ATK%/crit, but still let DEF mitigate it below.
-        return new AttackInput(event.getDamage(), 0, 0, DamageFormula.DEFAULT_CRIT_MULTIPLIER, 0, 0);
+        if (event.getDamager() instanceof Projectile projectile && projectile.getShooter() instanceof Player shooter) {
+            AttackInput projectileAttack = resolveProjectileAttack(projectile, shooter);
+            if (projectileAttack != null) {
+                return projectileAttack;
+            }
+        }
+
+        // Unrecognized attacker (vanilla mob, unstamped projectile, environmental damage, ...) -
+        // keep vanilla damage as the base and skip ATK%/crit, but still let DEF mitigate it below.
+        return new AttackInput(event.getDamage(), 0, 0, DamageFormula.DEFAULT_CRIT_MULTIPLIER, 0, 0, ElementType.NONE);
+    }
+
+    /**
+     * {@code null} if {@link ProjectileAttackPowerListener} never stamped this projectile (e.g.
+     * it was shot before this listener was registered, or the shooter had no identifiable
+     * weapon at launch) - falls back to the generic vanilla-damage path in that case. ATK%/crit/
+     * element are read fresh from the shooter's *current* stats/held weapon at impact time,
+     * rather than also being stamped at launch, since only the base attack power depends on
+     * what was equipped at the moment of firing.
+     */
+    private AttackInput resolveProjectileAttack(Projectile projectile, Player shooter) {
+        Double baseAttackPower = projectile.getPersistentDataContainer().get(projectileKeys.attackPower(), PersistentDataType.DOUBLE);
+        if (baseAttackPower == null) {
+            return null;
+        }
+        ItemStack weapon = shooter.getInventory().getItemInMainHand();
+        WeaponData data = identityService.dataOf(weapon).orElse(null);
+        StatSheet stats = statusService.getFinalStats(shooter.getUniqueId()).orElse(null);
+        double atkPercent = stats != null ? stats.get(StatType.ATK) : 0;
+        double critDmg = stats != null ? stats.get(StatType.CRT_DMG) : 0;
+        double critRate = (data != null ? data.getCritRate() : 0.0) + (stats != null ? stats.get(StatType.CRT) : 0);
+        double critMultiplier = data != null ? data.getCritMultiplier() : DamageFormula.DEFAULT_CRIT_MULTIPLIER;
+        ElementType element = data != null ? data.getElement() : ElementType.NONE;
+        double elementalDamageBonus = elementalDamageBonusPercentFor(element, stats);
+        return new AttackInput(baseAttackPower, atkPercent, critRate, critMultiplier, critDmg, elementalDamageBonus, element);
     }
 
     /** Maps a weapon's element to the relic-granted {@code StatType} that boosts damage dealt with it - 0 for {@link ElementType#NONE} or no stats. */
@@ -209,7 +249,14 @@ public final class CombatDamageListener implements Listener {
         }
     }
 
+    /** Stamps the attack's element on the victim so {@code DamageDisplayListener} can tint the floating damage number by it. */
+    private void applyElementMetadata(Entity victim, ElementType element) {
+        if (victim instanceof LivingEntity livingVictim) {
+            livingVictim.setMetadata(DamageFormula.ELEMENT_METADATA_KEY, new FixedMetadataValue(plugin, element.name()));
+        }
+    }
+
     private record AttackInput(double baseAttackPower, double atkPercent, double critRate, double critMultiplier,
-                                double critDmgPercent, double elementalDamageBonusPercent) {
+                                double critDmgPercent, double elementalDamageBonusPercent, ElementType element) {
     }
 }

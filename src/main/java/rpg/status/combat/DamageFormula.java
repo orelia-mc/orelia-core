@@ -34,6 +34,14 @@ public final class DamageFormula {
      */
     public static final String SCALED_DAMAGE_METADATA_KEY = "orelia_scaled_damage_amount";
 
+    /**
+     * Metadata key set on the *victim* with the attacking weapon's/monster's
+     * {@code rpg.item.model.ElementType} name (or {@code NONE} for an elementless attacker), so
+     * the floating damage-number display can tint the number by element - see
+     * {@code rpg.monster.service.DamageDisplayService}.
+     */
+    public static final String ELEMENT_METADATA_KEY = "orelia_last_hit_element";
+
     /** Crit multiplier used when there's no weapon/monster to supply its own (bare hands). */
     public static final double DEFAULT_CRIT_MULTIPLIER = 1.5;
 

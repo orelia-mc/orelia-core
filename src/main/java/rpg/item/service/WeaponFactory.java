@@ -1,11 +1,13 @@
 package rpg.item.service;
 
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import rpg.item.model.ElementType;
 import rpg.item.model.WeaponData;
+import rpg.item.model.WeaponType;
 import rpg.util.ColorUtil;
 import rpg.util.ItemBuilder;
 
@@ -29,12 +31,21 @@ public final class WeaponFactory {
 
     public ItemStack create(WeaponData data) {
         Material baseMaterial = data.resolveBaseMaterial();
-        ItemStack stack = new ItemBuilder(baseMaterial)
+        ItemBuilder builder = new ItemBuilder(baseMaterial)
                 .name(data.getRarity().getColor() + data.getName())
                 .customModelData(data.getCustomModelData())
                 .unbreakable(data.isUnbreakable())
-                .tag(keys.weaponId(), PersistentDataType.STRING, data.getId())
-                .build();
+                .tag(keys.weaponId(), PersistentDataType.STRING, data.getId());
+        // Ammo-consuming weapons quietly never run out - a hidden Infinity/Loyalty enchant is
+        // the simplest way to get that behavior for free from vanilla's own mechanics (Loyalty
+        // returns a thrown trident to hand instead of it landing on the ground) rather than
+        // reimplementing "don't consume ammo" ourselves.
+        if (data.getWeaponType() == WeaponType.BOW) {
+            builder.hiddenEnchant(Enchantment.INFINITY, 1);
+        } else if (data.getWeaponType() == WeaponType.SPEAR) {
+            builder.hiddenEnchant(Enchantment.LOYALTY, 3);
+        }
+        ItemStack stack = builder.build();
         applyLore(stack, data, data.getWeaponLevel(), 0, data.getAttackPower());
         return stack;
     }

@@ -5,6 +5,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,6 +37,22 @@ final class TargetFinder {
     static List<LivingEntity> inRadius(Player caster, double radius) {
         return caster.getWorld().getNearbyLivingEntities(caster.getLocation(), radius, radius, radius,
                 entity -> entity != caster).stream().collect(Collectors.toList());
+    }
+
+    /**
+     * Where a skill's effect (particle) should play: the nearest hit target's visual center if
+     * {@code targets} isn't empty, otherwise a point 2 blocks in front of the caster (so a whiff
+     * still shows the effect happening, rather than always centering it on the caster regardless
+     * of where the skill actually landed).
+     */
+    static Location effectLocation(Player caster, List<LivingEntity> targets) {
+        LivingEntity nearest = targets.stream()
+                .min(Comparator.comparingDouble(e -> e.getLocation().distanceSquared(caster.getLocation())))
+                .orElse(null);
+        if (nearest != null) {
+            return visualCenter(nearest);
+        }
+        return visualCenter(caster).add(caster.getLocation().getDirection().normalize().multiply(2.0));
     }
 
     private static boolean isInFront(Player caster, Vector facing, LivingEntity entity) {

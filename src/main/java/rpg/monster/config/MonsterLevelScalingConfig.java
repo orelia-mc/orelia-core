@@ -5,9 +5,10 @@ import org.bukkit.configuration.file.YamlConfiguration;
 /**
  * Loads {@code config.yml: monster-level-scaling.*} - how much a spawn point's optional
  * target level scales a spawned monster's {@code monsters.yml} hp/attack-power/defense from
- * their template values (see {@link rpg.monster.service.MonsterSpawnService}). Mirrors the
- * multiplicative shape {@link rpg.item.service.WeaponIdentityService#baseAttackPower} uses for
- * weapon level scaling: {@code scaled = base * (1 + factor * (targetLevel - 1))}.
+ * their template values (see {@link rpg.monster.service.MonsterSpawnService}). Exponential
+ * per-level growth, not linear: {@code scaled = base * growth^(targetLevel - 1)}, where
+ * {@code hp-factor}/{@code attack-factor}/{@code defense-factor} are the growth multiplier
+ * itself (e.g. {@code 1.1} = +10% per level, compounding), not an additive "extra percent".
  */
 public final class MonsterLevelScalingConfig {
 
@@ -16,7 +17,7 @@ public final class MonsterLevelScalingConfig {
     private double defenseFactor;
 
     public MonsterLevelScalingConfig() {
-        this(0.1, 0.1, 0.1);
+        this(1.12, 1.10, 1.08);
     }
 
     MonsterLevelScalingConfig(double hpFactor, double attackFactor, double defenseFactor) {
@@ -26,9 +27,9 @@ public final class MonsterLevelScalingConfig {
     }
 
     public void load(YamlConfiguration config) {
-        hpFactor = config.getDouble("monster-level-scaling.hp-factor", 0.1);
-        attackFactor = config.getDouble("monster-level-scaling.attack-factor", 0.1);
-        defenseFactor = config.getDouble("monster-level-scaling.defense-factor", 0.1);
+        hpFactor = config.getDouble("monster-level-scaling.hp-factor", 1.12);
+        attackFactor = config.getDouble("monster-level-scaling.attack-factor", 1.10);
+        defenseFactor = config.getDouble("monster-level-scaling.defense-factor", 1.08);
     }
 
     /** {@code targetLevel == null} means "no scaling" - returns {@code baseHp} unchanged. */
@@ -44,10 +45,10 @@ public final class MonsterLevelScalingConfig {
         return scale(baseDefense, defenseFactor, targetLevel, 0.0);
     }
 
-    private double scale(double base, double factor, Integer targetLevel, double minimum) {
+    private double scale(double base, double growth, Integer targetLevel, double minimum) {
         if (targetLevel == null) {
             return base;
         }
-        return Math.max(base * (1 + factor * (targetLevel - 1)), minimum);
+        return Math.max(base * Math.pow(growth, targetLevel - 1), minimum);
     }
 }

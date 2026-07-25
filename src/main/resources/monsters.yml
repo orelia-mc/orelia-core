@@ -8,9 +8,12 @@
 # crit-multiplier: optional multiplier applied on a crit (default 1.5, only matters if crit-rate > 0).
 # abilities: optional periodic attacks cast at nearby players (MonsterAbilityCastService), same
 # shape as bosses.yml's own abilities block: type is AOE_SLAM or FIREBALL_BARRAGE, damage/radius/
-# cooldown-seconds/particle/sound/announce-message. Do not configure abilities here for a monster
-# id that's also referenced by bosses.yml's monster-id (goblin_king, flame_lord below) - that
-# entity spawns through the separate boss ability system instead when spawned as a boss.
+# cooldown-seconds/particle/sound. No announce-message key here (unlike bosses.yml) - regular
+# monsters cast abilities every few seconds, and broadcasting a chat line each time would spam
+# every nearby player; sound + particle alone carry the "ability happening" signal. Do not
+# configure abilities here for a monster id that's also referenced by bosses.yml's monster-id
+# (goblin_king, flame_lord below) - that entity spawns through the separate boss ability system
+# instead when spawned as a boss.
 config-version: 2
 
 monsters:
@@ -64,7 +67,6 @@ monsters:
         cooldown-seconds: 10
         particle: SWEEP_ATTACK
         sound: ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR
-        announce-message: "&%eゴブリンの略奪者が雄叫びを上げた！"
 
   skeletal_archer:
     name: "骸骨の弓兵"
@@ -92,7 +94,6 @@ monsters:
         cooldown-seconds: 12
         particle: CRIT
         sound: ENTITY_SKELETON_SHOOT
-        announce-message: "&%7骸骨の弓兵が矢を乱射した！"
 
   goblin_king:
     name: "ゴブリンキング"
@@ -172,7 +173,6 @@ monsters:
         cooldown-seconds: 11
         particle: BLOCK_CRACK
         sound: ENTITY_RAVAGER_ATTACK
-        announce-message: "&%e洞窟トロルが地面を叩きつけた！"
 
   frost_archer:
     name: "氷結の射手"
@@ -206,7 +206,6 @@ monsters:
         cooldown-seconds: 12
         particle: SNOWFLAKE
         sound: ENTITY_SKELETON_SHOOT
-        announce-message: "&%b氷結の射手が矢を乱射した！"
 
   ancient_treant:
     name: "古の大樹人"
