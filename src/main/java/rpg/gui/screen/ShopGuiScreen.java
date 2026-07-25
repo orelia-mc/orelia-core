@@ -15,13 +15,14 @@ import rpg.gui.framework.Gui;
 import rpg.gui.framework.GuiButton;
 import rpg.item.manager.ItemManager;
 import rpg.item.model.WeaponData;
+import rpg.relic.service.RelicShopService;
 import rpg.util.ItemBuilder;
 import rpg.util.MoneyFormat;
 
 import java.util.List;
 
 /**
- * NPC shop screen (SOW section 17 "NPCショップ") shared by the weapon/armor/accessory
+ * NPC shop screen (SOW section 17 "NPCショップ") shared by the weapon/armor/accessory/relic
  * shop NPC types - which items are for sale is decided by the npc module, not here.
  */
 public final class ShopGuiScreen {
@@ -29,16 +30,18 @@ public final class ShopGuiScreen {
     private final ItemManager itemManager;
     private final AccessoryRepository accessoryRepository;
     private final AccessoryFactory accessoryFactory;
+    private final RelicShopService relicShopService;
     private final EconomyService economyService;
     private final GuiConfig guiConfig;
     private final MessageManager messages;
 
     public ShopGuiScreen(ItemManager itemManager, AccessoryRepository accessoryRepository,
-                          AccessoryFactory accessoryFactory, EconomyService economyService, GuiConfig guiConfig,
-                          MessageManager messages) {
+                          AccessoryFactory accessoryFactory, RelicShopService relicShopService,
+                          EconomyService economyService, GuiConfig guiConfig, MessageManager messages) {
         this.itemManager = itemManager;
         this.accessoryRepository = accessoryRepository;
         this.accessoryFactory = accessoryFactory;
+        this.relicShopService = relicShopService;
         this.economyService = economyService;
         this.guiConfig = guiConfig;
         this.messages = messages;
@@ -84,6 +87,9 @@ public final class ShopGuiScreen {
         if ("ACCESSORY".equalsIgnoreCase(entry.kind())) {
             return accessoryRepository.findById(entry.id()).map(AccessoryData::getName).orElse(entry.id());
         }
+        if ("RELIC".equalsIgnoreCase(entry.kind())) {
+            return "レリック (" + entry.id() + ")";
+        }
         if ("VANILLA".equalsIgnoreCase(entry.kind())) {
             return prettifyMaterialName(entry.id());
         }
@@ -109,6 +115,9 @@ public final class ShopGuiScreen {
     private java.util.Optional<ItemStack> resolve(ShopEntry entry) {
         if ("ACCESSORY".equalsIgnoreCase(entry.kind())) {
             return accessoryRepository.findById(entry.id()).map(accessoryFactory::create);
+        }
+        if ("RELIC".equalsIgnoreCase(entry.kind())) {
+            return relicShopService.build(entry.id());
         }
         if ("VANILLA".equalsIgnoreCase(entry.kind())) {
             try {

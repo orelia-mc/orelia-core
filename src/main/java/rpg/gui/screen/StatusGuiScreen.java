@@ -4,39 +4,55 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
+import rpg.accessory.manager.AccessorySlotLayout;
+import rpg.accessory.model.AccessoryType;
+import rpg.economy.service.EconomyService;
 import rpg.gui.config.GuiConfig;
 import rpg.gui.framework.Gui;
 import rpg.gui.framework.GuiButton;
+import rpg.item.model.WeaponData;
+import rpg.item.service.WeaponIdentityService;
+import rpg.status.combat.DamageFormula;
 import rpg.status.model.PlayerStatusComponent;
 import rpg.status.model.StatSheet;
 import rpg.status.model.StatType;
 import rpg.status.service.StatusService;
 import rpg.util.ColorUtil;
 import rpg.util.ItemBuilder;
+import rpg.util.MoneyFormat;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * Read-only view of the player's final stats (SOW section 17 "ステータス"). Stats can change
- * while this screen is open (level-up, buff apply/expire, equipment swap elsewhere) - since
- * there's no single event that covers all of those, {@code GuiModule} periodically calls
- * {@link #refresh} for any player with this screen open (tag {@link #TAG}) instead.
+ * Read-only overview of the player's final stats, held-weapon attack power, current money, and
+ * equipped accessories/relics (SOW section 17 "ステータス", extended to fold in the equipment
+ * summary previously only visible in a separate screen so a player can see everything at a
+ * glance). All of this can change while the screen is open (level-up, buff apply/expire,
+ * equipment swap in the player's own inventory underneath) - since there's no single event that
+ * covers every case, {@code GuiModule} periodically calls {@link #refresh} for any player with
+ * this screen open (tag {@link #TAG}) instead. Actual equip/unequip of accessories/relics still
+ * happens in the player's own inventory slots (see {@code AccessorySlotLayout}), which stays
+ * interactive underneath this screen exactly like {@link EquipmentGuiScreen} - the icons here
+ * are a read-only mirror, not separate interactive slots.
  *
- * <p>Split into 3 category icons (base / crit / elemental damage) rather than either "one icon
- * per stat" (too many icons once relics added 7 more {@link StatType} values) or "everything in
- * one lore" (too cramped to read) - see the relic system's Part O follow-up.
+ * <p>Stats are split into 3 category icons (base / crit / elemental damage) rather than either
+ * "one icon per stat" (too many icons once relics added 7 more {@link StatType} values) or
+ * "everything in one lore" (too cramped to read) - see the relic system's Part O follow-up.
  */
 public final class StatusGuiScreen {
 
     public static final String TAG = "status";
 
     private static final int HEAD_SLOT = 4;
+    private static final int MONEY_SLOT = 8;
     private static final int BASE_SLOT = 12;
     private static final int CRIT_SLOT = 13;
     private static final int ELEMENTAL_SLOT = 14;
+    private static final int[] ACCESSORY_SLOTS = {19, 20, 21, 22, 23, 24};
 
     private static final List<StatType> BASE_STATS = List.of(
             StatType.HP, StatType.SP, StatType.ATK, StatType.DEF, StatType.SPD, StatType.SP_RECOVERY);
@@ -63,27 +79,81 @@ public final class StatusGuiScreen {
 
     private final StatusService statusService;
     private final GuiConfig guiConfig;
+    private final EconomyService economyService;
+    private final WeaponIdentityService weaponIdentityService;
 
-    public StatusGuiScreen(StatusService statusService, GuiConfig guiConfig) {
+    public StatusGuiScreen(StatusService statusService, GuiConfig guiConfig, EconomyService economyService,
+                            WeaponIdentityService weaponIdentityService) {
         this.statusService = statusService;
         this.guiConfig = guiConfig;
+        this.economyService = economyService;
+        this.weaponIdentityService = weaponIdentityService;
     }
 
     public Gui build(Player player) {
         Gui gui = new Gui(guiConfig.title("status", "&%8ステータス"), 27);
+        for (int slot = 0; slot < 27; slot++) {
+            gui.set(slot, GuiButton.display(fillerIcon()));
+        }
         gui.set(HEAD_SLOT, GuiButton.display(headIcon(player)));
-        gui.set(BASE_SLOT, GuiButton.display(categoryIcon(player, Material.IRON_INGOT, "&%f基礎ステータス", BASE_STATS)));
+        gui.set(MONEY_SLOT, GuiButton.display(moneyIcon(player)));
+        gui.set(BASE_SLOT, GuiButton.display(baseStatsIcon(player)));
         gui.set(CRIT_SLOT, GuiButton.display(categoryIcon(player, Material.BLAZE_POWDER, "&%c会心", CRIT_STATS)));
         gui.set(ELEMENTAL_SLOT, GuiButton.display(categoryIcon(player, Material.FIRE_CHARGE, "&%6属性ダメージ増加", ELEMENTAL_STATS)));
+        AccessoryType[] types = AccessoryType.values();
+        for (int i = 0; i < types.length; i++) {
+            gui.set(ACCESSORY_SLOTS[i], GuiButton.display(accessoryIcon(player, types[i])));
+        }
         return gui;
     }
 
     /** Re-renders every icon into {@code inventory} without rebuilding the whole {@link Gui}. */
     public void refresh(Player player, org.bukkit.inventory.Inventory inventory) {
         inventory.setItem(HEAD_SLOT, headIcon(player));
-        inventory.setItem(BASE_SLOT, categoryIcon(player, Material.IRON_INGOT, "&%f基礎ステータス", BASE_STATS));
+        inventory.setItem(MONEY_SLOT, moneyIcon(player));
+        inventory.setItem(BASE_SLOT, baseStatsIcon(player));
         inventory.setItem(CRIT_SLOT, categoryIcon(player, Material.BLAZE_POWDER, "&%c会心", CRIT_STATS));
         inventory.setItem(ELEMENTAL_SLOT, categoryIcon(player, Material.FIRE_CHARGE, "&%6属性ダメージ増加", ELEMENTAL_STATS));
+        AccessoryType[] types = AccessoryType.values();
+        for (int i = 0; i < types.length; i++) {
+            inventory.setItem(ACCESSORY_SLOTS[i], accessoryIcon(player, types[i]));
+        }
+    }
+
+    private ItemStack fillerIcon() {
+        return new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).name(" ").build();
+    }
+
+    private ItemStack moneyIcon(Player player) {
+        double balance = economyService.getBalance(player.getUniqueId());
+        return new ItemBuilder(Material.GOLD_INGOT)
+                .name("&%6所持金")
+                .lore(List.of("&%f" + MoneyFormat.format(balance) + "G"))
+                .build();
+    }
+
+    private ItemStack accessoryIcon(Player player, AccessoryType type) {
+        ItemStack[] storage = player.getInventory().getStorageContents();
+        ItemStack accessory = storage[AccessorySlotLayout.slotFor(type)];
+        return accessory == null || accessory.getType().isAir()
+                ? new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).name("&%7" + type.getDisplayName()).build()
+                : accessory.clone();
+    }
+
+    /** Adds a "現在攻撃力" line on top of the plain base-stat lines - the same number {@code CombatDamageListener} would actually deal. */
+    private ItemStack baseStatsIcon(Player player) {
+        StatSheet stats = statusService.getFinalStats(player.getUniqueId()).orElse(StatSheet.empty());
+        List<String> lore = new ArrayList<>();
+        for (StatType type : BASE_STATS) {
+            lore.add("&%7" + LABELS.getOrDefault(type, type.name()) + ": &%f" + formatStat(stats.get(type), type));
+        }
+        ItemStack weapon = player.getInventory().getItemInMainHand();
+        WeaponData data = weaponIdentityService.dataOf(weapon).orElse(null);
+        double currentAttackPower = data != null
+                ? DamageFormula.applyAttackBonus(weaponIdentityService.baseAttackPower(weapon, data), stats.get(StatType.ATK))
+                : stats.get(StatType.ATK);
+        lore.add("&%c現在攻撃力 &%f" + String.format(Locale.ROOT, "%.1f", currentAttackPower));
+        return new ItemBuilder(Material.IRON_INGOT).name("&%f基礎ステータス").lore(lore).build();
     }
 
     private ItemStack headIcon(Player player) {

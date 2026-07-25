@@ -5,7 +5,9 @@ import org.bukkit.inventory.Inventory;
 import rpg.util.ColorUtil;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A single custom inventory screen: title, size, and the buttons placed in it. Every
@@ -18,6 +20,7 @@ public final class Gui {
     private final String title;
     private final int size;
     private final Map<Integer, GuiButton> buttons = new HashMap<>();
+    private final Set<Integer> interactiveSlots = new HashSet<>();
     private Inventory inventory;
     private boolean itemMovementAllowed = false;
     private String tag;
@@ -45,6 +48,21 @@ public final class Gui {
 
     public boolean isItemMovementAllowed() {
         return itemMovementAllowed;
+    }
+
+    /**
+     * Marks {@code slot} as freely interactive even on an otherwise button-only screen (e.g. an
+     * equip slot on a combined status/relic screen) - {@link GuiListener} won't cancel a click
+     * that lands on it, letting the player place/take an item there via the normal cursor swap.
+     * Unlike {@link #allowItemMovement()}, every other slot on the screen stays locked down.
+     */
+    public Gui interactiveSlot(int slot) {
+        interactiveSlots.add(slot);
+        return this;
+    }
+
+    public Set<Integer> getInteractiveSlots() {
+        return interactiveSlots;
     }
 
     public Gui set(int slot, GuiButton button) {

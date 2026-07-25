@@ -10,6 +10,11 @@
 #   5 times total across levels 3/6/9/12/15) = base + per-level * current level.
 # dungeon-set-bonuses: wearing 2+ relics whose source dungeon matches a key here grants that
 #   bonus (see rpg.relic.service.RelicEffectService).
+# shop-relics: fixed (non-rolled) relics NPC shops can sell (kind: RELIC in an npc.yml
+#   shop-stock entry, id matching a key here) - intentionally weaker than a boss drop: fixed
+#   stats, no substat growth since it's generated already at max level (15/15). part/main-stat
+#   use the same value types as a rolled relic; substats is a list of {stat, value} (element:
+#   only meaningful for ELEMENTAL_DMG_PERCENT, defaults to NONE).
 config-version: 1
 
 upgrade-cost-base: 500
@@ -53,3 +58,22 @@ dungeon-set-bonuses:
     stat: DEF
     modifier: PERCENT
     value: 15
+
+shop-relics:
+  shop_guardian_charm:
+    part: CHARM
+    main-stat: {stat: HP_PERCENT, value: 10}
+    substats:
+      - {stat: DEF_PERCENT, value: 8}
+      - {stat: HP_FLAT, value: 100}
+  shop_warriors_ring:
+    part: RING
+    main-stat: {stat: ATK_PERCENT, value: 10}
+    substats:
+      - {stat: CRT_PERCENT, value: 5}
+      - {stat: ATK_FLAT, value: 8}
+  shop_sages_necklace:
+    part: NECKLACE
+    main-stat: {stat: SP_RECOVERY_PERCENT, value: 10}
+    substats:
+      - {stat: HP_PERCENT, value: 8}
