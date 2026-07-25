@@ -29,12 +29,12 @@ final class CombatApiImpl implements CombatApi {
     }
 
     @Override
-    public Optional<LivingEntity> spawnMonster(String monsterId, Location location) {
-        return monsterSpawnService.spawn(monsterId, location);
+    public Optional<LivingEntity> spawnMonster(String monsterId, Location location, Integer targetLevel) {
+        return monsterSpawnService.spawn(monsterId, location, null, targetLevel);
     }
 
     @Override
-    public Optional<LivingEntity> spawnBoss(String bossId, Location location) {
-        return bossModule.spawn(bossId, location);
+    public Optional<LivingEntity> spawnBoss(String bossId, Location location, Integer targetLevel) {
+        return bossModule.spawn(bossId, location, targetLevel);
     }
 }

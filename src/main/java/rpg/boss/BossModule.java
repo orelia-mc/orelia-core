@@ -71,8 +71,13 @@ public final class BossModule implements RpgModule {
     }
 
     public Optional<LivingEntity> spawn(String bossId, Location location) {
+        return spawn(bossId, location, null);
+    }
+
+    /** {@code targetLevel} scales the underlying monster's hp/attack-power/defense - see {@link rpg.monster.service.MonsterSpawnService#spawn(String, Location, java.util.UUID, Integer)}. */
+    public Optional<LivingEntity> spawn(String bossId, Location location, Integer targetLevel) {
         Optional<LivingEntity> entity = repository.findById(bossId)
-                .flatMap(boss -> monsterModule.getSpawnService().spawn(boss.getMonsterId(), location));
+                .flatMap(boss -> monsterModule.getSpawnService().spawn(boss.getMonsterId(), location, null, targetLevel));
         entity.ifPresent(abilityCastService::register);
         return entity;
     }
