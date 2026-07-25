@@ -10,5 +10,18 @@ public enum ElementType {
     EARTH,
     WIND,
     LIGHT,
-    DARK
+    DARK;
+
+    /** {@code ColorUtil}-style custom color code used to tint this element's damage number - {@code null} for {@link #NONE} (caller falls back to its own default). */
+    public String getColorCode() {
+        return switch (this) {
+            case NONE -> null;
+            case FIRE -> "&%c";
+            case WATER -> "&%b";
+            case EARTH -> "&%2";
+            case WIND -> "&%a";
+            case LIGHT -> "&%e";
+            case DARK -> "&%5";
+        };
+    }
 }

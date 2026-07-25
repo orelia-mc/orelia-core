@@ -12,7 +12,6 @@ import org.bukkit.util.Vector;
 import rpg.boss.service.BossAbilityCastService;
 import rpg.monster.model.MonsterAbility;
 import rpg.monster.model.MonsterData;
-import rpg.util.ColorUtil;
 
 import java.util.Collection;
 import java.util.List;
@@ -101,11 +100,11 @@ public final class MonsterAbilityCastService {
         return System.currentTimeMillis() - last < ability.getCooldownSeconds() * 1000L;
     }
 
+    // Deliberately no chat broadcast here: a monster casting the same ability every few
+    // seconds would spam every nearby player's chat. Sound + particle carry the "an ability
+    // is happening" signal instead - do not reintroduce a player.sendMessage(...) announcement
+    // for regular monster abilities.
     private void cast(LivingEntity monster, MonsterAbility ability, Collection<Player> nearby) {
-        if (ability.getAnnounceMessage() != null && !ability.getAnnounceMessage().isBlank()) {
-            String message = ColorUtil.colorize(ability.getAnnounceMessage());
-            nearby.forEach(player -> player.sendMessage(message));
-        }
         switch (ability.getType()) {
             case AOE_SLAM -> castAoeSlam(monster, ability, nearby);
             case FIREBALL_BARRAGE -> castFireballBarrage(monster, ability, nearby);
@@ -150,7 +149,7 @@ public final class MonsterAbilityCastService {
 
     private void playSound(World world, LivingEntity monster, String soundName) {
         try {
-            world.playSound(monster.getLocation(), Sound.valueOf(soundName), 2.0f, 0.9f);
+            world.playSound(monster.getLocation(), Sound.valueOf(soundName), 0.6f, 0.9f);
         } catch (IllegalArgumentException ignored) {
         }
     }

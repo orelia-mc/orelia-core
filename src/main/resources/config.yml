@@ -89,7 +89,7 @@ combat:
     # Downward acceleration per tick (real entity physics, not a fixed drift speed - see
     # DamageDisplayService) - roughly half of vanilla's ~0.04 gravity by default, so the
     # number visibly falls and speeds up rather than floating at a constant rate.
-    gravity-per-tick: 0.02
+    gravity-per-tick: 0.014
     # Spawn offset from the hit location (victim's eye height by default) - negative moves it
     # down. Tune this if numbers feel like they're floating too high above the target.
     y-offset: -0.3
@@ -126,11 +126,12 @@ monster:
 
 # Optional per-spawn-point monster stat scaling (/oladmin spawnpoint add ... [targetLevel]).
 # A spawn point's targetLevel scales a spawned monster's monsters.yml hp/attack-power/defense
-# up or down from its template values, using the same multiplicative shape as weapon leveling
-# (WeaponIdentityService#baseAttackPower): scaled = base * (1 + factor * (targetLevel - 1)).
-# targetLevel 1, or leaving it unset (the default for every existing spawn point), leaves the
-# monster exactly as its monsters.yml template - fully backward compatible.
+# up or down from its template values, exponentially per level: scaled = base *
+# factor^(targetLevel - 1). Each *-factor is the per-level growth multiplier itself (e.g. 1.1 =
+# +10% per level, compounding), not an additive "extra percent". targetLevel 1, or leaving it
+# unset (the default for every existing spawn point), leaves the monster exactly as its
+# monsters.yml template - fully backward compatible.
 monster-level-scaling:
-  hp-factor: 0.1
-  attack-factor: 0.1
-  defense-factor: 0.1
+  hp-factor: 1.12
+  attack-factor: 1.10
+  defense-factor: 1.08

@@ -44,11 +44,14 @@ public final class EconomyModule implements RpgModule {
         this.economyService = new EconomyService(repository);
 
         if (Bukkit.getPluginManager().getPlugin("Vault") != null) {
+            // High priority so Orelia's own balance wins ServicesManager.load(Economy.class)
+            // lookups (e.g. PetService/MountService unlock checks) over any other Economy
+            // provider that might also be registered at the default Normal priority.
             Bukkit.getServicesManager().register(
                     net.milkbowl.vault.economy.Economy.class,
                     new OreliaVaultEconomy(economyService),
                     plugin,
-                    ServicePriority.Normal);
+                    ServicePriority.High);
             plugin.getLogger().info("Registered Orelia as the Vault economy provider.");
         }
     }

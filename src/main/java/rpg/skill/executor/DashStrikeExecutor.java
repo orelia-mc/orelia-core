@@ -26,15 +26,17 @@ public final class DashStrikeExecutor implements SkillExecutor {
         Vector dash = caster.getLocation().getDirection().normalize().multiply(data.getRange() / 4.0).setY(0.2);
         caster.setVelocity(dash);
 
-        try {
-            caster.getWorld().spawnParticle(Particle.valueOf(data.getEffectParticle()), TargetFinder.visualCenter(caster), 15);
-        } catch (IllegalArgumentException ignored) {
-        }
-
         List<LivingEntity> candidates = TargetFinder.inCone(caster, data.getRange());
         LivingEntity nearest = candidates.stream()
                 .min(Comparator.comparingDouble(e -> e.getLocation().distanceSquared(caster.getLocation())))
                 .orElse(null);
+
+        try {
+            List<LivingEntity> hit = nearest == null ? List.of() : List.of(nearest);
+            caster.getWorld().spawnParticle(Particle.valueOf(data.getEffectParticle()), TargetFinder.effectLocation(caster, hit), 15);
+        } catch (IllegalArgumentException ignored) {
+        }
+
         if (nearest == null) {
             return;
         }

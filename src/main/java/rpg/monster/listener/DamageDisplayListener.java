@@ -7,6 +7,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.plugin.Plugin;
+import rpg.item.model.ElementType;
 import rpg.monster.service.DamageDisplayService;
 import rpg.status.combat.DamageFormula;
 
@@ -44,7 +45,20 @@ public final class DamageDisplayListener implements Listener {
             attacker.removeMetadata(DamageFormula.CRIT_METADATA_KEY, plugin);
         }
         double amount = resolveDisplayAmount(victim, event.getFinalDamage());
-        displayService.show(victim.getEyeLocation(), amount, isCrit);
+        displayService.show(victim.getEyeLocation(), amount, isCrit, resolveElement(victim));
+    }
+
+    private ElementType resolveElement(LivingEntity victim) {
+        if (!victim.hasMetadata(DamageFormula.ELEMENT_METADATA_KEY)) {
+            return ElementType.NONE;
+        }
+        String raw = victim.getMetadata(DamageFormula.ELEMENT_METADATA_KEY).get(0).asString();
+        victim.removeMetadata(DamageFormula.ELEMENT_METADATA_KEY, plugin);
+        try {
+            return ElementType.valueOf(raw);
+        } catch (IllegalArgumentException e) {
+            return ElementType.NONE;
+        }
     }
 
     private double resolveDisplayAmount(LivingEntity victim, double vanillaFinalDamage) {

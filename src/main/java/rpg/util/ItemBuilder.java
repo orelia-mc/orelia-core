@@ -3,6 +3,8 @@ package rpg.util;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -54,6 +56,13 @@ public final class ItemBuilder {
     /** Sets vanilla's own "Unbreakable" NBT flag - the item never loses durability, no matter how it's used. */
     public ItemBuilder unbreakable(boolean unbreakable) {
         meta.setUnbreakable(unbreakable);
+        return this;
+    }
+
+    /** Adds {@code enchantment} without showing it in the item's lore (HIDE_ENCHANTS) - for a mechanical-only effect baked into a weapon rather than a player-visible enchant. */
+    public ItemBuilder hiddenEnchant(Enchantment enchantment, int level) {
+        meta.addEnchant(enchantment, level, true);
+        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         return this;
     }
 
