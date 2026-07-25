@@ -2,6 +2,7 @@ package rpg.gathering.listener;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -40,6 +41,10 @@ import java.util.concurrent.ThreadLocalRandom;
  * {@link #resolveToolData}) still blocks use entirely below its required level, and its
  * {@code luck-level} rolls a bonus-drop chance per break (see {@link #applyMiningLuckBonus}).
  * A plain vanilla tool (or any tool with no recognized identity) triggers neither mechanic.
+ *
+ * <p>Whatever the activity, a break that vanilla would yield no drops for (too weak a tool for
+ * the block's harvest tier) is rejected outright rather than silently costing the player the
+ * node's regen cooldown for nothing. Creative players are exempt.
  *
  * <p>Blocks a player placed by hand (tracked by {@link PlacedBlockTrackingService}, populated
  * by {@link GatherBlockPlaceListener}) are excluded entirely from this listener - no regen, no
@@ -111,11 +116,22 @@ public final class GatherBlockBreakListener implements Listener {
             return;
         }
 
+        // A block broken with too weak a tool still breaks in vanilla, it just yields nothing.
+        // Letting that through here would hand out gathering XP and lock the node behind its
+        // regen cooldown for everyone else while the breaker got no drops at all. Creative
+        // players are exempt - they break blocks bare-handed by design.
+        List<ItemStack> drops = new ArrayList<>(block.getDrops(player.getInventory().getItemInMainHand()));
+        if (drops.isEmpty() && player.getGameMode() != GameMode.CREATIVE) {
+            event.setCancelled(true);
+            player.sendMessage(Component.text("このツールでは回収できません。適切なツールを装備してください。",
+                    NamedTextColor.RED));
+            return;
+        }
+
         block.getWorld().playSound(block.getLocation(), actionType.breakSound(), 1f, 1f);
 
         if (actionType == GatherActionType.MINING) {
-            ItemStack tool = player.getInventory().getItemInMainHand();
-            applyMiningLuckBonus(event, tool, toolData.map(WeaponData::getLuckLevel).orElse(0));
+            applyMiningLuckBonus(event, drops, toolData.map(WeaponData::getLuckLevel).orElse(0));
         }
 
         // Vanilla removes the block and spawns drops only after this handler returns, so
@@ -136,18 +152,16 @@ public final class GatherBlockBreakListener implements Listener {
 
     /**
      * Rolls {@code luckLevel} times (0 = no-op) at {@link MiningLuckConfig#getBonusChancePercent()}
-     * each, adding +1 to a random drop from the broken block per success. {@code
-     * BlockBreakEvent} has no way to override its drop list directly ({@code setDropItems}
-     * only takes a boolean), so vanilla's own drops are suppressed and the bonus-adjusted list
-     * is dropped manually instead. Must run before the block is actually removed (i.e. while
-     * still inside this handler) since {@link Block#getDrops(ItemStack)} reads live block state.
+     * each, adding +1 to a random entry of {@code drops} per success. {@code BlockBreakEvent}
+     * has no way to override its drop list directly ({@code setDropItems} only takes a boolean),
+     * so vanilla's own drops are suppressed and the bonus-adjusted list is dropped manually
+     * instead - which is also why a zero luck level has to return before touching the event at
+     * all, leaving vanilla to handle the drops as usual.
      */
-    private void applyMiningLuckBonus(BlockBreakEvent event, ItemStack tool, int luckLevel) {
-        if (luckLevel <= 0) {
-            return;
-        }
-        List<ItemStack> drops = new ArrayList<>(event.getBlock().getDrops(tool));
-        if (drops.isEmpty()) {
+    private void applyMiningLuckBonus(BlockBreakEvent event, List<ItemStack> drops, int luckLevel) {
+        // drops can still be empty here despite the harvest guard above, since that guard
+        // deliberately lets creative-mode players through.
+        if (luckLevel <= 0 || drops.isEmpty() || !event.isDropItems()) {
             return;
         }
         for (int i = 0; i < luckLevel; i++) {
@@ -158,7 +172,7 @@ public final class GatherBlockBreakListener implements Listener {
             boosted.setAmount(boosted.getAmount() + 1);
         }
         event.setDropItems(false);
-        Location location = event.getBlock().getLocation();
+        Location location = event.getBlock().getLocation().toCenterLocation();
         for (ItemStack drop : drops) {
             location.getWorld().dropItemNaturally(location, drop);
         }

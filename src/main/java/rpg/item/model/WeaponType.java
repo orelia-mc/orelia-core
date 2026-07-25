@@ -35,7 +35,17 @@ public enum WeaponType {
         this.baseMaterialsByTier = baseMaterialsByTier;
     }
 
-    /** Picks a base material for the given rarity, clamping to the strongest tier this weapon type has. */
+    /**
+     * Picks a base material for the given rarity, clamping to the strongest tier this weapon
+     * type has. This is only the fallback for a weapon with no explicit {@code base-material}
+     * in items.yml - see {@link WeaponData#resolveBaseMaterial()}.
+     *
+     * <p>Beware when using it for a gathering tool: this list is ordered by material
+     * progression, not by vanilla's *harvest* tier, and the two disagree at gold. A golden
+     * pickaxe only harvests what a wooden one does, so an {@code EPIC} (gold) tool collects
+     * strictly less ore than a {@code RARE} (iron) one. Set {@code base-material} explicitly
+     * rather than relying on rarity whenever the harvest tier actually matters.
+     */
     public Material materialForRarity(Rarity rarity) {
         int index = Math.min(rarity.ordinal(), baseMaterialsByTier.size() - 1);
         return baseMaterialsByTier.get(index);
