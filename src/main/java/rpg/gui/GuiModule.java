@@ -74,14 +74,16 @@ public final class GuiModule implements RpgModule {
         EconomyModule economyModule = require(plugin, EconomyModule.class);
 
         this.guiManager = new GuiManager();
-        this.statusGuiScreen = new StatusGuiScreen(statusModule.getStatusService(), guiConfig);
+        this.statusGuiScreen = new StatusGuiScreen(statusModule.getStatusService(), guiConfig,
+                economyModule.getEconomyService(), itemModule.getItemManager().getIdentityService());
         this.equipmentGuiScreen = new EquipmentGuiScreen(guiConfig);
         this.skillGuiScreen = new SkillGuiScreen(skillModule.getSkillRepository(), skillModule.getProgressService(),
                 skillModule.getSocketService(), itemModule.getItemManager().getIdentityService(), guiConfig,
                 plugin.getMessageManager());
         this.jobGuiScreen = new JobGuiScreen(jobModule.getJobService(), jobModule.getJobManager(), guiConfig, plugin.getMessageManager());
         this.shopGuiScreen = new ShopGuiScreen(itemModule.getItemManager(), accessoryModule.getRepository(),
-                accessoryModule.getFactory(), economyModule.getEconomyService(), guiConfig, plugin.getMessageManager());
+                accessoryModule.getFactory(), accessoryModule.getRelicShopService(),
+                economyModule.getEconomyService(), guiConfig, plugin.getMessageManager());
         this.craftingGuiScreen = new CraftingGuiScreen(itemModule.getCraftingRepository(), itemModule.getCraftingService(),
                 itemModule.getItemManager(), guiConfig, plugin.getMessageManager());
 
