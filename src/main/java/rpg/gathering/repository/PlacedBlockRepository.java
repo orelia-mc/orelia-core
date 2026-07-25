@@ -89,4 +89,13 @@ public final class PlacedBlockRepository implements SchemaOwner {
             throw new IllegalStateException("Failed to delete placed block location " + location, e);
         }
     }
+
+    public void deleteAll() {
+        try (Connection connection = databaseManager.getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.executeUpdate("DELETE FROM gathering_placed_block");
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to delete all placed block locations", e);
+        }
+    }
 }

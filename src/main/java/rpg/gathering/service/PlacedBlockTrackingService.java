@@ -54,4 +54,18 @@ public final class PlacedBlockTrackingService {
             scheduler.runAsync(() -> repository.delete(location));
         }
     }
+
+    /**
+     * Wipes every tracked placed-block location, in-memory and persisted. Admin escape hatch
+     * ({@code /oladmin gathering resetregen}) - every currently-tracked coordinate reverts to
+     * behaving as a natural gathering node.
+     *
+     * @return how many locations were cleared
+     */
+    public int clearAll() {
+        int count = placed.size();
+        placed.clear();
+        scheduler.runAsync(repository::deleteAll);
+        return count;
+    }
 }

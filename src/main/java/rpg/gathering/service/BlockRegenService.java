@@ -87,6 +87,21 @@ public final class BlockRegenService {
         });
     }
 
+    /**
+     * Wipes every pending regen task, in-memory and persisted. Admin escape hatch
+     * ({@code /oladmin gathering resetregen}) for clearing out stale tasks - e.g. ones
+     * queued before {@link #cancelPending} existed, back when a hand-placed block over a
+     * waiting node had no way to cancel the node's leftover restore.
+     *
+     * @return how many tasks were cleared
+     */
+    public int clearAll() {
+        int count = pending.size();
+        pending.clear();
+        scheduler.runAsync(repository::deleteAll);
+        return count;
+    }
+
     private void tick() {
         long now = System.currentTimeMillis();
         for (BlockRegenTask task : pending) {

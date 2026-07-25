@@ -94,6 +94,11 @@ admin:
   spawnpoint-list-entry-suffix: "&%7 {monster} @ {world} {x},{y},{z} ({interval}s, max {max}, lv {level})"
   spawnpoint-list-entry-id-hover: "&%7クリックして /oladmin spawnpoint remove をチャット欄に入力"
 
+gathering:
+  usage-resetregen: "&%e使い方: /{label} resetregen confirm"
+  resetregen-confirm: "&%c全ワールドの再生成待ちタスクと手動設置追跡をリセットします。実行するには /{label} resetregen confirm"
+  resetregen-done: "&%a再生成待ちタスクを{regen}件、手動設置追跡を{placed}件リセットしました。"
+
 relic:
   usage: "&%e使い方: /ol relic upgrade"
   not-holding-relic: "&%cレリックを手に持ってください。"
