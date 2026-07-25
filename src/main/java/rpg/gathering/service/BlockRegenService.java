@@ -3,10 +3,13 @@ package rpg.gathering.service;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.plugin.Plugin;
 import rpg.core.scheduler.SchedulerService;
 import rpg.gathering.model.BlockRegenTask;
+import rpg.gathering.model.GatherBlockTemplate;
 import rpg.gathering.repository.BlockRegenRepository;
+import rpg.gathering.repository.GatheringDefinitionRepository;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,12 +29,15 @@ public final class BlockRegenService {
     private final Plugin plugin;
     private final SchedulerService scheduler;
     private final BlockRegenRepository repository;
+    private final GatheringDefinitionRepository definitions;
     private final List<BlockRegenTask> pending = new CopyOnWriteArrayList<>();
 
-    public BlockRegenService(Plugin plugin, SchedulerService scheduler, BlockRegenRepository repository) {
+    public BlockRegenService(Plugin plugin, SchedulerService scheduler, BlockRegenRepository repository,
+                              GatheringDefinitionRepository definitions) {
         this.plugin = plugin;
         this.scheduler = scheduler;
         this.repository = repository;
+        this.definitions = definitions;
     }
 
     /** Loads any regen tasks left over from before a restart/crash. Call once during onEnable. */
@@ -143,8 +149,38 @@ public final class BlockRegenService {
             drop(task);
             return;
         }
-        world.getBlockAt(task.x(), task.y(), task.z()).setType(parseMaterial(task.originalMaterial()), false);
+        Block block = world.getBlockAt(task.x(), task.y(), task.z());
+        Material original = parseMaterial(task.originalMaterial());
+        if (!isRestorable(block.getType(), original)) {
+            drop(task);
+            return;
+        }
+        block.setType(original, false);
         drop(task);
+    }
+
+    /**
+     * Whether the coordinate is still "ours" to restore. {@link #cancelPending} only fires
+     * when the block a player places is itself a tracked gather block, so it can't catch a
+     * player who breaks the waiting block and builds something else (plain planks, stone, a
+     * WorldEdit paste, another plugin) over a spot with a task still queued - restoring
+     * unconditionally would then overwrite whatever they put there once the cooldown elapsed.
+     *
+     * <p>Restoring is allowed only while the coordinate still holds the waiting block this
+     * service put there, the original material already, or air (the waiting block was broken
+     * but nothing was built in its place - a node coming back into an empty spot is the
+     * intended behavior). Anything else means someone claimed the coordinate, so the task is
+     * dropped instead. The tradeoff is that a node permanently built over stops regenerating,
+     * which applies to ore as well as logs - "ore regenerates regardless of how it was placed"
+     * (see {@code GatherBlockPlaceListener}) is about placement *tracking*, not a license to
+     * overwrite someone's build.
+     */
+    private boolean isRestorable(Material current, Material original) {
+        if (current == Material.AIR || current == original) {
+            return true;
+        }
+        GatherBlockTemplate template = definitions.getGatherBlocks().get(original);
+        return template != null && current == template.replaceBlock();
     }
 
     private void drop(BlockRegenTask task) {

@@ -13,6 +13,7 @@ import rpg.gathering.config.MiningLuckConfig;
 import rpg.gathering.listener.FarmingListener;
 import rpg.gathering.listener.FishingListener;
 import rpg.gathering.listener.GatherBlockBreakListener;
+import rpg.gathering.listener.GatherBlockCleanupListener;
 import rpg.gathering.listener.GatherBlockPlaceListener;
 import rpg.gathering.listener.GatherChunkLoadListener;
 import rpg.gathering.manager.GatheringManager;
@@ -88,7 +89,7 @@ public final class GatheringModule implements RpgModule {
         this.levelService = new GatheringLevelService(plugin.getPlayerDataManager(), levelingConfig,
                 jobModule.getJobManager());
 
-        this.regenService = new BlockRegenService(plugin, plugin.getSchedulerService(), regenRepository);
+        this.regenService = new BlockRegenService(plugin, plugin.getSchedulerService(), regenRepository, definitions);
         regenService.loadPending();
         YamlConfiguration config = plugin.getConfigManager().get("gathering.yml").get();
         regenService.start(config.getLong("regen-tick-period-ticks", 100L));
@@ -105,6 +106,8 @@ public final class GatheringModule implements RpgModule {
         plugin.getServer().getPluginManager().registerEvents(
                 new GatherBlockPlaceListener(definitions, trackingService, regenService), plugin);
         plugin.getServer().getPluginManager().registerEvents(
+                new GatherBlockCleanupListener(definitions, trackingService), plugin);
+        plugin.getServer().getPluginManager().registerEvents(
                 new FarmingListener(definitions, levelService, radiusConfig, protectionService), plugin);
         plugin.getServer().getPluginManager().registerEvents(new GatherChunkLoadListener(regenService), plugin);
         plugin.getServer().getPluginManager().registerEvents(
@@ -116,7 +119,8 @@ public final class GatheringModule implements RpgModule {
                 "採掘/伐採/農業のレベルを確認します。", "gathering");
         plugin.getAdminCommandRegistry().register("gathering",
                 new GatheringAdminCommand(regenService, trackingService, plugin.getMessageManager()),
-                "採取システムの再生成待ちタスク・手動設置追跡をリセットします。", "gathering resetregen confirm");
+                "採取システムの再生成待ちタスク／手動設置追跡をリセットします。",
+                "gathering <resetregen|resetplaced> confirm");
     }
 
     @Override
