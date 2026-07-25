@@ -13,7 +13,6 @@ import rpg.skill.executor.MeleeConeExecutor;
 import rpg.skill.executor.SkillDamage;
 import rpg.skill.listener.ArrowSkillDamageListener;
 import rpg.skill.listener.ExplosiveArrowHitListener;
-import rpg.skill.listener.SkillActivationListener;
 import rpg.skill.manager.SkillExecutorRegistry;
 import rpg.skill.manager.SkillManager;
 import rpg.skill.repository.PlayerSkillRepository;
@@ -77,9 +76,9 @@ public final class SkillModule implements RpgModule {
         this.castService = new SkillCastService(plugin.getPlayerDataManager(), skillRepository, executorRegistry,
                 socketService, itemModule.getItemManager().getIdentityService(), statusModule.getStatusService());
 
-        plugin.getServer().getPluginManager().registerEvents(
-                new SkillActivationListener(castService, socketService, itemModule.getItemManager().getIdentityService(),
-                        plugin.getMessageManager()), plugin);
+        // SkillActivationListener itself is registered by GuiModule (registered after this
+        // module), not here - it needs ActionBarService, which GuiModule owns and doesn't
+        // exist yet at this point in the module enable order.
         plugin.getServer().getPluginManager().registerEvents(new ArrowSkillDamageListener(), plugin);
         plugin.getServer().getPluginManager().registerEvents(new ExplosiveArrowHitListener(plugin), plugin);
     }
