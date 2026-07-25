@@ -1,7 +1,7 @@
 # Centralized user-facing text. Every chat message the plugin sends goes through
 # rpg.core.message.MessageManager, keyed by the dotted paths below - do not hardcode
 # ChatColor + literal strings in command/listener/service code, add a key here instead.
-config-version: 3
+config-version: 4
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -31,6 +31,7 @@ job:
   change-failed: "&%c転職に失敗しました。"
   current: "&%a職業: &%f{job}"
   list: "&%a職業一覧: &%f{jobs}"
+  rod-requires-fisherman: "&%cこの釣りざおは釣り人でないと使用できません。"
 
 skill:
   wrong-weapon: "&%cこの武器ではこのスキルを使用できません。"

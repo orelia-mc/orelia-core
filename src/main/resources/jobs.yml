@@ -1,7 +1,7 @@
 # Job definitions (SOW section 9). allowed-weapons restricts which WeaponType a player
 # with this job may fight with; passive-bonus is a flat stat bonus applied while the job
 # is active.
-config-version: 1
+config-version: 2
 
 jobs:
   FENCER:
@@ -38,3 +38,6 @@ jobs:
     display-name: "木こり"
     allowed-weapons:
       - HATCHET
+
+  FISHERMAN:
+    display-name: "釣り人"

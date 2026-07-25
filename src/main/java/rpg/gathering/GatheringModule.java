@@ -5,15 +5,18 @@ import rpg.core.OreliaPlugin;
 import rpg.core.module.RpgModule;
 import rpg.database.DatabaseModule;
 import rpg.gathering.command.GatheringCommand;
+import rpg.gathering.config.FishingConfig;
 import rpg.gathering.config.GatheringLevelingConfig;
 import rpg.gathering.config.LevelRadiusConfig;
 import rpg.gathering.config.MiningLuckConfig;
 import rpg.gathering.listener.FarmingListener;
+import rpg.gathering.listener.FishingListener;
 import rpg.gathering.listener.GatherBlockBreakListener;
 import rpg.gathering.listener.GatherBlockPlaceListener;
 import rpg.gathering.listener.GatherChunkLoadListener;
 import rpg.gathering.manager.GatheringManager;
 import rpg.gathering.repository.BlockRegenRepository;
+import rpg.gathering.repository.FishingLootRepository;
 import rpg.gathering.repository.GatheringDefinitionRepository;
 import rpg.gathering.repository.PlacedBlockRepository;
 import rpg.gathering.repository.PlayerGatheringRepository;
@@ -37,6 +40,8 @@ public final class GatheringModule implements RpgModule {
     private GatheringLevelingConfig levelingConfig;
     private LevelRadiusConfig radiusConfig;
     private MiningLuckConfig miningLuckConfig;
+    private FishingConfig fishingConfig;
+    private FishingLootRepository fishingLootRepository;
     private GatheringLevelService levelService;
     private BlockRegenService regenService;
     private OreliaPlugin plugin;
@@ -58,6 +63,8 @@ public final class GatheringModule implements RpgModule {
         this.levelingConfig = new GatheringLevelingConfig();
         this.radiusConfig = new LevelRadiusConfig();
         this.miningLuckConfig = new MiningLuckConfig();
+        this.fishingConfig = new FishingConfig();
+        this.fishingLootRepository = new FishingLootRepository(plugin.getLogger());
         reloadConfig();
 
         PlayerGatheringRepository playerRepository = new PlayerGatheringRepository(databaseModule.getDatabaseManager());
@@ -96,6 +103,9 @@ public final class GatheringModule implements RpgModule {
         plugin.getServer().getPluginManager().registerEvents(
                 new FarmingListener(definitions, levelService, radiusConfig, protectionService), plugin);
         plugin.getServer().getPluginManager().registerEvents(new GatherChunkLoadListener(regenService), plugin);
+        plugin.getServer().getPluginManager().registerEvents(
+                new FishingListener(jobModule.getJobService(), plugin.getPlayerDataManager(), levelService,
+                        fishingConfig, fishingLootRepository, plugin.getMessageManager()), plugin);
 
         plugin.getPlayerCommandRegistry().register("gathering",
                 new GatheringCommand(levelService, radiusConfig, jobModule.getJobManager()),
@@ -118,6 +128,11 @@ public final class GatheringModule implements RpgModule {
         levelingConfig.load(config);
         radiusConfig.load(config);
         miningLuckConfig.load(config);
+
+        plugin.getConfigManager().register("fishing.yml");
+        YamlConfiguration fishingYml = plugin.getConfigManager().get("fishing.yml").get();
+        fishingConfig.load(fishingYml);
+        fishingLootRepository.load(fishingYml);
     }
 
     public GatheringLevelService getLevelService() {

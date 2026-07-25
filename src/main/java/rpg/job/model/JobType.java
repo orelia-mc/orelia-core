@@ -11,5 +11,6 @@ public enum JobType {
     ARCHER,
     MINER,
     FARMER,
-    WOODCUTTER
+    WOODCUTTER,
+    FISHERMAN
 }
