@@ -19,11 +19,11 @@
 # xp-gain-per-catch: fishing experience granted per successful catch, toward the same
 # leveling curve mining/woodcutting/farming already use (gathering.yml: leveling).
 #
-# towns: which items are catchable, and how likely each one is, per town. orelia-core has
-# no first-class "town"/region concept of its own (that lives in orelia-world), so a town
-# here is simply the name of the Bukkit world the player is fishing in - the natural setup
-# is one world per town. A world with no matching key below uses "default" instead, so you
-# don't have to enumerate every world. Each entry:
+# towns: which items are catchable, and how likely each one is, per area. Each key below is
+# tried in order of specificity: first any WorldGuard region ID at the bobber's location (if
+# WorldGuard is installed - see config.yml: town-detection), then the Bukkit world name the
+# player is fishing in, then "default" if nothing else matches. The natural setup without
+# WorldGuard is still one world per key, same as before. Each entry:
 #   item                   : vanilla Material caught.
 #   weight                 : relative chance among that town's own entries (not a percentage
 #                            - only relative to the other weights in the same town matters).

@@ -25,6 +25,7 @@ import rpg.gathering.service.GatheringLevelService;
 import rpg.gathering.service.PlacedBlockTrackingService;
 import rpg.gathering.service.RegionProtectionService;
 import rpg.job.JobModule;
+import rpg.region.RegionModule;
 
 import java.util.logging.Level;
 
@@ -58,6 +59,8 @@ public final class GatheringModule implements RpgModule {
                 .orElseThrow(() -> new IllegalStateException("gathering module requires database module"));
         JobModule jobModule = plugin.getModuleManager().get(JobModule.class)
                 .orElseThrow(() -> new IllegalStateException("gathering module requires job module"));
+        RegionModule regionModule = plugin.getModuleManager().get(RegionModule.class)
+                .orElseThrow(() -> new IllegalStateException("gathering module requires region module"));
 
         this.definitions = new GatheringDefinitionRepository(plugin.getLogger());
         this.levelingConfig = new GatheringLevelingConfig();
@@ -105,7 +108,7 @@ public final class GatheringModule implements RpgModule {
         plugin.getServer().getPluginManager().registerEvents(new GatherChunkLoadListener(regenService), plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new FishingListener(jobModule.getJobService(), plugin.getPlayerDataManager(), levelService,
-                        fishingConfig, fishingLootRepository, plugin.getMessageManager()), plugin);
+                        fishingConfig, fishingLootRepository, regionModule.getQueryService(), plugin.getMessageManager()), plugin);
 
         plugin.getPlayerCommandRegistry().register("gathering",
                 new GatheringCommand(levelService, radiusConfig, jobModule.getJobManager()),

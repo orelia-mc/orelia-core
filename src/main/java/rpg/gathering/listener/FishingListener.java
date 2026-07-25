@@ -17,7 +17,9 @@ import rpg.gathering.repository.FishingLootRepository;
 import rpg.gathering.service.GatheringLevelService;
 import rpg.job.model.JobType;
 import rpg.job.service.JobService;
+import rpg.region.service.RegionQueryService;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -31,9 +33,11 @@ import java.util.UUID;
  *
  * <p>Also scales bobber wait time down with the player's fisherman level (their own
  * {@link GatherActionType#FISHING} level, tracked the same as mining/woodcutting/farming)
- * and replaces the vanilla catch with a weighted roll from that world's {@code fishing.yml}
- * loot table, so catchable items can differ per town and be changed later without a code
- * change.
+ * and replaces the vanilla catch with a weighted roll from a {@code fishing.yml} loot table,
+ * so catchable items can differ per area and be changed later without a code change. The loot
+ * bucket is resolved from the bobber's own location: WorldGuard region IDs there (most
+ * specific first, via {@link RegionQueryService}), then the fishing world's name, then
+ * {@code fishing.yml}'s {@code default} table.
  */
 public final class FishingListener implements Listener {
 
@@ -42,16 +46,19 @@ public final class FishingListener implements Listener {
     private final GatheringLevelService levelService;
     private final FishingConfig fishingConfig;
     private final FishingLootRepository lootRepository;
+    private final RegionQueryService regionQueryService;
     private final MessageManager messages;
     private final Random random = new Random();
 
     public FishingListener(JobService jobService, PlayerDataManager playerDataManager, GatheringLevelService levelService,
-                            FishingConfig fishingConfig, FishingLootRepository lootRepository, MessageManager messages) {
+                            FishingConfig fishingConfig, FishingLootRepository lootRepository,
+                            RegionQueryService regionQueryService, MessageManager messages) {
         this.jobService = jobService;
         this.playerDataManager = playerDataManager;
         this.levelService = levelService;
         this.fishingConfig = fishingConfig;
         this.lootRepository = lootRepository;
+        this.regionQueryService = regionQueryService;
         this.messages = messages;
     }
 
@@ -78,7 +85,9 @@ public final class FishingListener implements Listener {
         }
 
         if (event.getCaught() instanceof Item caughtItem) {
-            List<FishingLootEntry> loot = lootRepository.lootFor(player.getWorld().getName());
+            List<String> candidateKeys = new ArrayList<>(regionQueryService.getRegionIds(event.getHook().getLocation()));
+            candidateKeys.add(player.getWorld().getName());
+            List<FishingLootEntry> loot = lootRepository.lootFor(candidateKeys);
             if (!loot.isEmpty()) {
                 caughtItem.setItemStack(rollLoot(loot));
             }

@@ -14,12 +14,13 @@ import java.util.logging.Logger;
 
 /**
  * Parses {@code fishing.yml}'s {@code towns} section: which items are catchable, and how
- * often, per town. orelia-core has no first-class town/region concept of its own (that
- * lives in orelia-world), so a town here is just the name of the Bukkit world the player is
- * fishing in - a world with no matching key falls back to the {@code default} table. Adding
- * a town or changing its item list is a config-only change (edit {@code fishing.yml}, run
- * {@code /oladmin reload}) - no code edit needed. Pure data access - never touches Bukkit
- * events or game logic.
+ * often, per bucket. Each key under {@code towns} is a free-form string - in practice either a
+ * WorldGuard region ID (resolved via {@code rpg.region.service.RegionQueryService}, most
+ * specific) or a Bukkit world name (the original, coarser fallback) - matched by
+ * {@link #lootFor(List)} in that order, falling back to the {@code default} table if nothing
+ * matches. Adding a bucket or changing its item list is a config-only change (edit
+ * {@code fishing.yml}, run {@code /oladmin reload}) - no code edit needed. Pure data access -
+ * never touches Bukkit events or game logic.
  */
 public final class FishingLootRepository {
 
@@ -79,9 +80,20 @@ public final class FishingLootRepository {
 
     /** Catchable-item table for {@code townId} (typically the fishing world's name), falling back to "default". */
     public List<FishingLootEntry> lootFor(String townId) {
-        List<FishingLootEntry> exact = lootByTown.get(townId.toLowerCase(Locale.ROOT));
-        if (exact != null) {
-            return exact;
+        return lootFor(List.of(townId));
+    }
+
+    /**
+     * Tries each key in {@code candidateKeys} in order (most specific first - e.g. WorldGuard
+     * region IDs before a fallback world name) and returns the first bucket that matches,
+     * falling back to the {@code default} bucket if none of them do.
+     */
+    public List<FishingLootEntry> lootFor(List<String> candidateKeys) {
+        for (String key : candidateKeys) {
+            List<FishingLootEntry> entries = lootByTown.get(key.toLowerCase(Locale.ROOT));
+            if (entries != null) {
+                return entries;
+            }
         }
         return lootByTown.getOrDefault(DEFAULT_TOWN, List.of());
     }

@@ -16,13 +16,14 @@ import rpg.job.JobModule;
 import rpg.monster.MonsterModule;
 import rpg.skill.SkillModule;
 import rpg.status.StatusModule;
+import rpg.town.TownModule;
 
 /**
  * Publishes every cross-plugin API interface to Bukkit's {@code ServicesManager}. This is
  * the ONLY door orelia-world (and orelia-extra) are meant to use to reach into
  * orelia-core - see {@link OreliaApi}, {@link StatusApi}, {@link JobApi}, {@link ItemApi},
  * {@link AccessoryApi}, {@link SkillApi}, {@link GuiApi}, {@link EffectApi},
- * {@link CombatApi}, {@link RelicApi} (SOW section 19 / "APIを通してModule間・リポジトリ間の連携を行い、
+ * {@link CombatApi}, {@link RelicApi}, {@link TownApi} (SOW section 19 / "APIを通してModule間・リポジトリ間の連携を行い、
  * 直接依存を避ける"). Registered last so every service it wraps is already fully constructed.
  *
  * <p>{@link PlayerDataManager} and {@link DatabaseManager} are also published as-is: they
@@ -52,6 +53,7 @@ public final class ApiModule implements RpgModule {
         MonsterModule monsterModule = require(plugin, MonsterModule.class);
         BossModule bossModule = require(plugin, BossModule.class);
         GuiModule guiModule = require(plugin, GuiModule.class);
+        TownModule townModule = require(plugin, TownModule.class);
 
         this.api = new OreliaApiImpl(plugin);
 
@@ -74,6 +76,7 @@ public final class ApiModule implements RpgModule {
         servicesManager.register(RelicApi.class,
                 new RelicApiImpl(accessoryModule.getRelicGenerationService()), plugin, ServicePriority.Normal);
         servicesManager.register(GuiApi.class, new GuiApiImpl(guiModule), plugin, ServicePriority.Normal);
+        servicesManager.register(TownApi.class, new TownApiImpl(townModule.getDetectionService()), plugin, ServicePriority.Normal);
         servicesManager.register(PlayerDataManager.class, plugin.getPlayerDataManager(), plugin, ServicePriority.Normal);
         servicesManager.register(DatabaseManager.class, databaseModule.getDatabaseManager(), plugin, ServicePriority.Normal);
     }
