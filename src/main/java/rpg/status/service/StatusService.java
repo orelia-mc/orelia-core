@@ -61,30 +61,34 @@ public final class StatusService {
 
     public void setEquipmentContribution(UUID uuid, String sourceKey, StatSheet sheet) {
         statusComponent(uuid).ifPresent(component -> {
+            double oldMax = calculatorService.calculateFinal(component).get(StatType.HP);
             component.setEquipmentContribution(sourceKey, sheet);
-            reconcileScaledHealth(uuid, component);
+            reconcileScaledHealth(uuid, component, oldMax);
         });
     }
 
     public void clearEquipmentContribution(UUID uuid, String sourceKey) {
         statusComponent(uuid).ifPresent(component -> {
+            double oldMax = calculatorService.calculateFinal(component).get(StatType.HP);
             component.clearEquipmentContribution(sourceKey);
-            reconcileScaledHealth(uuid, component);
+            reconcileScaledHealth(uuid, component, oldMax);
         });
     }
 
     public void addBuff(UUID uuid, String sourceKey, StatType statType, ModifierType modifierType, double amount, long durationMillis) {
         statusComponent(uuid).ifPresent(component -> {
+            double oldMax = calculatorService.calculateFinal(component).get(StatType.HP);
             long expiresAt = durationMillis <= 0 ? 0 : System.currentTimeMillis() + durationMillis;
             component.addBuff(new StatModifier(sourceKey, statType, modifierType, amount, expiresAt));
-            reconcileScaledHealth(uuid, component);
+            reconcileScaledHealth(uuid, component, oldMax);
         });
     }
 
     public void removeBuffsFromSource(UUID uuid, String sourceKey) {
         statusComponent(uuid).ifPresent(component -> {
+            double oldMax = calculatorService.calculateFinal(component).get(StatType.HP);
             component.removeBuffsFromSource(sourceKey);
-            reconcileScaledHealth(uuid, component);
+            reconcileScaledHealth(uuid, component, oldMax);
         });
     }
 
@@ -178,7 +182,8 @@ public final class StatusService {
     /**
      * Adds experience and applies as many level-ups as the new total allows (capped at
      * {@link LevelingConfig#getMaxLevel()}). On each level-up, base stats are recalculated
-     * from {@link LevelGrowthService} and HP/SP are refilled to the new max.
+     * from {@link LevelGrowthService} and HP/SP keep the same percentage of the new max they
+     * held of the old max, rather than being refilled to full - see {@link #reconcileScaledHealth}.
      */
     public void addExperience(UUID uuid, long amount) {
         if (amount <= 0) {
@@ -194,10 +199,14 @@ public final class StatusService {
                 leveledUp = true;
             }
             if (leveledUp) {
+                StatSheet oldStats = calculatorService.calculateFinal(component);
+                double oldHpFraction = fractionOf(component.getCurrentHp(), oldStats.get(StatType.HP));
+                double oldSpFraction = fractionOf(component.getCurrentSp(), oldStats.get(StatType.SP));
+
                 component.setBaseStats(levelGrowthService.baseStatsForLevel(component.getLevel()));
                 StatSheet finalStats = calculatorService.calculateFinal(component);
-                component.setCurrentHp(finalStats.get(StatType.HP));
-                component.setCurrentSp(finalStats.get(StatType.SP));
+                component.setCurrentHp(oldHpFraction * finalStats.get(StatType.HP));
+                component.setCurrentSp(oldSpFraction * finalStats.get(StatType.SP));
                 syncVanillaHealth(uuid, component.getCurrentHp(), finalStats.get(StatType.HP));
             }
         });
@@ -205,17 +214,25 @@ public final class StatusService {
 
     /**
      * Re-syncs vanilla health after something that can change max HP without changing
-     * {@code currentHp} itself (equipment/buff changes) - keeps the scaled/vanilla percentage
-     * in step, but does not attempt to preserve {@code currentHp}'s own percentage of the
-     * (now different) max; it simply clamps and re-syncs. A max-HP increase that leaves
-     * {@code currentHp} unchanged in absolute terms will therefore show as a *lower*
-     * percentage of vanilla health too - same tradeoff vanilla Minecraft's own max-health
-     * attribute changes have.
+     * {@code currentHp} itself (equipment/buff changes) - preserves {@code currentHp}'s
+     * percentage of {@code oldMax} (captured by the caller before mutating the
+     * equipment/buff state that feeds {@code calculateFinal}) onto the new max, e.g. 50% HP
+     * stays ~50% HP after a max-HP change, rather than clamping the old absolute value into
+     * the new range.
      */
-    private void reconcileScaledHealth(UUID uuid, PlayerStatusComponent component) {
-        double max = calculatorService.calculateFinal(component).get(StatType.HP);
-        component.setCurrentHp(MathUtil.clamp(component.getCurrentHp(), 0, max));
-        syncVanillaHealth(uuid, component.getCurrentHp(), max);
+    private void reconcileScaledHealth(UUID uuid, PlayerStatusComponent component, double oldMax) {
+        double oldFraction = fractionOf(component.getCurrentHp(), oldMax);
+        double newMax = calculatorService.calculateFinal(component).get(StatType.HP);
+        component.setCurrentHp(MathUtil.clamp(oldFraction * newMax, 0, newMax));
+        syncVanillaHealth(uuid, component.getCurrentHp(), newMax);
+    }
+
+    /** {@code current / max}, clamped to [0, 1] and defaulting to 1 (full) when {@code max} is non-positive. */
+    private double fractionOf(double current, double max) {
+        if (max <= 0) {
+            return 1.0;
+        }
+        return MathUtil.clamp(current / max, 0, 1);
     }
 
     private void syncVanillaHealth(UUID uuid, double currentHp, double maxHp) {

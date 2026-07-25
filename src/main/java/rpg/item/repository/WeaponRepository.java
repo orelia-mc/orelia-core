@@ -61,7 +61,7 @@ public final class WeaponRepository {
                 section.getInt("custom-model-data", 0),
                 section.getDouble("sell-price", 0.0),
                 section.getInt("skill-slot-count", 1),
-                section.getBoolean("unbreakable", false),
+                section.getBoolean("unbreakable", true),
                 section.getInt("bulk-chop-radius", 0),
                 section.getInt("gather-required-level", 0),
                 section.getInt("luck-level", 0),

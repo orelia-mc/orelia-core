@@ -16,6 +16,7 @@ import rpg.relic.config.RelicConfig;
 import rpg.relic.gui.RelicUpgradeGuiScreen;
 import rpg.relic.service.RelicEffectService;
 import rpg.relic.service.RelicFactory;
+import rpg.relic.service.RelicShopService;
 import rpg.relic.service.RelicGenerationService;
 import rpg.relic.service.RelicIdentityService;
 import rpg.relic.service.RelicKeys;
@@ -38,6 +39,7 @@ public final class AccessoryModule implements RpgModule {
     private RelicIdentityService relicIdentityService;
     private RelicGenerationService relicGenerationService;
     private RelicUpgradeService relicUpgradeService;
+    private RelicShopService relicShopService;
     private OreliaPlugin plugin;
 
     @Override
@@ -65,6 +67,7 @@ public final class AccessoryModule implements RpgModule {
         RelicFactory relicFactory = new RelicFactory(relicIdentityService);
         this.relicGenerationService = new RelicGenerationService(relicConfig, relicFactory);
         this.relicUpgradeService = new RelicUpgradeService(relicConfig, relicIdentityService, relicFactory, economy);
+        this.relicShopService = new RelicShopService(relicConfig, relicFactory);
         RelicEffectService relicEffectService = new RelicEffectService(statusModule.getStatusService(), relicIdentityService, relicConfig);
 
         plugin.getServer().getPluginManager().registerEvents(
@@ -117,5 +120,9 @@ public final class AccessoryModule implements RpgModule {
     /** Used by {@code rpg.api.RelicApiImpl} - the only cross-plugin entry point for orelia-world's boss-drop hook. */
     public RelicGenerationService getRelicGenerationService() {
         return relicGenerationService;
+    }
+
+    public RelicShopService getRelicShopService() {
+        return relicShopService;
     }
 }

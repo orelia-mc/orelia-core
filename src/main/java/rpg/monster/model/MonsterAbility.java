@@ -17,10 +17,9 @@ public final class MonsterAbility {
     private final int cooldownSeconds;
     private final String particle;
     private final String sound;
-    private final String announceMessage;
 
     public MonsterAbility(String id, String name, MonsterAbilityType type, double damage, double radius,
-                           int cooldownSeconds, String particle, String sound, String announceMessage) {
+                           int cooldownSeconds, String particle, String sound) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -29,7 +28,6 @@ public final class MonsterAbility {
         this.cooldownSeconds = cooldownSeconds;
         this.particle = particle;
         this.sound = sound;
-        this.announceMessage = announceMessage;
     }
 
     public String getId() {
@@ -62,9 +60,5 @@ public final class MonsterAbility {
 
     public String getSound() {
         return sound;
-    }
-
-    public String getAnnounceMessage() {
-        return announceMessage;
     }
 }

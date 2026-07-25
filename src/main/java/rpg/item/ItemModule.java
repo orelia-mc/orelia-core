@@ -5,6 +5,7 @@ import rpg.core.OreliaPlugin;
 import rpg.core.module.RpgModule;
 import rpg.item.command.ItemCommand;
 import rpg.item.config.WeaponLevelConfig;
+import rpg.item.listener.BowAmmoListener;
 import rpg.item.manager.ItemManager;
 import rpg.item.repository.CraftingConfigRepository;
 import rpg.item.repository.WeaponRepository;
@@ -53,6 +54,7 @@ public final class ItemModule implements RpgModule {
                 jobModule.getJobService(), statusModule.getStatusService(), plugin.getPlayerDataManager());
         this.itemManager = new ItemManager(repository, factory, identityService, requirementService);
         this.craftingService = new CraftingService(itemManager);
+        plugin.getServer().getPluginManager().registerEvents(new BowAmmoListener(identityService), plugin);
 
         // Damage-computation logic (weapon hit -> ATK% -> DEF -> crit -> weakness) lives in
         // rpg.monster.listener.CombatDamageListener, registered by MonsterModule (which is

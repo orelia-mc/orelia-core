@@ -90,7 +90,9 @@ admin:
   spawnpoint-invalid-id: "&%c無効なスポーンポイントIDです: {id}"
   spawnpoint-empty: "&%e登録されているスポーンポイントはありません。"
   spawnpoint-list-header: "&%aスポーンポイント一覧:"
-  spawnpoint-list-entry: "&%7- {id} {monster} @ {world} {x},{y},{z} ({interval}s, max {max}, lv {level})"
+  spawnpoint-list-entry-prefix: "&%7- &%f"
+  spawnpoint-list-entry-suffix: "&%7 {monster} @ {world} {x},{y},{z} ({interval}s, max {max}, lv {level})"
+  spawnpoint-list-entry-id-hover: "&%7クリックして /oladmin spawnpoint remove をチャット欄に入力"
 
 relic:
   usage: "&%e使い方: /ol relic upgrade"

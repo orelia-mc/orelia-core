@@ -1,5 +1,8 @@
 package rpg.core.command;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -11,6 +14,7 @@ import rpg.core.message.MessageManager;
 import rpg.monster.MonsterModule;
 import rpg.monster.spawnpoint.model.MonsterSpawnPoint;
 import rpg.monster.spawnpoint.service.MonsterSpawnPointService;
+import rpg.util.ColorUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -211,15 +215,30 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
                 }
                 messages.send(sender, "admin.spawnpoint-list-header");
                 for (MonsterSpawnPoint point : points.values()) {
-                    messages.sendRaw(sender, "admin.spawnpoint-list-entry",
-                            "id", point.getId(), "monster", point.getMonsterId(), "world", point.getWorld(),
-                            "x", (int) point.getX(), "y", (int) point.getY(), "z", (int) point.getZ(),
-                            "interval", point.getIntervalSeconds(), "max", point.getMaxAlive(),
-                            "level", point.getTargetLevel() != null ? point.getTargetLevel() : "-");
+                    sender.sendMessage(spawnPointListEntry(point));
                 }
             }
             default -> messages.send(sender, "admin.usage-spawnpoint");
         }
+    }
+
+    /**
+     * The spawn point's UUID is a clickable {@code suggestCommand} span (rather than plain
+     * text within {@code admin.spawnpoint-list-entry}) so an admin can click it to fill
+     * {@code /oladmin spawnpoint remove <uuid>} into their chat bar instead of hand-copying it.
+     */
+    private Component spawnPointListEntry(MonsterSpawnPoint point) {
+        String id = point.getId().toString();
+        Component idComponent = ColorUtil.component(id)
+                .clickEvent(ClickEvent.suggestCommand("/oladmin spawnpoint remove " + id))
+                .hoverEvent(HoverEvent.showText(ColorUtil.component(messages.format("admin.spawnpoint-list-entry-id-hover"))));
+        return ColorUtil.component(messages.format("admin.spawnpoint-list-entry-prefix"))
+                .append(idComponent)
+                .append(ColorUtil.component(messages.format("admin.spawnpoint-list-entry-suffix",
+                        "monster", point.getMonsterId(), "world", point.getWorld(),
+                        "x", (int) point.getX(), "y", (int) point.getY(), "z", (int) point.getZ(),
+                        "interval", point.getIntervalSeconds(), "max", point.getMaxAlive(),
+                        "level", point.getTargetLevel() != null ? point.getTargetLevel() : "-")));
     }
 
     private int parseIntOrDefault(String[] args, int index, int defaultValue) {

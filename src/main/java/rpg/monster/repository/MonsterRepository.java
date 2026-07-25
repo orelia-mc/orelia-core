@@ -74,8 +74,7 @@ public final class MonsterRepository {
                         abilitySection.getDouble("radius", 5.0),
                         abilitySection.getInt("cooldown-seconds", 15),
                         abilitySection.getString("particle", "EXPLOSION_EMITTER"),
-                        abilitySection.getString("sound", "ENTITY_WITHER_SHOOT"),
-                        abilitySection.getString("announce-message", "")));
+                        abilitySection.getString("sound", "ENTITY_WITHER_SHOOT")));
             }
         }
 

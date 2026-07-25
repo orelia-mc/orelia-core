@@ -8,6 +8,7 @@ import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 import org.bukkit.util.Transformation;
 import rpg.core.OreliaPlugin;
+import rpg.item.model.ElementType;
 import rpg.util.ColorUtil;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,7 +35,7 @@ public final class DamageDisplayService {
         this.plugin = plugin;
     }
 
-    public void show(Location origin, double amount, boolean isCrit) {
+    public void show(Location origin, double amount, boolean isCrit, ElementType element) {
         var config = plugin.getConfigManager().get("config.yml").get();
         if (!config.getBoolean("combat.damage-display.enabled", true)) {
             return;
@@ -42,13 +43,18 @@ public final class DamageDisplayService {
         long durationTicks = config.getLong("combat.damage-display.duration-ticks", 20);
         double gravityPerTick = config.getDouble("combat.damage-display.gravity-per-tick", 0.02);
         double yOffset = config.getDouble("combat.damage-display.y-offset", -0.3);
-        String color = config.getString(isCrit ? "combat.damage-display.crit-color" : "combat.damage-display.normal-color",
-                isCrit ? "&%e" : "&%f");
+        // An elemental weapon's color takes priority over the plain crit/normal default -
+        // NONE (bare hand, elementless weapon/monster) falls back to the old white/gold scheme.
+        String elementColor = element == null ? null : element.getColorCode();
+        String color = elementColor != null ? elementColor
+                : config.getString(isCrit ? "combat.damage-display.crit-color" : "combat.damage-display.normal-color",
+                        isCrit ? "&%e" : "&%f");
         float scale = isCrit ? (float) config.getDouble("combat.damage-display.crit-scale", 1.3) : 1.0f;
+        String text = isCrit ? "&%6✧" + color + Math.round(amount) + "&%6✧" : color + Math.round(amount);
 
         Location spawnLocation = origin.clone().add(0, yOffset, 0);
         TextDisplay display = spawnLocation.getWorld().spawn(spawnLocation, TextDisplay.class, d -> {
-            d.text(ColorUtil.component(color + Math.round(amount)));
+            d.text(ColorUtil.component(text));
             d.setBillboard(Display.Billboard.CENTER);
             d.setPersistent(false);
             if (scale != 1.0f) {
