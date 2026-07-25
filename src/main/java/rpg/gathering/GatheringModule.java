@@ -7,6 +7,7 @@ import rpg.database.DatabaseModule;
 import rpg.gathering.command.GatheringCommand;
 import rpg.gathering.config.GatheringLevelingConfig;
 import rpg.gathering.config.LevelRadiusConfig;
+import rpg.gathering.config.MiningLuckConfig;
 import rpg.gathering.listener.FarmingListener;
 import rpg.gathering.listener.GatherBlockBreakListener;
 import rpg.gathering.listener.GatherBlockPlaceListener;
@@ -35,6 +36,7 @@ public final class GatheringModule implements RpgModule {
     private GatheringDefinitionRepository definitions;
     private GatheringLevelingConfig levelingConfig;
     private LevelRadiusConfig radiusConfig;
+    private MiningLuckConfig miningLuckConfig;
     private GatheringLevelService levelService;
     private BlockRegenService regenService;
     private OreliaPlugin plugin;
@@ -55,6 +57,7 @@ public final class GatheringModule implements RpgModule {
         this.definitions = new GatheringDefinitionRepository(plugin.getLogger());
         this.levelingConfig = new GatheringLevelingConfig();
         this.radiusConfig = new LevelRadiusConfig();
+        this.miningLuckConfig = new MiningLuckConfig();
         reloadConfig();
 
         PlayerGatheringRepository playerRepository = new PlayerGatheringRepository(databaseModule.getDatabaseManager());
@@ -87,7 +90,7 @@ public final class GatheringModule implements RpgModule {
 
         plugin.getServer().getPluginManager().registerEvents(
                 new GatherBlockBreakListener(definitions, regenService, levelService, protectionService,
-                        jobModule.getJobManager(), trackingService, plugin), plugin);
+                        jobModule.getJobManager(), trackingService, miningLuckConfig, plugin), plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new GatherBlockPlaceListener(definitions, trackingService), plugin);
         plugin.getServer().getPluginManager().registerEvents(
@@ -114,6 +117,7 @@ public final class GatheringModule implements RpgModule {
         definitions.load(config);
         levelingConfig.load(config);
         radiusConfig.load(config);
+        miningLuckConfig.load(config);
     }
 
     public GatheringLevelService getLevelService() {

@@ -40,7 +40,7 @@ public final class GatheringCommand implements CommandExecutor {
                 int radius = radiusConfig.radiusForLevel(level);
                 line = line.append(Component.text(" / 一括範囲(半径): ", NamedTextColor.GREEN))
                         .append(Component.text(String.valueOf(radius), NamedTextColor.WHITE));
-            } else {
+            } else if (activity == GatherActionType.WOODCUTTING) {
                 line = line.append(Component.text(" / 一括範囲: 装備中のツール次第", NamedTextColor.GRAY));
             }
             sender.sendMessage(line);

@@ -7,14 +7,17 @@
 # required-job: FENCER | WARRIOR | ARCHER | MINER | FARMER | WOODCUTTER (blank = any job may use it)
 # unbreakable: true | false (default false) - vanilla's own "Unbreakable" flag, the item never
 #   loses durability no matter how it's used.
-# bulk-chop-radius: (HATCHET/PICKAXE only, default 0) radius of the automatic bulk-gather sweep
-#   this tool grants on every break - no sneaking required. 0 = no bulk gather (single-block
-#   only), 1 = 3x3, 2 = 5x5, etc. Ignored for other weapon-types.
+# bulk-chop-radius: (HATCHET only, default 0) radius of the automatic bulk-chop sweep this axe
+#   grants on every break - no sneaking required. 0 = no bulk chop (single-block only),
+#   1 = 3x3, 2 = 5x5, etc. Ignored for other weapon-types.
 # gather-required-level: (HATCHET/PICKAXE only, default 0) minimum 木こり(WOODCUTTING)/
 #   採掘(MINING) job level (the gathering module's own level, not character level) required to
 #   use this tool at all - below this, breaking any configured wood/ore block while holding this
 #   tool is blocked entirely (single-block break included). 0 = no restriction. Ignored for
 #   other weapon-types.
+# luck-level: (PICKAXE only, default 0) each level rolls a chance (gathering.yml:
+#   mining-luck.bonus-chance-per-level) per ore block broken to add +1 to a random drop from
+#   that block. 0 = no bonus. Ignored for other weapon-types.
 #
 # Note: AXE (warrior) and HATCHET (woodcutter) are deliberately separate weapon-types even
 # though they render with the same vanilla axe materials - what a given ItemStack "is" comes
@@ -196,8 +199,8 @@ weapons:
     custom-model-data: 100401
     sell-price: 10.0
     skill-slot-count: 1
-    bulk-chop-radius: 0
     gather-required-level: 1
+    luck-level: 0
 
   skilled_miners_pickaxe:
     name: "熟練採掘師のつるはし"
@@ -211,12 +214,12 @@ weapons:
     required-job: MINER
     required-level: 10
     description:
-      - "&%7手慣れた採掘師が愛用するつるはし。周囲の鉱石も一度に採掘できる。"
+      - "&%7手慣れた採掘師が愛用するつるはし。掘り出す鉱石に幸運が宿る。"
     custom-model-data: 100402
     sell-price: 150.0
     skill-slot-count: 1
-    bulk-chop-radius: 1
     gather-required-level: 10
+    luck-level: 1
 
   master_miners_pickaxe:
     name: "達人採掘師のつるはし"
@@ -230,12 +233,12 @@ weapons:
     required-job: MINER
     required-level: 25
     description:
-      - "&%7坑道を切り拓く達人だけが扱える一振り。広範囲の鉱石を一度に採掘する。"
+      - "&%7坑道を切り拓く達人だけが扱える一振り。強い幸運を纏い、貴重な鉱石をより多く掘り出す。"
     custom-model-data: 100403
     sell-price: 600.0
     skill-slot-count: 2
-    bulk-chop-radius: 2
     gather-required-level: 25
+    luck-level: 2
 
   apprentice_hoe:
     name: "見習いの鍬"

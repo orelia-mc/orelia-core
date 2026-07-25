@@ -9,6 +9,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
 import rpg.core.OreliaPlugin;
+import rpg.gathering.config.MiningLuckConfig;
 import rpg.gathering.model.GatherActionType;
 import rpg.gathering.model.GatherBlockTemplate;
 import rpg.gathering.repository.GatheringDefinitionRepository;
@@ -22,16 +23,22 @@ import rpg.item.model.WeaponData;
 import rpg.item.model.WeaponType;
 import rpg.job.manager.JobManager;
 import rpg.job.model.Job;
+import rpg.util.MathUtil;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Hooks ore/log breaks (SOW 3.1): every configured block always regenerates after its
- * cooldown. Both mining and woodcutting trigger their bulk sweep from the equipped tool
- * (see {@link #resolveToolData}) - no sneaking required, and the radius/level-gate come
- * from the {@code PICKAXE}/{@code HATCHET}-type weapon's own {@code items.yml} configuration.
- * A plain vanilla tool (or any tool with no recognized identity) never triggers a bulk sweep -
- * single-block breaks only.
+ * cooldown. Woodcutting triggers its bulk sweep from the equipped hatchet (see
+ * {@link #resolveToolData}) - no sneaking required, and the radius/level-gate come from the
+ * {@code HATCHET}-type weapon's own {@code items.yml} configuration. Mining has no bulk-break
+ * - it always breaks a single block, but an equipped pickaxe's own level-gate (also read via
+ * {@link #resolveToolData}) still blocks use entirely below its required level, and its
+ * {@code luck-level} rolls a bonus-drop chance per break (see {@link #applyMiningLuckBonus}).
+ * A plain vanilla tool (or any tool with no recognized identity) triggers neither mechanic.
  *
  * <p>Blocks a player placed by hand (tracked by {@link PlacedBlockTrackingService}, populated
  * by {@link GatherBlockPlaceListener}) are excluded entirely from this listener - no regen, no
@@ -51,18 +58,20 @@ public final class GatherBlockBreakListener implements Listener {
     private final RegionProtectionService protectionService;
     private final JobManager jobManager;
     private final PlacedBlockTrackingService trackingService;
+    private final MiningLuckConfig miningLuckConfig;
     private final OreliaPlugin plugin;
 
     public GatherBlockBreakListener(GatheringDefinitionRepository definitions, BlockRegenService regenService,
                                      GatheringLevelService levelService, RegionProtectionService protectionService,
                                      JobManager jobManager, PlacedBlockTrackingService trackingService,
-                                     OreliaPlugin plugin) {
+                                     MiningLuckConfig miningLuckConfig, OreliaPlugin plugin) {
         this.definitions = definitions;
         this.regenService = regenService;
         this.levelService = levelService;
         this.protectionService = protectionService;
         this.jobManager = jobManager;
         this.trackingService = trackingService;
+        this.miningLuckConfig = miningLuckConfig;
         this.plugin = plugin;
     }
 
@@ -103,18 +112,49 @@ public final class GatherBlockBreakListener implements Listener {
 
         block.getWorld().playSound(block.getLocation(), actionType.breakSound(), 1f, 1f);
 
+        if (actionType == GatherActionType.MINING) {
+            ItemStack tool = player.getInventory().getItemInMainHand();
+            applyMiningLuckBonus(event, tool, toolData.map(WeaponData::getLuckLevel).orElse(0));
+        }
+
         // Vanilla removes the block and spawns drops only after this handler returns, so
         // the replace-block swap for the block the event fired on has to wait a tick.
         regenService.scheduleNextTick(block.getWorld(), block.getX(), block.getY(), block.getZ(),
                 template.blockType(), template.replaceBlock(), template.cooldownSeconds());
         levelService.addExperience(player.getUniqueId(), actionType, template.xpGain());
 
-        int radius = BulkRadiusResolver.equippedToolRadius(playerLevel,
-                toolData.map(WeaponData::getBulkChopRadius).orElse(0),
-                toolData.map(WeaponData::getGatherRequiredLevel).orElse(0));
-        if (radius > 0) {
-            sweepAndBreak(player, block, template, radius);
+        if (actionType == GatherActionType.WOODCUTTING) {
+            int radius = BulkRadiusResolver.equippedToolRadius(playerLevel,
+                    toolData.map(WeaponData::getBulkChopRadius).orElse(0),
+                    toolData.map(WeaponData::getGatherRequiredLevel).orElse(0));
+            if (radius > 0) {
+                sweepAndBreak(player, block, template, radius);
+            }
         }
+    }
+
+    /**
+     * Rolls {@code luckLevel} times (0 = no-op) at {@link MiningLuckConfig#getBonusChancePercent()}
+     * each, adding +1 to a random drop from the broken block per success, and overrides the
+     * event's drops with the result. Must run before the block is actually removed (i.e. while
+     * still inside this handler) since {@link Block#getDrops(ItemStack)} reads live block state.
+     */
+    private void applyMiningLuckBonus(BlockBreakEvent event, ItemStack tool, int luckLevel) {
+        if (luckLevel <= 0) {
+            return;
+        }
+        List<ItemStack> drops = new ArrayList<>(event.getBlock().getDrops(tool));
+        if (drops.isEmpty()) {
+            return;
+        }
+        for (int i = 0; i < luckLevel; i++) {
+            if (!MathUtil.rollChance(miningLuckConfig.getBonusChancePercent())) {
+                continue;
+            }
+            ItemStack boosted = drops.get(ThreadLocalRandom.current().nextInt(drops.size()));
+            boosted.setAmount(boosted.getAmount() + 1);
+        }
+        event.setDropItems(drops);
     }
 
     private WeaponType requiredToolType(GatherActionType actionType) {
