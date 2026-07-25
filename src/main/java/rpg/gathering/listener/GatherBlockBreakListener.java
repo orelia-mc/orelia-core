@@ -90,6 +90,7 @@ public final class GatherBlockBreakListener implements Listener {
         }
         if (trackingService.isPlaced(block.getWorld(), block.getX(), block.getY(), block.getZ())) {
             trackingService.clearPlaced(block.getWorld(), block.getX(), block.getY(), block.getZ());
+            regenService.cancelPending(block.getWorld(), block.getX(), block.getY(), block.getZ());
             return;
         }
 

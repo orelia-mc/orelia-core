@@ -69,6 +69,24 @@ public final class BlockRegenService {
         scheduler.runSync(() -> schedule(world, x, y, z, originalMaterial, waitingMaterial, cooldownSeconds));
     }
 
+    /**
+     * Cancels any pending regen task at the given coordinate, if one exists. A coordinate can
+     * carry a stale task from before it was tracked as a hand-placed block (see
+     * {@code PlacedBlockTrackingService}) - e.g. a natural node was harvested (scheduling a
+     * restore) and a player then manually placed their own block over the waiting spot before
+     * the cooldown elapsed. Without cancelling it, that leftover task fires later regardless
+     * and forces the coordinate back to the original material, undoing a since-tracked removal.
+     */
+    public void cancelPending(World world, int x, int y, int z) {
+        pending.removeIf(task -> {
+            boolean match = task.world().equals(world.getName()) && task.x() == x && task.y() == y && task.z() == z;
+            if (match) {
+                scheduler.runAsync(() -> repository.delete(task.id()));
+            }
+            return match;
+        });
+    }
+
     private void tick() {
         long now = System.currentTimeMillis();
         for (BlockRegenTask task : pending) {

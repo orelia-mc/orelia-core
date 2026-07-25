@@ -7,6 +7,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import rpg.gathering.model.GatherActionType;
 import rpg.gathering.model.GatherBlockTemplate;
 import rpg.gathering.repository.GatheringDefinitionRepository;
+import rpg.gathering.service.BlockRegenService;
 import rpg.gathering.service.PlacedBlockTrackingService;
 
 /**
@@ -17,15 +18,24 @@ import rpg.gathering.service.PlacedBlockTrackingService;
  *
  * <p>Mining (ore) blocks are deliberately excluded from this tracking - ore should keep
  * regenerating unconditionally regardless of how it was placed, unlike logs.
+ *
+ * <p>Also cancels any regen task already pending at this coordinate. A spot can carry a
+ * leftover task from before this placement - e.g. a natural log was harvested (scheduling a
+ * restore after its cooldown) and a player then hand-placed their own log over the waiting
+ * spot - without cancelling it, that stale task would still fire later and force the
+ * coordinate back to a log, making a manually placed block look like it "regenerated".
  */
 public final class GatherBlockPlaceListener implements Listener {
 
     private final GatheringDefinitionRepository definitions;
     private final PlacedBlockTrackingService trackingService;
+    private final BlockRegenService regenService;
 
-    public GatherBlockPlaceListener(GatheringDefinitionRepository definitions, PlacedBlockTrackingService trackingService) {
+    public GatherBlockPlaceListener(GatheringDefinitionRepository definitions, PlacedBlockTrackingService trackingService,
+                                     BlockRegenService regenService) {
         this.definitions = definitions;
         this.trackingService = trackingService;
+        this.regenService = regenService;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -36,5 +46,6 @@ public final class GatherBlockPlaceListener implements Listener {
             return;
         }
         trackingService.markPlaced(block.getWorld(), block.getX(), block.getY(), block.getZ());
+        regenService.cancelPending(block.getWorld(), block.getX(), block.getY(), block.getZ());
     }
 }
