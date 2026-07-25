@@ -14,6 +14,8 @@ import rpg.accessory.model.AccessoryType;
 import rpg.accessory.service.AccessoryEffectService;
 import rpg.accessory.service.AccessoryIdentityService;
 import rpg.core.scheduler.SchedulerService;
+import rpg.relic.service.RelicEffectService;
+import rpg.relic.service.RelicIdentityService;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -23,24 +25,34 @@ import java.util.Set;
  * Enforces "only the matching accessory type may sit in its designated slot" (SOW section
  * 8) and keeps the status module's equipment contribution in sync with what is actually
  * in that slot. Effects are (re)applied one tick after the inventory event so the click
- * has already been resolved into the slot's new contents.
+ * has already been resolved into the slot's new contents. Handles both the fully static
+ * {@code rpg.accessory} items and boss-dropped {@code rpg.relic} items sharing the same
+ * slot row - a slot holds exactly one or the other, so both effect services are told about
+ * every change and each independently no-ops (via {@code AccessoryEffectService#clear}/
+ * {@code RelicEffectService#clear}) when the slot doesn't hold their kind of item.
  */
 public final class AccessorySlotListener implements Listener {
 
     private final AccessoryIdentityService identityService;
     private final AccessoryEffectService effectService;
+    private final RelicIdentityService relicIdentityService;
+    private final RelicEffectService relicEffectService;
     private final SchedulerService schedulerService;
 
     public AccessorySlotListener(AccessoryIdentityService identityService, AccessoryEffectService effectService,
+                                  RelicIdentityService relicIdentityService, RelicEffectService relicEffectService,
                                   SchedulerService schedulerService) {
         this.identityService = identityService;
         this.effectService = effectService;
+        this.relicIdentityService = relicIdentityService;
+        this.relicEffectService = relicEffectService;
         this.schedulerService = schedulerService;
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         effectService.syncAll(event.getPlayer());
+        relicEffectService.syncAll(event.getPlayer());
     }
 
     @EventHandler
@@ -105,7 +117,9 @@ public final class AccessorySlotListener implements Listener {
         if (type.isEmpty()) {
             return true;
         }
-        return identityService.dataOf(incoming).map(data -> data.getType() == type.get()).orElse(false);
+        boolean matchesStaticAccessory = identityService.dataOf(incoming).map(data -> data.getType() == type.get()).orElse(false);
+        boolean matchesRelic = relicIdentityService.read(incoming).map(instance -> instance.part() == type.get()).orElse(false);
+        return matchesStaticAccessory || matchesRelic;
     }
 
     private void syncNextTick(HumanEntity human, int slot) {
@@ -113,6 +127,9 @@ public final class AccessorySlotListener implements Listener {
         if (type == null || !(human instanceof Player player)) {
             return;
         }
-        schedulerService.runLater(() -> effectService.applyFromSlot(player, type), 1L);
+        schedulerService.runLater(() -> {
+            effectService.applyFromSlot(player, type);
+            relicEffectService.applyFromSlot(player, type);
+        }, 1L);
     }
 }

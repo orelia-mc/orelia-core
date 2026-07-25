@@ -1,7 +1,7 @@
 # Centralized user-facing text. Every chat message the plugin sends goes through
 # rpg.core.message.MessageManager, keyed by the dotted paths below - do not hardcode
 # ChatColor + literal strings in command/listener/service code, add a key here instead.
-config-version: 1
+config-version: 2
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -87,3 +87,11 @@ admin:
   spawnpoint-empty: "&%e登録されているスポーンポイントはありません。"
   spawnpoint-list-header: "&%aスポーンポイント一覧:"
   spawnpoint-list-entry: "&%7- {id} {monster} @ {world} {x},{y},{z} ({interval}s, max {max}, lv {level})"
+
+relic:
+  usage: "&%e使い方: /ol relic upgrade"
+  not-holding-relic: "&%cレリックを手に持ってください。"
+  upgrade-success: "&%aレリックの「{stat}」を強化しました。"
+  upgrade-max-level: "&%cこのレリックは既に最大レベルです。"
+  upgrade-invalid-choice: "&%c無効な選択です。"
+  upgrade-insufficient-funds: "&%c所持金が不足しています。"

@@ -1,0 +1,55 @@
+# Relic definitions - boss-dropped rollable accessories (distinct from the fully static
+# accessories.yml). Reload with: /oladmin reload
+#
+# parts: for each AccessoryType (part), which RelicStatType values it can roll as its main
+#   stat. Substats are always drawn from the same 9-value pool minus ELEMENTAL_DMG_PERCENT,
+#   regardless of part.
+# main-stat-value-ranges: min/max the main stat's value rolls to at generation (fixed for the
+#   relic's lifetime - only substats grow via /ol relic upgrade).
+# upgrade-cost-base / upgrade-cost-per-level: money cost of one upgrade event (every 3 levels,
+#   5 times total across levels 3/6/9/12/15) = base + per-level * current level.
+# dungeon-set-bonuses: wearing 2+ relics whose source dungeon matches a key here grants that
+#   bonus (see rpg.relic.service.RelicEffectService).
+config-version: 1
+
+upgrade-cost-base: 500
+upgrade-cost-per-level: 300
+
+parts:
+  CHARM:
+    main-stat-pool: [HP_PERCENT, DEF_PERCENT, HP_FLAT]
+  RING:
+    main-stat-pool: [ATK_PERCENT, CRT_PERCENT, CRT_DMG_PERCENT, ATK_FLAT]
+  NECKLACE:
+    main-stat-pool: [SP_RECOVERY_PERCENT, HP_PERCENT, DEF_PERCENT]
+  WING:
+    main-stat-pool: [ATK_PERCENT, CRT_PERCENT, ELEMENTAL_DMG_PERCENT]
+  EARRING:
+    main-stat-pool: [ELEMENTAL_DMG_PERCENT]
+  BELT:
+    main-stat-pool: [CRT_PERCENT, CRT_DMG_PERCENT, ATK_PERCENT]
+
+main-stat-value-ranges:
+  HP_PERCENT: {min: 15, max: 25}
+  DEF_PERCENT: {min: 15, max: 25}
+  ATK_PERCENT: {min: 15, max: 25}
+  CRT_PERCENT: {min: 8, max: 15}
+  CRT_DMG_PERCENT: {min: 16, max: 30}
+  ELEMENTAL_DMG_PERCENT: {min: 15, max: 25}
+  SP_RECOVERY_PERCENT: {min: 15, max: 25}
+  HP_FLAT: {min: 200, max: 400}
+  ATK_FLAT: {min: 10, max: 20}
+
+dungeon-set-bonuses:
+  goblin_cave:
+    stat: ATK
+    modifier: PERCENT
+    value: 10
+  trial_of_the_swordsman:
+    stat: CRT_DMG
+    modifier: FLAT
+    value: 15
+  raid_dragons_lair:
+    stat: DEF
+    modifier: PERCENT
+    value: 15

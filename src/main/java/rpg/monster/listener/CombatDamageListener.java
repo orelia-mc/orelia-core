@@ -71,7 +71,7 @@ public final class CombatDamageListener implements Listener {
         DamageFormula.DamageResult result = DamageFormula.compute(
                 attack.baseAttackPower(), attack.atkPercent(), defense,
                 attack.critRate(), attack.critMultiplier(), attack.critDmgPercent(),
-                weak, DamageFormula.DEFAULT_WEAKNESS_MULTIPLIER);
+                weak, DamageFormula.DEFAULT_WEAKNESS_MULTIPLIER, attack.elementalDamageBonusPercent());
 
         event.setDamage(resolveFinalDamage(event.getEntity(), result.amount()));
         applyCritMetadata(event.getDamager(), result.crit());
@@ -118,11 +118,13 @@ public final class CombatDamageListener implements Listener {
             double weaponCritRate = (data != null ? data.getCritRate() : 0.0) + (stats != null ? stats.get(StatType.CRT) : 0);
             double critMultiplier = data != null ? data.getCritMultiplier() : DamageFormula.DEFAULT_CRIT_MULTIPLIER;
 
+            double elementalDamageBonus = elementalDamageBonusPercentFor(data != null ? data.getElement() : ElementType.NONE, stats);
+
             if (attacker.hasMetadata(DamageFormula.SKILL_OVERRIDE_METADATA)) {
                 // SkillDamage already folded base attack power + ATK% into event.getDamage()
                 // (once per cast, not per target) - only DEF/crit/weakness are left to resolve
                 // against this specific victim.
-                return new AttackInput(event.getDamage(), 0, weaponCritRate, critMultiplier, critDmg);
+                return new AttackInput(event.getDamage(), 0, weaponCritRate, critMultiplier, critDmg, elementalDamageBonus);
             }
 
             double atkPercent = stats != null ? stats.get(StatType.ATK) : 0;
@@ -133,25 +135,42 @@ public final class CombatDamageListener implements Listener {
                     return null;
                 }
                 double baseAttackPower = identityService.baseAttackPower(weapon, data);
-                return new AttackInput(baseAttackPower, atkPercent, weaponCritRate, critMultiplier, critDmg);
+                return new AttackInput(baseAttackPower, atkPercent, weaponCritRate, critMultiplier, critDmg, elementalDamageBonus);
             }
 
             // Bare hand: the player's own ATK stat IS the base attack power directly - no
             // separate ATK% layer on top of itself (that would double-count the same stat).
             double critRate = stats != null ? stats.get(StatType.CRT) : 0;
-            return new AttackInput(atkPercent, 0, critRate, DamageFormula.DEFAULT_CRIT_MULTIPLIER, critDmg);
+            return new AttackInput(atkPercent, 0, critRate, DamageFormula.DEFAULT_CRIT_MULTIPLIER, critDmg, 0);
         }
 
         if (event.getDamager() instanceof LivingEntity attacker) {
             MonsterData data = spawnService.dataOf(attacker).orElse(null);
             if (data != null) {
-                return new AttackInput(spawnService.scaledAttackPowerOf(attacker, data), 0, data.getCritRate(), data.getCritMultiplier(), 0);
+                return new AttackInput(spawnService.scaledAttackPowerOf(attacker, data), 0, data.getCritRate(), data.getCritMultiplier(), 0, 0);
             }
         }
 
         // Unrecognized attacker (vanilla mob, projectile, environmental damage, ...) - keep
         // vanilla damage as the base and skip ATK%/crit, but still let DEF mitigate it below.
-        return new AttackInput(event.getDamage(), 0, 0, DamageFormula.DEFAULT_CRIT_MULTIPLIER, 0);
+        return new AttackInput(event.getDamage(), 0, 0, DamageFormula.DEFAULT_CRIT_MULTIPLIER, 0, 0);
+    }
+
+    /** Maps a weapon's element to the relic-granted {@code StatType} that boosts damage dealt with it - 0 for {@link ElementType#NONE} or no stats. */
+    private double elementalDamageBonusPercentFor(ElementType element, StatSheet stats) {
+        if (stats == null || element == ElementType.NONE) {
+            return 0;
+        }
+        StatType statType = switch (element) {
+            case FIRE -> StatType.FIRE_DMG;
+            case WATER -> StatType.WATER_DMG;
+            case EARTH -> StatType.EARTH_DMG;
+            case WIND -> StatType.WIND_DMG;
+            case LIGHT -> StatType.LIGHT_DMG;
+            case DARK -> StatType.DARK_DMG;
+            case NONE -> null;
+        };
+        return statType == null ? 0 : stats.get(statType);
     }
 
     private double resolveDefense(Entity victim) {
@@ -190,6 +209,7 @@ public final class CombatDamageListener implements Listener {
         }
     }
 
-    private record AttackInput(double baseAttackPower, double atkPercent, double critRate, double critMultiplier, double critDmgPercent) {
+    private record AttackInput(double baseAttackPower, double atkPercent, double critRate, double critMultiplier,
+                                double critDmgPercent, double elementalDamageBonusPercent) {
     }
 }

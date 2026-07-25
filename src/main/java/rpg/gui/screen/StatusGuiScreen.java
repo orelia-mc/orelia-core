@@ -12,19 +12,26 @@ import rpg.status.model.StatType;
 import rpg.status.service.StatusService;
 import rpg.util.ItemBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Read-only view of the player's final stats (SOW section 17 "ステータス"). Stats can change
  * while this screen is open (level-up, buff apply/expire, equipment swap elsewhere) - since
  * there's no single event that covers all of those, {@code GuiModule} periodically calls
  * {@link #refresh} for any player with this screen open (tag {@link #TAG}) instead.
+ *
+ * <p>Every {@link StatType} is listed in one item's lore (rather than one icon per stat) so
+ * the player can read them all at once without hovering over each icon individually - this
+ * matters more now that relics can grant up to 7 extra stat types (elemental damage x6, SP
+ * recovery) on top of the base 7.
  */
 public final class StatusGuiScreen {
 
     public static final String TAG = "status";
 
     private static final int HEAD_SLOT = 4;
-    private static final Material[] ICONS = {Material.REDSTONE, Material.LAPIS_LAZULI, Material.IRON_INGOT,
-            Material.SHIELD, Material.EMERALD, Material.BLAZE_POWDER, Material.SUGAR};
+    private static final int STATS_SLOT = 13;
 
     private final StatusService statusService;
     private final GuiConfig guiConfig;
@@ -35,24 +42,16 @@ public final class StatusGuiScreen {
     }
 
     public Gui build(Player player) {
-        Gui gui = new Gui(guiConfig.title("status", "&%8ステータス"), 27).tag(TAG);
-        StatSheet stats = statusService.getFinalStats(player.getUniqueId()).orElse(StatSheet.empty());
+        Gui gui = new Gui(guiConfig.title("status", "&%8ステータス"), 27);
         gui.set(HEAD_SLOT, GuiButton.display(headIcon(player)));
-        StatType[] types = StatType.values();
-        for (int i = 0; i < types.length; i++) {
-            gui.set(10 + i, GuiButton.display(statIcon(stats, types[i], i)));
-        }
+        gui.set(STATS_SLOT, GuiButton.display(statsIcon(player)));
         return gui;
     }
 
-    /** Re-renders every stat icon into {@code inventory} without rebuilding the whole {@link Gui}. */
+    /** Re-renders both icons into {@code inventory} without rebuilding the whole {@link Gui}. */
     public void refresh(Player player, org.bukkit.inventory.Inventory inventory) {
-        StatSheet stats = statusService.getFinalStats(player.getUniqueId()).orElse(StatSheet.empty());
         inventory.setItem(HEAD_SLOT, headIcon(player));
-        StatType[] types = StatType.values();
-        for (int i = 0; i < types.length; i++) {
-            inventory.setItem(10 + i, statIcon(stats, types[i], i));
-        }
+        inventory.setItem(STATS_SLOT, statsIcon(player));
     }
 
     private ItemStack headIcon(Player player) {
@@ -63,10 +62,15 @@ public final class StatusGuiScreen {
                 .build();
     }
 
-    private ItemStack statIcon(StatSheet stats, StatType type, int index) {
-        return new ItemBuilder(ICONS[index % ICONS.length])
-                .name("&%f" + type.name().replace('_', '-'))
-                .lore("&%7" + formatStat(stats.get(type)))
+    private ItemStack statsIcon(Player player) {
+        StatSheet stats = statusService.getFinalStats(player.getUniqueId()).orElse(StatSheet.empty());
+        List<String> lore = new ArrayList<>();
+        for (StatType type : StatType.values()) {
+            lore.add("&%7" + type.name().replace('_', '-') + ": &%f" + formatStat(stats.get(type)));
+        }
+        return new ItemBuilder(Material.NETHER_STAR)
+                .name("&%eステータス")
+                .lore(lore)
                 .build();
     }
 

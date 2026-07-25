@@ -5,7 +5,7 @@ orelia-coreの戦闘ダメージ計算は、`rpg.status.combat.DamageFormula`(�
 ## 計算の全体像
 
 ```
-基礎攻撃力 → ATK%加算(現在攻撃力) → DEF軽減 → クリティカル判定 → 属性弱点倍率
+基礎攻撃力 → ATK%加算(現在攻撃力) → DEF軽減 → クリティカル判定 → 属性弱点倍率 → 属性ダメージ増加%(レリック)
 ```
 
 ## 1. 基礎攻撃力
@@ -73,6 +73,18 @@ public static double applyElementalWeakness(double damage, boolean weak, double 
 }
 ```
 
+## 6. 属性ダメージ増加%(レリック)
+
+属性弱点倍率の**後**、最終ステップとして適用されます。攻撃者が装備している武器の属性(`ElementType`)に対応するレリックのステータス(`StatType.FIRE_DMG`等、`rpg.status.model.StatType`)を百分率ボーナスとして乗算します。武器が無属性(`ElementType.NONE`)の場合、または該当するレリックを装備していない場合は0(=無補正)です。プレイヤーが被弾側の場合や、モンスターが攻撃者の場合はこのステップは適用されません(モンスターはレリックを装備できないため)。
+
+```java
+public static double applyElementalDamageBonus(double damage, double elementalDamageBonusPercent) {
+    return damage * (1 + elementalDamageBonusPercent / 100.0);
+}
+```
+
+例: `FIRE`属性の武器を持ち、`FIRE_DMG: 15`のレリックを装備している場合 → `damage × 1.15`。
+
 ## 実例
 
 **条件**: プレイヤー(見習いの剣、`attack-power: 4.0` `crit-rate: 5.0` `crit-multiplier: 1.5`、強化倍率1.0)が、`森のスライム`(`defense: 0` `weakness: FIRE`、装備武器は無属性のため弱点不一致)を攻撃。プレイヤーの最終ステータスは`ATK: 10` `CRT: 5` `CRT_DMG: 20`。
@@ -99,7 +111,7 @@ public static double applyElementalWeakness(double damage, boolean weak, double 
 
 ## 実装上の注意
 
-- 計算式の実体は`rpg/status/combat/DamageFormula.java`の`mitigate`/`applyAttackBonus`/`criticalMultiplier`/`rollCrit`/`applyElementalWeakness`と、それらを固定順序でまとめた`compute()`に集約されている。計算式を変更する場合はここを直す(リスナーに直接式を書かない)。
+- 計算式の実体は`rpg/status/combat/DamageFormula.java`の`mitigate`/`applyAttackBonus`/`criticalMultiplier`/`rollCrit`/`applyElementalWeakness`/`applyElementalDamageBonus`と、それらを固定順序でまとめた`compute()`に集約されている。計算式を変更する場合はここを直す(リスナーに直接式を書かない)。
 - `DamageFormula.CRIT_METADATA_KEY`は、クリティカルが発生した攻撃側エンティティに一時的に立てるBukkit metadataキー。ダメージ数値表示(`DamageDisplayListener`)がこれを読んで色・サイズを変える。
 - `DamageFormula.SKILL_OVERRIDE_METADATA`は、スキル攻撃中であることを示すBukkit metadataキー。`CombatDamageListener`がこれを見て、基礎攻撃力とATK%の再計算をスキップする。
-- `src/test/java/rpg/status/combat/DamageFormulaTest.java`に、乱数を含まない部分(`mitigate`/`applyAttackBonus`/`criticalMultiplier`/`applyElementalWeakness`/`compute`)の単体テストがある。
+- `src/test/java/rpg/status/combat/DamageFormulaTest.java`に、乱数を含まない部分(`mitigate`/`applyAttackBonus`/`criticalMultiplier`/`applyElementalWeakness`/`applyElementalDamageBonus`/`compute`)の単体テストがある。

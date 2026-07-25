@@ -11,6 +11,7 @@ import rpg.status.listener.ScaledHealthJoinListener;
 import rpg.status.listener.ScaledHealthRegenListener;
 import rpg.status.manager.StatusManager;
 import rpg.status.repository.StatusRepository;
+import rpg.status.model.StatType;
 import rpg.status.service.LevelGrowthService;
 import rpg.status.service.StatusCalculatorService;
 import rpg.status.service.StatusService;
@@ -71,8 +72,12 @@ public final class StatusModule implements RpgModule {
         double spRegen = config.getDouble("status.regen.sp-percent-per-tick", 1.0);
         long periodTicks = config.getLong("status.regen.period-ticks", 100L);
         plugin.getSchedulerService().runTimer(() ->
-                plugin.getServer().getOnlinePlayers().forEach(player ->
-                        statusService.tickRegen(player.getUniqueId(), hpRegen, spRegen)),
+                plugin.getServer().getOnlinePlayers().forEach(player -> {
+                    // A relic's SP_RECOVERY stat scales the SP side only - HP regen is untouched.
+                    double spRecoveryBonus = statusService.getFinalStats(player.getUniqueId())
+                            .map(stats -> stats.get(StatType.SP_RECOVERY)).orElse(0.0);
+                    statusService.tickRegen(player.getUniqueId(), hpRegen, spRegen * (1 + spRecoveryBonus / 100.0));
+                }),
                 periodTicks, periodTicks);
     }
 
