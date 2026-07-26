@@ -12,6 +12,7 @@ import org.bukkit.util.Vector;
 import rpg.boss.service.BossAbilityCastService;
 import rpg.monster.model.MonsterAbility;
 import rpg.monster.model.MonsterData;
+import rpg.status.combat.DamageFormula;
 
 import java.util.Collection;
 import java.util.List;
@@ -117,7 +118,12 @@ public final class MonsterAbilityCastService {
         playSound(world, monster, ability.getSound());
         for (Player player : nearby) {
             if (player.getLocation().distance(monster.getLocation()) <= ability.getRadius()) {
-                player.damage(ability.getDamage());
+                player.setMetadata(DamageFormula.LAST_ABILITY_ATTACKER_METADATA_KEY, new FixedMetadataValue(plugin, monster));
+                try {
+                    player.damage(ability.getDamage());
+                } finally {
+                    player.removeMetadata(DamageFormula.LAST_ABILITY_ATTACKER_METADATA_KEY, plugin);
+                }
             }
         }
     }

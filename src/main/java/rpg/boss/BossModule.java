@@ -54,7 +54,7 @@ public final class BossModule implements RpgModule {
                         plugin.getMessageManager()), plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new BossEnrageListener(monsterModule.getSpawnService(), repository, stateManager), plugin);
-        plugin.getServer().getPluginManager().registerEvents(new BossFireballHitListener(), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new BossFireballHitListener(plugin), plugin);
 
         plugin.getSchedulerService().runTimer(abilityCastService::tick, ABILITY_TICK_PERIOD_TICKS, ABILITY_TICK_PERIOD_TICKS);
         plugin.getSchedulerService().runTimer(bossBarService::tick, BOSS_BAR_TICK_PERIOD_TICKS, BOSS_BAR_TICK_PERIOD_TICKS);

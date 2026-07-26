@@ -42,6 +42,19 @@ public final class DamageFormula {
      */
     public static final String ELEMENT_METADATA_KEY = "orelia_last_hit_element";
 
+    /**
+     * Metadata key set on the *victim* with the {@code LivingEntity} that just hit them via a
+     * no-damager {@code player.damage(amount)} call (monster/boss ability damage - AOE slam,
+     * fireball barrage - deliberately bypasses the normal {@code EntityDamageByEntityEvent} path
+     * so {@code rpg.monster.listener.CombatDamageListener} doesn't overwrite it, see
+     * {@code rpg.monster.service.MonsterAbilityCastService}/{@code rpg.boss.service.BossAbilityCastService}).
+     * Without a damager entity, {@code PlayerDeathEvent#getEntity().getLastDamageCause()} is a
+     * plain {@code EntityDamageEvent}, so death-message attribution has nothing to read - callers
+     * set this immediately before calling {@code damage(amount)} and clear it right after, so
+     * {@code rpg.monster.listener.MonsterDeathListener} can still resolve the real attacker.
+     */
+    public static final String LAST_ABILITY_ATTACKER_METADATA_KEY = "orelia_last_ability_attacker";
+
     /** Crit multiplier used when there's no weapon/monster to supply its own (bare hands). */
     public static final double DEFAULT_CRIT_MULTIPLIER = 1.5;
 
