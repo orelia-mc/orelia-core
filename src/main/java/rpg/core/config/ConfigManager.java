@@ -31,9 +31,13 @@ public final class ConfigManager {
     public ConfigFile register(String fileName) {
         return files.computeIfAbsent(fileName, name -> {
             if (plugin.getResource(name) != null) {
-                boolean alreadyExisted = new File(plugin.getDataFolder(), name).exists();
-                plugin.saveResource(name, false);
-                if (alreadyExisted) {
+                // saveResource(name, false) logs its own "could not save, already exists"
+                // warning whenever the file is already there and replace=false - calling it
+                // unconditionally spammed that warning on every single startup after the
+                // first. Only ever need it the first time the file doesn't exist yet.
+                if (!new File(plugin.getDataFolder(), name).exists()) {
+                    plugin.saveResource(name, false);
+                } else {
                     migrateExisting(name);
                 }
             }
