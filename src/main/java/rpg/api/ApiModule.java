@@ -74,7 +74,9 @@ public final class ApiModule implements RpgModule {
         servicesManager.register(CombatApi.class,
                 new CombatApiImpl(monsterModule.getSpawnService(), bossModule), plugin, ServicePriority.Normal);
         servicesManager.register(RelicApi.class,
-                new RelicApiImpl(accessoryModule.getRelicGenerationService()), plugin, ServicePriority.Normal);
+                new RelicApiImpl(accessoryModule.getRelicGenerationService(), accessoryModule.getRelicUpgradeGuiScreen(),
+                        accessoryModule.getRelicGuiManager(), plugin.getMessageManager()),
+                plugin, ServicePriority.Normal);
         servicesManager.register(GuiApi.class, new GuiApiImpl(guiModule), plugin, ServicePriority.Normal);
         servicesManager.register(TownApi.class, new TownApiImpl(townModule.getDetectionService()), plugin, ServicePriority.Normal);
         servicesManager.register(PlayerDataManager.class, plugin.getPlayerDataManager(), plugin, ServicePriority.Normal);

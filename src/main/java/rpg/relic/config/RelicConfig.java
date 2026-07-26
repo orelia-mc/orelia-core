@@ -34,6 +34,10 @@ public final class RelicConfig {
 
     private double upgradeCostBase = 500;
     private double upgradeCostPerLevel = 300;
+    private double substatUpgradeMin = 1.0;
+    private double substatUpgradeMax = 2.0;
+    private int initialSubstatCountMin = 3;
+    private int initialSubstatCountMax = 4;
     private Map<AccessoryType, List<RelicStatType>> mainStatPools = new EnumMap<>(AccessoryType.class);
     private Map<RelicStatType, RelicValueRange> mainStatValueRanges = new EnumMap<>(RelicStatType.class);
     private Map<String, DungeonSetBonus> dungeonSetBonuses = new LinkedHashMap<>();
@@ -42,6 +46,10 @@ public final class RelicConfig {
     public void load(YamlConfiguration config) {
         this.upgradeCostBase = config.getDouble("upgrade-cost-base", 500);
         this.upgradeCostPerLevel = config.getDouble("upgrade-cost-per-level", 300);
+        this.substatUpgradeMin = config.getDouble("substat-upgrade-min", 1.0);
+        this.substatUpgradeMax = Math.max(substatUpgradeMin, config.getDouble("substat-upgrade-max", 2.0));
+        this.initialSubstatCountMin = Math.max(0, config.getInt("initial-substat-count-min", 3));
+        this.initialSubstatCountMax = Math.max(initialSubstatCountMin, config.getInt("initial-substat-count-max", 4));
         this.mainStatPools = loadMainStatPools(config.getConfigurationSection("parts"));
         this.mainStatValueRanges = loadValueRanges(config.getConfigurationSection("main-stat-value-ranges"));
         this.dungeonSetBonuses = loadDungeonSetBonuses(config.getConfigurationSection("dungeon-set-bonuses"));
@@ -162,6 +170,20 @@ public final class RelicConfig {
 
     public double getUpgradeCostPerLevel() {
         return upgradeCostPerLevel;
+    }
+
+    /** How much a substat's value grows per pick - both when a brand-new relic rolls its initial lines and when {@code RelicUpgradeService} grows/adds one. */
+    public RelicValueRange getSubstatUpgradeRange() {
+        return new RelicValueRange(substatUpgradeMin, substatUpgradeMax);
+    }
+
+    /** A freshly-generated relic rolls this many initial substats (see {@code RelicGenerationService}) rather than starting blank. */
+    public int getInitialSubstatCountMin() {
+        return initialSubstatCountMin;
+    }
+
+    public int getInitialSubstatCountMax() {
+        return initialSubstatCountMax;
     }
 
     public List<AccessoryType> getParts() {
