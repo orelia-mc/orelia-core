@@ -3,10 +3,13 @@ package rpg.gathering.service;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.plugin.Plugin;
 import rpg.core.scheduler.SchedulerService;
 import rpg.gathering.model.BlockRegenTask;
+import rpg.gathering.model.GatherBlockTemplate;
 import rpg.gathering.repository.BlockRegenRepository;
+import rpg.gathering.repository.GatheringDefinitionRepository;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,12 +29,17 @@ public final class BlockRegenService {
     private final Plugin plugin;
     private final SchedulerService scheduler;
     private final BlockRegenRepository repository;
+    private final GatheringDefinitionRepository definitions;
+    private final RegenExclusionService exclusionService;
     private final List<BlockRegenTask> pending = new CopyOnWriteArrayList<>();
 
-    public BlockRegenService(Plugin plugin, SchedulerService scheduler, BlockRegenRepository repository) {
+    public BlockRegenService(Plugin plugin, SchedulerService scheduler, BlockRegenRepository repository,
+                              GatheringDefinitionRepository definitions, RegenExclusionService exclusionService) {
         this.plugin = plugin;
         this.scheduler = scheduler;
         this.repository = repository;
+        this.definitions = definitions;
+        this.exclusionService = exclusionService;
     }
 
     /** Loads any regen tasks left over from before a restart/crash. Call once during onEnable. */
@@ -67,6 +75,38 @@ public final class BlockRegenService {
      */
     public void scheduleNextTick(World world, int x, int y, int z, Material originalMaterial, Material waitingMaterial, int cooldownSeconds) {
         scheduler.runSync(() -> schedule(world, x, y, z, originalMaterial, waitingMaterial, cooldownSeconds));
+    }
+
+    /**
+     * Cancels any pending regen task at the given coordinate, if one exists. A coordinate can
+     * carry a task queued before the area became excluded - a natural node was harvested
+     * (scheduling a restore), and the spot only later ended up inside a
+     * {@code gathering.yml: regen-exclusion.regions} region. Without cancelling it, that
+     * leftover task fires regardless once the cooldown elapses.
+     */
+    public void cancelPending(World world, int x, int y, int z) {
+        pending.removeIf(task -> {
+            boolean match = task.world().equals(world.getName()) && task.x() == x && task.y() == y && task.z() == z;
+            if (match) {
+                scheduler.runAsync(() -> repository.delete(task.id()));
+            }
+            return match;
+        });
+    }
+
+    /**
+     * Wipes every pending regen task, in-memory and persisted. Admin escape hatch
+     * ({@code /oladmin gathering resetregen}) for clearing out stale tasks - e.g. ones
+     * queued before {@link #cancelPending} existed, back when a hand-placed block over a
+     * waiting node had no way to cancel the node's leftover restore.
+     *
+     * @return how many tasks were cleared
+     */
+    public int clearAll() {
+        int count = pending.size();
+        pending.clear();
+        scheduler.runAsync(repository::deleteAll);
+        return count;
     }
 
     private void tick() {
@@ -110,8 +150,39 @@ public final class BlockRegenService {
             drop(task);
             return;
         }
-        world.getBlockAt(task.x(), task.y(), task.z()).setType(parseMaterial(task.originalMaterial()), false);
+        Block block = world.getBlockAt(task.x(), task.y(), task.z());
+        Material original = parseMaterial(task.originalMaterial());
+        // Checked here as well as on break so that defining a new exclusion region (plus
+        // /oladmin reload) retroactively stops regens already queued inside it, instead of
+        // leaving them to fire one last time after the region exists.
+        if (exclusionService.isExcluded(block.getLocation()) || !isRestorable(block.getType(), original)) {
+            drop(task);
+            return;
+        }
+        block.setType(original, false);
         drop(task);
+    }
+
+    /**
+     * Whether the coordinate is still "ours" to restore. Region exclusion only covers areas an
+     * admin has drawn a region around, so this is the WorldGuard-independent backstop for a
+     * player who breaks the waiting block and builds something else (plain planks, stone, a
+     * WorldEdit paste, another plugin) over a spot with a task still queued - restoring
+     * unconditionally would overwrite whatever they put there once the cooldown elapsed.
+     *
+     * <p>Restoring is allowed only while the coordinate still holds the waiting block this
+     * service put there, the original material already, or air (the waiting block was broken
+     * but nothing was built in its place - a node coming back into an empty spot is the
+     * intended behavior). Anything else means someone claimed the coordinate, so the task is
+     * dropped instead. The tradeoff is that a node permanently built over stops regenerating,
+     * for ore as much as for logs.
+     */
+    private boolean isRestorable(Material current, Material original) {
+        if (current == Material.AIR || current == original) {
+            return true;
+        }
+        GatherBlockTemplate template = definitions.getGatherBlocks().get(original);
+        return template != null && current == template.replaceBlock();
     }
 
     private void drop(BlockRegenTask task) {

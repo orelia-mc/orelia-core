@@ -94,4 +94,13 @@ public final class BlockRegenRepository implements SchemaOwner {
             throw new IllegalStateException("Failed to delete block regen task " + id, e);
         }
     }
+
+    public void deleteAll() {
+        try (Connection connection = databaseManager.getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.executeUpdate("DELETE FROM block_regen_task");
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to delete all block regen tasks", e);
+        }
+    }
 }

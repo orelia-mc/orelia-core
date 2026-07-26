@@ -18,7 +18,7 @@ import rpg.gathering.repository.GatheringDefinitionRepository;
 import rpg.gathering.service.BlockRegenService;
 import rpg.gathering.service.BulkRadiusResolver;
 import rpg.gathering.service.GatheringLevelService;
-import rpg.gathering.service.PlacedBlockTrackingService;
+import rpg.gathering.service.RegenExclusionService;
 import rpg.gathering.service.RegionProtectionService;
 import rpg.item.ItemModule;
 import rpg.item.model.WeaponData;
@@ -46,9 +46,10 @@ import java.util.concurrent.ThreadLocalRandom;
  * the block's harvest tier) is rejected outright rather than silently costing the player the
  * node's regen cooldown for nothing. Creative players are exempt.
  *
- * <p>Blocks a player placed by hand (tracked by {@link PlacedBlockTrackingService}, populated
- * by {@link GatherBlockPlaceListener}) are excluded entirely from this listener - no regen, no
- * XP, no level gate - so building material doesn't grow back like a natural gathering node.
+ * <p>Blocks inside a WorldGuard region listed in {@code gathering.yml: regen-exclusion.regions}
+ * (see {@link RegenExclusionService}) are excluded entirely from this listener - no regen, no
+ * XP, no level gate - so a town's decorative trees and players' builds don't grow back like
+ * natural gathering nodes, and can't be farmed for gathering XP.
  *
  * <p>The cube search itself stays synchronous even though SOW 4.1 asks for async block
  * search: at the configured radius cap it is at most a few hundred {@code Block#getType()}
@@ -63,20 +64,20 @@ public final class GatherBlockBreakListener implements Listener {
     private final GatheringLevelService levelService;
     private final RegionProtectionService protectionService;
     private final JobManager jobManager;
-    private final PlacedBlockTrackingService trackingService;
+    private final RegenExclusionService exclusionService;
     private final MiningLuckConfig miningLuckConfig;
     private final OreliaPlugin plugin;
 
     public GatherBlockBreakListener(GatheringDefinitionRepository definitions, BlockRegenService regenService,
                                      GatheringLevelService levelService, RegionProtectionService protectionService,
-                                     JobManager jobManager, PlacedBlockTrackingService trackingService,
+                                     JobManager jobManager, RegenExclusionService exclusionService,
                                      MiningLuckConfig miningLuckConfig, OreliaPlugin plugin) {
         this.definitions = definitions;
         this.regenService = regenService;
         this.levelService = levelService;
         this.protectionService = protectionService;
         this.jobManager = jobManager;
-        this.trackingService = trackingService;
+        this.exclusionService = exclusionService;
         this.miningLuckConfig = miningLuckConfig;
         this.plugin = plugin;
     }
@@ -88,8 +89,10 @@ public final class GatherBlockBreakListener implements Listener {
         if (template == null) {
             return;
         }
-        if (trackingService.isPlaced(block.getWorld(), block.getX(), block.getY(), block.getZ())) {
-            trackingService.clearPlaced(block.getWorld(), block.getX(), block.getY(), block.getZ());
+        if (exclusionService.isExcluded(block.getLocation())) {
+            // Also drops any task queued here before the region was defined, so adding a
+            // region and running /oladmin reload stops pending regens inside it.
+            regenService.cancelPending(block.getWorld(), block.getX(), block.getY(), block.getZ());
             return;
         }
 
@@ -217,7 +220,10 @@ public final class GatherBlockBreakListener implements Listener {
                     if (target.getType() != template.blockType()) {
                         continue;
                     }
-                    if (trackingService.isPlaced(target.getWorld(), target.getX(), target.getY(), target.getZ())) {
+                    // Checked per swept block rather than once at the centre: the cube can
+                    // straddle a region boundary, and canModify below already costs a
+                    // WorldGuard lookup per block anyway.
+                    if (exclusionService.isExcluded(target.getLocation())) {
                         continue;
                     }
                     if (!protectionService.canModify(player, target)) {
