@@ -15,6 +15,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
+import rpg.core.OreliaPlugin;
 import rpg.gathering.config.LevelRadiusConfig;
 import rpg.gathering.model.CropTemplate;
 import rpg.gathering.model.GatherActionType;
@@ -22,6 +23,8 @@ import rpg.gathering.repository.GatheringDefinitionRepository;
 import rpg.gathering.service.BulkRadiusResolver;
 import rpg.gathering.service.GatheringLevelService;
 import rpg.gathering.service.RegionProtectionService;
+import rpg.item.ItemModule;
+import rpg.item.model.WeaponType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,13 +43,16 @@ public final class FarmingListener implements Listener {
     private final GatheringLevelService levelService;
     private final LevelRadiusConfig radiusConfig;
     private final RegionProtectionService protectionService;
+    private final OreliaPlugin plugin;
 
     public FarmingListener(GatheringDefinitionRepository definitions, GatheringLevelService levelService,
-                            LevelRadiusConfig radiusConfig, RegionProtectionService protectionService) {
+                            LevelRadiusConfig radiusConfig, RegionProtectionService protectionService,
+                            OreliaPlugin plugin) {
         this.definitions = definitions;
         this.levelService = levelService;
         this.radiusConfig = radiusConfig;
         this.protectionService = protectionService;
+        this.plugin = plugin;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -119,7 +125,7 @@ public final class FarmingListener implements Listener {
         levelService.addExperience(player.getUniqueId(), GatherActionType.FARMING, template.xpGain());
 
         ItemStack tool = player.getInventory().getItemInMainHand();
-        if (!player.isSneaking() || !isHoe(tool.getType())) {
+        if (!player.isSneaking() || !isHoe(tool)) {
             return;
         }
         int radius = BulkRadiusResolver.levelBasedRadius(player.isSneaking(),
@@ -166,8 +172,25 @@ public final class FarmingListener implements Listener {
         return !(data instanceof Ageable ageable) || ageable.getAge() >= ageable.getMaximumAge();
     }
 
-    private boolean isHoe(Material material) {
-        return material.name().endsWith("_HOE");
+    /**
+     * A plain vanilla hoe or the farmer's own {@code HOE}-type weapon both count. A mage's
+     * {@code WAND}-type weapon (also built on a hoe material - see {@link WeaponType}) does not,
+     * even though its {@code Material} name also ends in {@code _HOE}; identity is resolved via
+     * {@link ItemModule}'s {@code WeaponIdentityService} the same way {@code GatherBlockBreakListener}
+     * separates HATCHET from AXE. {@code ItemModule} is registered after {@code GatheringModule}
+     * (see {@code OreliaPlugin.onEnable} ordering), so it can't be looked up during this module's
+     * own {@code onEnable} - this lookup happens lazily here, at harvest time, by which point
+     * every module is already enabled.
+     */
+    private boolean isHoe(ItemStack tool) {
+        if (!tool.getType().name().endsWith("_HOE")) {
+            return false;
+        }
+        return plugin.getModuleManager().get(ItemModule.class)
+                .map(ItemModule::getItemManager)
+                .flatMap(itemManager -> itemManager.getIdentityService().dataOf(tool))
+                .map(data -> data.getWeaponType() == WeaponType.HOE)
+                .orElse(true);
     }
 
     private int remainingDurability(ItemStack tool) {

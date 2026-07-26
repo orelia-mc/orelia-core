@@ -1,7 +1,7 @@
 # Job definitions (SOW section 9). allowed-weapons restricts which WeaponType a player
 # with this job may fight with; passive-bonus is a flat stat bonus applied while the job
 # is active.
-config-version: 2
+config-version: 3
 
 jobs:
   FENCER:
@@ -41,3 +41,10 @@ jobs:
 
   FISHERMAN:
     display-name: "釣り人"
+
+  MAGE:
+    display-name: "魔法使い"
+    allowed-weapons:
+      - WAND
+    passive-bonus:
+      SP: 10

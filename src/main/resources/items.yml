@@ -1,10 +1,10 @@
 # Weapon definitions (SOW section 6). Add a new weapon by adding a new key under
 # `weapons:` - no code change required.
 #
-# weapon-type: SWORD | SPEAR | AXE | BOW | PICKAXE | HOE | HATCHET
+# weapon-type: SWORD | SPEAR | AXE | BOW | PICKAXE | HOE | HATCHET | WAND
 # rarity: COMMON | UNCOMMON | RARE | EPIC | LEGENDARY
 # element: NONE | FIRE | WATER | EARTH | WIND | LIGHT | DARK
-# required-job: FENCER | WARRIOR | ARCHER | MINER | FARMER | WOODCUTTER (blank = any job may use it)
+# required-job: FENCER | WARRIOR | ARCHER | MINER | FARMER | WOODCUTTER | MAGE (blank = any job may use it)
 # unbreakable: true | false (default true) - vanilla's own "Unbreakable" flag, the item never
 #   loses durability no matter how it's used.
 # base-material: (optional) the vanilla item this weapon is stamped onto, e.g. IRON_PICKAXE.
@@ -24,12 +24,13 @@
 #   mining-luck.bonus-chance-per-level) per ore block broken to add +1 to a random drop from
 #   that block. 0 = no bonus. Ignored for other weapon-types.
 #
-# Note: AXE (warrior) and HATCHET (woodcutter) are deliberately separate weapon-types even
-# though they render with the same vanilla axe materials - what a given ItemStack "is" comes
-# entirely from the id (this section's key) stamped onto it as a hidden tag when created, not
-# from its visible Material, so the two never get confused with each other or with a plain
-# vanilla axe/pickaxe/hoe a player is holding for ordinary block-breaking.
-config-version: 2
+# Note: AXE (warrior) and HATCHET (woodcutter) - and, the same way, HOE (farmer) and WAND
+# (mage) - are deliberately separate weapon-types even though they render with the same
+# vanilla axe/hoe materials - what a given ItemStack "is" comes entirely from the id (this
+# section's key) stamped onto it as a hidden tag when created, not from its visible Material,
+# so the two never get confused with each other or with a plain vanilla axe/pickaxe/hoe a
+# player is holding for ordinary block-breaking.
+config-version: 3
 
 weapons:
   wooden_training_sword:
@@ -322,3 +323,20 @@ weapons:
     skill-slot-count: 2
     bulk-chop-radius: 2
     gather-required-level: 25
+
+  magic_wand:
+    name: "魔法の杖"
+    weapon-type: WAND
+    level: 1
+    rarity: COMMON
+    attack-power: 4.0
+    element: WATER
+    crit-rate: 5.0
+    crit-multiplier: 1.5
+    required-job: MAGE
+    required-level: 1
+    description:
+      - "&%7魔法使いが操る神秘の杖。右クリックで氷弾、左クリックでエヴォーカーの牙を放つ。"
+    custom-model-data: 100601
+    sell-price: 10.0
+    skill-slot-count: 0
