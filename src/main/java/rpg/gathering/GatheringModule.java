@@ -102,7 +102,7 @@ public final class GatheringModule implements RpgModule {
                 new GatherBlockBreakListener(definitions, regenService, levelService, protectionService,
                         jobModule.getJobManager(), exclusionService, miningLuckConfig, plugin), plugin);
         plugin.getServer().getPluginManager().registerEvents(
-                new FarmingListener(definitions, levelService, radiusConfig, protectionService), plugin);
+                new FarmingListener(definitions, levelService, radiusConfig, protectionService, plugin), plugin);
         plugin.getServer().getPluginManager().registerEvents(new GatherChunkLoadListener(regenService), plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new FishingListener(jobModule.getJobService(), plugin.getPlayerDataManager(), levelService,

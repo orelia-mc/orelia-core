@@ -55,6 +55,19 @@ public final class DamageFormula {
      */
     public static final String LAST_ABILITY_ATTACKER_METADATA_KEY = "orelia_last_ability_attacker";
 
+    /**
+     * Metadata key {@code rpg.item.listener.MagicWandAbilityListener} sets on the
+     * {@code EvokerFangs} it summons purely for visual/sound flavor (魔法使いの左クリックアビリティ) -
+     * that ability computes its own scaled AOE damage manually (weapon attack power x ATK%,
+     * respecting DEF/crit/weakness via the normal {@link #SKILL_OVERRIDE_METADATA} path) rather
+     * than relying on the fangs' native attack, which deals a fixed vanilla amount with no
+     * ATK%/crit/elemental scaling. {@code rpg.monster.listener.CombatDamageListener} bypasses
+     * this specific damager entirely - cancelling the event alone would not be enough, since
+     * that listener has no {@code ignoreCancelled} guard and would still apply its own
+     * (unwanted, unscaled) damage side effects to the victim's tracked HP.
+     */
+    public static final String WAND_FANGS_METADATA_KEY = "orelia_wand_fangs_visual";
+
     /** Crit multiplier used when there's no weapon/monster to supply its own (bare hands). */
     public static final double DEFAULT_CRIT_MULTIPLIER = 1.5;
 

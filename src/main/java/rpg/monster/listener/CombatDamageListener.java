@@ -1,6 +1,7 @@
 package rpg.monster.listener;
 
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EvokerFangs;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -117,6 +118,14 @@ public final class CombatDamageListener implements Listener {
 
     /** Returns {@code null} if the event was cancelled and processing should stop here. */
     private AttackInput resolveAttack(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof EvokerFangs fangs && fangs.hasMetadata(DamageFormula.WAND_FANGS_METADATA_KEY)) {
+            // Visual-only fangs summoned by the mage's wand ability - see WAND_FANGS_METADATA_KEY.
+            // Damage was already applied manually by MagicWandAbilityListener; skip entirely
+            // rather than cancelling, since this listener has no ignoreCancelled guard and would
+            // otherwise still run its own (unwanted) damage side effects below.
+            event.setCancelled(true);
+            return null;
+        }
         if (event.getDamager() instanceof Player attacker) {
             ItemStack weapon = attacker.getInventory().getItemInMainHand();
             WeaponData rawData = identityService.dataOf(weapon).orElse(null);
