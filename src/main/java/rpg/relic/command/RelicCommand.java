@@ -3,15 +3,19 @@ package rpg.relic.command;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import rpg.core.command.TabCompletions;
 import rpg.core.message.MessageManager;
 import rpg.gui.framework.Gui;
 import rpg.gui.framework.GuiManager;
 import rpg.relic.gui.RelicUpgradeGuiScreen;
 
+import java.util.List;
+
 /** {@code /ol relic upgrade} - opens the "選べる厳選" GUI for the relic held in the main hand. */
-public final class RelicCommand implements CommandExecutor {
+public final class RelicCommand implements CommandExecutor, TabCompleter {
 
     private final RelicUpgradeGuiScreen guiScreen;
     private final GuiManager guiManager;
@@ -41,5 +45,13 @@ public final class RelicCommand implements CommandExecutor {
         }
         guiManager.open(player, gui);
         return true;
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length <= 1) {
+            return TabCompletions.matching(List.of("upgrade"), args.length == 0 ? "" : args[0]);
+        }
+        return List.of();
     }
 }

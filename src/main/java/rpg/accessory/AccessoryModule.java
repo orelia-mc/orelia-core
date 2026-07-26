@@ -51,6 +51,8 @@ public final class AccessoryModule implements RpgModule {
     private RelicUpgradeService relicUpgradeService;
     private RelicShopService relicShopService;
     private RelicEffectService relicEffectService;
+    private RelicUpgradeGuiScreen relicUpgradeGuiScreen;
+    private final GuiManager relicGuiManager = new GuiManager();
     private OreliaPlugin plugin;
 
     @Override
@@ -96,8 +98,8 @@ public final class AccessoryModule implements RpgModule {
         plugin.getServer().getPluginManager().registerEvents(
                 new AccessoryEquipmentJoinListener(effectService, relicEffectService), plugin);
 
-        RelicUpgradeGuiScreen relicGuiScreen = new RelicUpgradeGuiScreen(relicIdentityService, relicUpgradeService, plugin.getMessageManager());
-        RelicCommand relicCommand = new RelicCommand(relicGuiScreen, new GuiManager(), plugin.getMessageManager());
+        this.relicUpgradeGuiScreen = new RelicUpgradeGuiScreen(relicIdentityService, relicUpgradeService, plugin.getMessageManager());
+        RelicCommand relicCommand = new RelicCommand(relicUpgradeGuiScreen, relicGuiManager, plugin.getMessageManager());
         plugin.getPlayerCommandRegistry().register("relic", relicCommand,
                 "手に持ったレリックの厳選(サブステータス選択アップグレード)を行います。", "relic upgrade");
     }
@@ -162,5 +164,15 @@ public final class AccessoryModule implements RpgModule {
 
     public RelicShopService getRelicShopService() {
         return relicShopService;
+    }
+
+    /** Used by {@code rpg.api.RelicApiImpl} to open the same upgrade GUI {@code /ol relic upgrade} does, from an NPC. */
+    public RelicUpgradeGuiScreen getRelicUpgradeGuiScreen() {
+        return relicUpgradeGuiScreen;
+    }
+
+    /** Used by {@code rpg.api.RelicApiImpl} - shares one instance with {@code /ol relic}'s own command handler. */
+    public GuiManager getRelicGuiManager() {
+        return relicGuiManager;
     }
 }

@@ -18,11 +18,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * "選べる厳選" - the deliberate differentiator from a pure-RNG artifact system: a relic starts
- * with 0 substats, and every 3 levels (5 times across level 0-15) the player picks *which*
- * stat grows, not just how much. Below 4 substat lines, only "add a new line" is offered;
- * once all 4 are filled, only "grow an existing line" is offered - see
- * {@link #availableChoices}. The +1~2 magnitude per pick stays randomized, keeping a small
+ * "選べる厳選" - the deliberate differentiator from a pure-RNG artifact system: a relic already
+ * starts with a few substats rolled in (see {@code RelicGenerationService}), and every 3 levels
+ * (5 times across level 0-15) the player picks *which* stat grows next, not just how much -
+ * either strengthening one of its existing lines or, while under 4 substats, adding a brand
+ * new one instead. See {@link #availableChoices}. The magnitude per pick (config: {@code
+ * relics.yml}'s {@code substat-upgrade-min}/{@code -max}) stays randomized, keeping a small
  * amount of luck without making the stat itself a gamble.
  */
 public final class RelicUpgradeService {
@@ -57,20 +58,25 @@ public final class RelicUpgradeService {
     }
 
     /**
-     * The stat types the player may pick for the next upgrade: new lines (excluding the main
-     * stat's type, {@code ELEMENTAL_DMG_PERCENT}, and any already-owned substat) while under
-     * {@link #MAX_SUBSTATS} lines, otherwise the already-owned lines themselves (to grow).
+     * The stat types the player may pick for the next upgrade: every already-owned substat
+     * (to strengthen it further) plus, while still under {@link #MAX_SUBSTATS} lines, every
+     * not-yet-owned type (excluding the main stat's own type and {@code ELEMENTAL_DMG_PERCENT},
+     * which never rolls as a substat) as a "add this as a new line" option. Both kinds of
+     * choice are offered side by side rather than one gating the other, so a relic that already
+     * has room left (e.g. rolled with 3 of the possible 4 substats) still lets the player choose
+     * between growing what it has and filling the last slot.
      */
     public List<RelicStatType> availableChoices(RelicInstance instance) {
         Set<RelicStatType> owned = instance.substats().stream().map(RelicLine::type).collect(Collectors.toSet());
-        if (owned.size() >= MAX_SUBSTATS) {
-            return List.copyOf(owned);
+        List<RelicStatType> choices = new ArrayList<>(owned);
+        if (owned.size() < MAX_SUBSTATS) {
+            Arrays.stream(RelicStatType.values())
+                    .filter(type -> type != RelicStatType.ELEMENTAL_DMG_PERCENT)
+                    .filter(type -> type != instance.mainStat().type())
+                    .filter(type -> !owned.contains(type))
+                    .forEach(choices::add);
         }
-        return Arrays.stream(RelicStatType.values())
-                .filter(type -> type != RelicStatType.ELEMENTAL_DMG_PERCENT)
-                .filter(type -> type != instance.mainStat().type())
-                .filter(type -> !owned.contains(type))
-                .toList();
+        return choices;
     }
 
     public Optional<UpgradeFailure> upgrade(Player player, ItemStack stack, RelicInstance instance, RelicStatType chosen) {
@@ -85,7 +91,7 @@ public final class RelicUpgradeService {
             return Optional.of(UpgradeFailure.INSUFFICIENT_FUNDS);
         }
 
-        double gained = round1(1 + random.nextDouble());
+        double gained = round1(config.getSubstatUpgradeRange().roll(random));
         List<RelicLine> substats = new ArrayList<>(instance.substats());
         int existingIndex = -1;
         for (int i = 0; i < substats.size(); i++) {

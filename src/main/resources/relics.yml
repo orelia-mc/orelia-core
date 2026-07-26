@@ -15,10 +15,21 @@
 #   stats, no substat growth since it's generated already at max level (15/15). part/main-stat
 #   use the same value types as a rolled relic; substats is a list of {stat, value} (element:
 #   only meaningful for ELEMENTAL_DMG_PERCENT, defaults to NONE).
-config-version: 1
+# substat-upgrade-min / substat-upgrade-max: how much a substat's value grows each time it's
+#   picked (rolled from this range, one decimal place) - both for a fresh relic's initial lines
+#   and for a later /ol relic upgrade pick. Same magnitude either way.
+# initial-substat-count-min / initial-substat-count-max: how many substats a freshly-generated
+#   (boss-dropped) relic starts with, picked randomly in this range - out of the 4 max, so a
+#   relic isn't a blank slate on drop. Does not apply to shop-relics, which set their own
+#   substats explicitly above.
+config-version: 2
 
 upgrade-cost-base: 500
 upgrade-cost-per-level: 300
+substat-upgrade-min: 1
+substat-upgrade-max: 2
+initial-substat-count-min: 3
+initial-substat-count-max: 4
 
 parts:
   CHARM:
