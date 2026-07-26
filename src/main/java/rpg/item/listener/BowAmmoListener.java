@@ -26,10 +26,18 @@ import rpg.item.service.WeaponIdentityService;
  * check only ever *skips consuming* an arrow the Infinity enchant already found in inventory -
  * it never conjures one from nothing, so a player who somehow has zero arrows (sold/dropped the
  * seed one, or never had it) still can't even start drawing without at least one physically
- * present. If {@link org.bukkit.inventory.PlayerInventory#addItem} can't find room for it (a
- * full 36-slot inventory), the granted arrow is dropped at the player's feet instead of being
- * silently discarded - Paper's own pickup radius picks it right back up for a stationary player,
- * so the shot still goes through instead of failing with no explanation.
+ * present, and that check happens before any event this class (or any other plugin) can hook -
+ * bypassing it entirely would need NMS/reflection, which this codebase otherwise avoids
+ * entirely (Paper API + relocated shaded libs only).
+ *
+ * <p>Rather than fighting the player's 36-slot main inventory for room, the seed arrow goes into
+ * the off-hand slot instead whenever it's empty - vanilla's own ammo search already checks the
+ * off-hand for arrows (that's the mechanic that lets a player normally carry reserve arrows
+ * there), so this is a legitimate ammo location, not a workaround, and it's a slot a bow user
+ * essentially never has anything else in. Only if the off-hand is already occupied (a shield,
+ * a second weapon, ...) does this fall back to the main inventory, dropping the arrow at the
+ * player's feet if even that has no room - Paper's own pickup radius picks it right back up for
+ * a stationary player, so the shot still goes through instead of failing with no explanation.
  */
 public final class BowAmmoListener implements Listener {
 
@@ -56,15 +64,25 @@ public final class BowAmmoListener implements Listener {
             return;
         }
         PlayerInventory inventory = event.getPlayer().getInventory();
-        if (inventory.containsAtLeast(new ItemStack(Material.ARROW), 1)) {
+        if (hasArrow(inventory)) {
+            return;
+        }
+        ItemStack offHand = inventory.getItemInOffHand();
+        if (offHand.getType().isAir()) {
+            inventory.setItemInOffHand(new ItemStack(Material.ARROW, 1));
             return;
         }
         var leftover = inventory.addItem(new ItemStack(Material.ARROW, 1));
         if (!leftover.isEmpty()) {
-            // Inventory had no free/stackable slot for it - drop at the player's feet rather
-            // than silently losing the grant (which would otherwise leave the shot cancelled
-            // by vanilla's own arrow check right after this listener returns, with no feedback).
+            // Off-hand was occupied and the main inventory had no free/stackable slot either -
+            // drop at the player's feet rather than silently losing the grant (which would
+            // otherwise leave the shot cancelled by vanilla's own arrow check right after this
+            // listener returns, with no feedback).
             leftover.values().forEach(stack -> event.getPlayer().getWorld().dropItem(event.getPlayer().getLocation(), stack));
         }
+    }
+
+    private boolean hasArrow(PlayerInventory inventory) {
+        return inventory.getItemInOffHand().getType() == Material.ARROW || inventory.containsAtLeast(new ItemStack(Material.ARROW), 1);
     }
 }
