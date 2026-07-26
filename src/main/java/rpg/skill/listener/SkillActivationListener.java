@@ -22,13 +22,18 @@ import java.util.Optional;
 
 /**
  * Skill activation triggers for melee weapons (SWORD/SPEAR/AXE/PICKAXE/HATCHET): right-click
- * casts the weapon's first socketed skill, shift+right-click the second, and the swap-hands
- * key (F) the third. Each trigger only cancels its underlying vanilla event (block
- * interaction / hand swap) when a skill actually occupied that socket, so an empty slot
- * falls back to normal behavior. BOW and HOE are excluded from the right-click triggers -
- * right-click is vanilla's draw-and-shoot action for a bow (bow skill activation is being
- * redesigned separately to fire off the normal shot instead) and vanilla's till-farmland
- * action for a hoe; the F-key trigger still works for both in the meantime.
+ * casts the weapon's first socketed skill, and the swap-hands key (F, cancelling the vanilla
+ * item swap) casts the second - no weapon's {@code items.yml} {@code skill-slot-count} exceeds
+ * 2 today, so these two triggers cover every socket that can actually be filled. (Previously
+ * the second socket cast on shift+right-click instead; that was dropped in favor of F since
+ * shift+right-click also means "sneak while attacking," which reads as an odd key for casting
+ * a skill compared to the swap-hands key most players already associate with a secondary
+ * action.) Each trigger only cancels its underlying vanilla event (block interaction / hand
+ * swap) when a skill actually occupied that socket, so an empty slot falls back to normal
+ * behavior. BOW and HOE are excluded from the right-click trigger - right-click is vanilla's
+ * draw-and-shoot action for a bow (bow skill activation is being redesigned separately to fire
+ * off the normal shot instead) and vanilla's till-farmland action for a hoe; the F-key trigger
+ * still works for both in the meantime.
  *
  * <p>Cast feedback (success/on-cooldown/etc.) goes through {@link ActionBarService#showTransient}
  * rather than chat - a player casting repeatedly (e.g. spamming right-click while a skill is on
@@ -71,15 +76,14 @@ public final class SkillActivationListener implements Listener {
             return;
         }
 
-        int slotIndex = player.isSneaking() ? 1 : 0;
-        if (castSlot(player, slotIndex)) {
+        if (castSlot(player, 0)) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler
     public void onSwapHands(PlayerSwapHandItemsEvent event) {
-        if (castSlot(event.getPlayer(), 2)) {
+        if (castSlot(event.getPlayer(), 1)) {
             event.setCancelled(true);
         }
     }
