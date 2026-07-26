@@ -10,21 +10,19 @@ import rpg.gathering.config.FishingConfig;
 import rpg.gathering.config.GatheringLevelingConfig;
 import rpg.gathering.config.LevelRadiusConfig;
 import rpg.gathering.config.MiningLuckConfig;
+import rpg.gathering.config.RegenExclusionConfig;
 import rpg.gathering.listener.FarmingListener;
 import rpg.gathering.listener.FishingListener;
 import rpg.gathering.listener.GatherBlockBreakListener;
-import rpg.gathering.listener.GatherBlockCleanupListener;
-import rpg.gathering.listener.GatherBlockPlaceListener;
 import rpg.gathering.listener.GatherChunkLoadListener;
 import rpg.gathering.manager.GatheringManager;
 import rpg.gathering.repository.BlockRegenRepository;
 import rpg.gathering.repository.FishingLootRepository;
 import rpg.gathering.repository.GatheringDefinitionRepository;
-import rpg.gathering.repository.PlacedBlockRepository;
 import rpg.gathering.repository.PlayerGatheringRepository;
 import rpg.gathering.service.BlockRegenService;
 import rpg.gathering.service.GatheringLevelService;
-import rpg.gathering.service.PlacedBlockTrackingService;
+import rpg.gathering.service.RegenExclusionService;
 import rpg.gathering.service.RegionProtectionService;
 import rpg.job.JobModule;
 import rpg.region.RegionModule;
@@ -43,6 +41,7 @@ public final class GatheringModule implements RpgModule {
     private GatheringLevelingConfig levelingConfig;
     private LevelRadiusConfig radiusConfig;
     private MiningLuckConfig miningLuckConfig;
+    private RegenExclusionConfig regenExclusionConfig;
     private FishingConfig fishingConfig;
     private FishingLootRepository fishingLootRepository;
     private GatheringLevelService levelService;
@@ -68,17 +67,16 @@ public final class GatheringModule implements RpgModule {
         this.levelingConfig = new GatheringLevelingConfig();
         this.radiusConfig = new LevelRadiusConfig();
         this.miningLuckConfig = new MiningLuckConfig();
+        this.regenExclusionConfig = new RegenExclusionConfig();
         this.fishingConfig = new FishingConfig();
         this.fishingLootRepository = new FishingLootRepository(plugin.getLogger());
         reloadConfig();
 
         PlayerGatheringRepository playerRepository = new PlayerGatheringRepository(databaseModule.getDatabaseManager());
         BlockRegenRepository regenRepository = new BlockRegenRepository(databaseModule.getDatabaseManager());
-        PlacedBlockRepository placedBlockRepository = new PlacedBlockRepository(databaseModule.getDatabaseManager());
         try {
             playerRepository.createSchemaIfNotExists();
             regenRepository.createSchemaIfNotExists();
-            placedBlockRepository.createSchemaIfNotExists();
         } catch (Exception e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to initialize gathering schema", e);
         }
@@ -89,24 +87,20 @@ public final class GatheringModule implements RpgModule {
         this.levelService = new GatheringLevelService(plugin.getPlayerDataManager(), levelingConfig,
                 jobModule.getJobManager());
 
-        this.regenService = new BlockRegenService(plugin, plugin.getSchedulerService(), regenRepository, definitions);
+        RegenExclusionService exclusionService = new RegenExclusionService(regionModule.getQueryService(),
+                regenExclusionConfig);
+
+        this.regenService = new BlockRegenService(plugin, plugin.getSchedulerService(), regenRepository, definitions,
+                exclusionService);
         regenService.loadPending();
         YamlConfiguration config = plugin.getConfigManager().get("gathering.yml").get();
         regenService.start(config.getLong("regen-tick-period-ticks", 100L));
 
         RegionProtectionService protectionService = new RegionProtectionService(plugin);
 
-        PlacedBlockTrackingService trackingService = new PlacedBlockTrackingService(plugin, plugin.getSchedulerService(),
-                placedBlockRepository);
-        trackingService.loadPlaced();
-
         plugin.getServer().getPluginManager().registerEvents(
                 new GatherBlockBreakListener(definitions, regenService, levelService, protectionService,
-                        jobModule.getJobManager(), trackingService, miningLuckConfig, plugin), plugin);
-        plugin.getServer().getPluginManager().registerEvents(
-                new GatherBlockPlaceListener(definitions, trackingService, regenService), plugin);
-        plugin.getServer().getPluginManager().registerEvents(
-                new GatherBlockCleanupListener(definitions, trackingService), plugin);
+                        jobModule.getJobManager(), exclusionService, miningLuckConfig, plugin), plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new FarmingListener(definitions, levelService, radiusConfig, protectionService), plugin);
         plugin.getServer().getPluginManager().registerEvents(new GatherChunkLoadListener(regenService), plugin);
@@ -118,9 +112,8 @@ public final class GatheringModule implements RpgModule {
                 new GatheringCommand(levelService, radiusConfig, jobModule.getJobManager()),
                 "採掘/伐採/農業のレベルを確認します。", "gathering");
         plugin.getAdminCommandRegistry().register("gathering",
-                new GatheringAdminCommand(regenService, trackingService, plugin.getMessageManager()),
-                "採取システムの再生成待ちタスク／手動設置追跡をリセットします。",
-                "gathering <resetregen|resetplaced> confirm");
+                new GatheringAdminCommand(regenService, plugin.getMessageManager()),
+                "採取システムの再生成待ちタスクをリセットします。", "gathering resetregen confirm");
     }
 
     @Override
@@ -139,6 +132,7 @@ public final class GatheringModule implements RpgModule {
         levelingConfig.load(config);
         radiusConfig.load(config);
         miningLuckConfig.load(config);
+        regenExclusionConfig.load(config);
 
         plugin.getConfigManager().register("fishing.yml");
         YamlConfiguration fishingYml = plugin.getConfigManager().get("fishing.yml").get();

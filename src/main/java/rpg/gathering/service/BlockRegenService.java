@@ -30,14 +30,16 @@ public final class BlockRegenService {
     private final SchedulerService scheduler;
     private final BlockRegenRepository repository;
     private final GatheringDefinitionRepository definitions;
+    private final RegenExclusionService exclusionService;
     private final List<BlockRegenTask> pending = new CopyOnWriteArrayList<>();
 
     public BlockRegenService(Plugin plugin, SchedulerService scheduler, BlockRegenRepository repository,
-                              GatheringDefinitionRepository definitions) {
+                              GatheringDefinitionRepository definitions, RegenExclusionService exclusionService) {
         this.plugin = plugin;
         this.scheduler = scheduler;
         this.repository = repository;
         this.definitions = definitions;
+        this.exclusionService = exclusionService;
     }
 
     /** Loads any regen tasks left over from before a restart/crash. Call once during onEnable. */
@@ -77,11 +79,10 @@ public final class BlockRegenService {
 
     /**
      * Cancels any pending regen task at the given coordinate, if one exists. A coordinate can
-     * carry a stale task from before it was tracked as a hand-placed block (see
-     * {@code PlacedBlockTrackingService}) - e.g. a natural node was harvested (scheduling a
-     * restore) and a player then manually placed their own block over the waiting spot before
-     * the cooldown elapsed. Without cancelling it, that leftover task fires later regardless
-     * and forces the coordinate back to the original material, undoing a since-tracked removal.
+     * carry a task queued before the area became excluded - a natural node was harvested
+     * (scheduling a restore), and the spot only later ended up inside a
+     * {@code gathering.yml: regen-exclusion.regions} region. Without cancelling it, that
+     * leftover task fires regardless once the cooldown elapses.
      */
     public void cancelPending(World world, int x, int y, int z) {
         pending.removeIf(task -> {
@@ -151,7 +152,10 @@ public final class BlockRegenService {
         }
         Block block = world.getBlockAt(task.x(), task.y(), task.z());
         Material original = parseMaterial(task.originalMaterial());
-        if (!isRestorable(block.getType(), original)) {
+        // Checked here as well as on break so that defining a new exclusion region (plus
+        // /oladmin reload) retroactively stops regens already queued inside it, instead of
+        // leaving them to fire one last time after the region exists.
+        if (exclusionService.isExcluded(block.getLocation()) || !isRestorable(block.getType(), original)) {
             drop(task);
             return;
         }
@@ -160,20 +164,18 @@ public final class BlockRegenService {
     }
 
     /**
-     * Whether the coordinate is still "ours" to restore. {@link #cancelPending} only fires
-     * when the block a player places is itself a tracked gather block, so it can't catch a
+     * Whether the coordinate is still "ours" to restore. Region exclusion only covers areas an
+     * admin has drawn a region around, so this is the WorldGuard-independent backstop for a
      * player who breaks the waiting block and builds something else (plain planks, stone, a
      * WorldEdit paste, another plugin) over a spot with a task still queued - restoring
-     * unconditionally would then overwrite whatever they put there once the cooldown elapsed.
+     * unconditionally would overwrite whatever they put there once the cooldown elapsed.
      *
      * <p>Restoring is allowed only while the coordinate still holds the waiting block this
      * service put there, the original material already, or air (the waiting block was broken
      * but nothing was built in its place - a node coming back into an empty spot is the
      * intended behavior). Anything else means someone claimed the coordinate, so the task is
      * dropped instead. The tradeoff is that a node permanently built over stops regenerating,
-     * which applies to ore as well as logs - "ore regenerates regardless of how it was placed"
-     * (see {@code GatherBlockPlaceListener}) is about placement *tracking*, not a license to
-     * overwrite someone's build.
+     * for ore as much as for logs.
      */
     private boolean isRestorable(Material current, Material original) {
         if (current == Material.AIR || current == original) {

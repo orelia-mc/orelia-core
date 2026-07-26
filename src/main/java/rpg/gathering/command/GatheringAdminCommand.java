@@ -7,40 +7,27 @@ import org.bukkit.command.TabCompleter;
 import rpg.core.command.TabCompletions;
 import rpg.core.message.MessageManager;
 import rpg.gathering.service.BlockRegenService;
-import rpg.gathering.service.PlacedBlockTrackingService;
 
 import java.util.List;
 
 /**
- * {@code /oladmin gathering <resetregen|resetplaced> confirm} - admin escape hatches for the
- * gathering module's two persisted coordinate tables. They are deliberately *separate*
- * subcommands because they do opposite things:
- *
- * <ul>
- *   <li>{@code resetregen} clears {@link BlockRegenService}'s pending restore queue - the
- *       blocks waiting to grow back. Use it to drop stale tasks (e.g. ones queued before
- *       {@code BlockRegenService#cancelPending} existed, which forced hand-placed blocks back
- *       into gathering nodes). Nothing a player built is affected.</li>
- *   <li>{@code resetplaced} clears {@link PlacedBlockTrackingService}'s hand-placed tracking -
- *       the *exclusion* list. Every log players placed by hand loses its regen exemption and
- *       goes back to behaving as a natural node, so this is the destructive one and is only
- *       ever what you want when the tracking table itself is wrong.</li>
- * </ul>
- *
- * Both require the literal {@code confirm} argument since they clear every world at once.
+ * {@code /oladmin gathering resetregen confirm} - clears {@link BlockRegenService}'s pending
+ * restore queue, in memory and in the database. Use it to drop stale tasks, e.g. ones queued
+ * before an exclusion region was defined over that area. Nothing a player built is affected -
+ * which blocks are exempt from regen is decided by
+ * {@code gathering.yml: regen-exclusion.regions} and needs only {@code /oladmin reload}, not
+ * this command. Requires the literal {@code confirm} argument since it clears every world at
+ * once.
  */
 public final class GatheringAdminCommand implements CommandExecutor, TabCompleter {
 
-    private static final List<String> SUBCOMMANDS = List.of("resetregen", "resetplaced");
+    private static final List<String> SUBCOMMANDS = List.of("resetregen");
 
     private final BlockRegenService regenService;
-    private final PlacedBlockTrackingService trackingService;
     private final MessageManager messages;
 
-    public GatheringAdminCommand(BlockRegenService regenService, PlacedBlockTrackingService trackingService,
-                                  MessageManager messages) {
+    public GatheringAdminCommand(BlockRegenService regenService, MessageManager messages) {
         this.regenService = regenService;
-        this.trackingService = trackingService;
         this.messages = messages;
     }
 
@@ -57,13 +44,6 @@ public final class GatheringAdminCommand implements CommandExecutor, TabComplete
                     return true;
                 }
                 messages.send(sender, "gathering.resetregen-done", "regen", regenService.clearAll());
-            }
-            case "resetplaced" -> {
-                if (!confirmed(args)) {
-                    messages.send(sender, "gathering.resetplaced-confirm", "label", label);
-                    return true;
-                }
-                messages.send(sender, "gathering.resetplaced-done", "placed", trackingService.clearAll());
             }
             default -> messages.send(sender, "gathering.usage", "label", label);
         }

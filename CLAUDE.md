@@ -91,6 +91,24 @@ refuses to spawn at all inside a town (the single choke point every caller - spa
 `/oladmin spawn` - goes through), and `TownApi` publishes `isInTown(Location)` for
 orelia-world/orelia-extra.
 
+`rpg.gathering.service.RegenExclusionService` is the third consumer of `RegionQueryService`,
+same shape as `TownDetectionService` but reading its own list (`gathering.yml:
+regen-exclusion.regions`) - a forest that shouldn't regenerate isn't necessarily a town, so the
+two lists are deliberately separate. Inside a listed region `GatherBlockBreakListener` returns
+immediately: no regen, no gathering XP, no min-level gate. This **replaced** a per-coordinate
+`PlacedBlockTrackingService`/`gathering_placed_block` table that tracked which blocks a player
+placed by hand; keying off the *location* rather than a block's provenance removed the whole
+subsystem (tracking service, repository, table, `BlockPlaceEvent` listener, and a
+burn/explode/piston listener that existed only to keep the table in step) and fixed the cases
+provenance-tracking structurally couldn't see - naturally-grown trees standing inside a build,
+and WorldEdit/schematic pastes, which never fire `BlockPlaceEvent`. The tradeoff is granularity
+(a build outside every listed region isn't protected) and a harder WorldGuard dependency (the
+fail-open contract means nothing is excluded while WorldGuard is down). `BlockRegenService`
+checks exclusion again at restore time, so defining a region plus `/oladmin reload`
+retroactively cancels regens already queued inside it; its `isRestorable` guard is the separate,
+WorldGuard-independent backstop that refuses to restore over a block someone else has since put
+at that coordinate.
+
 Fishing's per-area loot table (`rpg.gathering.listener.FishingListener`,
 `rpg.gathering.repository.FishingLootRepository`) is a separate, lower-level consumer of the
 same `RegionQueryService` - it doesn't go through `rpg.town` at all, since a fishing spot

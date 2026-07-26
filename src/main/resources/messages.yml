@@ -95,11 +95,9 @@ admin:
   spawnpoint-list-entry-id-hover: "&%7クリックして /oladmin spawnpoint remove をチャット欄に入力"
 
 gathering:
-  usage: "&%e使い方: /{label} &%7<&%eresetregen&%7|&%eresetplaced&%7>&%e confirm"
+  usage: "&%e使い方: /{label} resetregen confirm"
   resetregen-confirm: "&%e全ワールドの再生成待ちタスクを取り消します（プレイヤーの建築には影響しません）。実行するには /{label} resetregen confirm"
   resetregen-done: "&%a再生成待ちタスクを{regen}件取り消しました。"
-  resetplaced-confirm: "&%c手動設置の追跡を全ワールド分削除します。手で置いた原木は再生成の除外対象から外れ、天然ノードと同じ扱いに戻ります。実行するには /{label} resetplaced confirm"
-  resetplaced-done: "&%a手動設置の追跡を{placed}件削除しました。"
 
 relic:
   usage: "&%e使い方: /ol relic upgrade"
