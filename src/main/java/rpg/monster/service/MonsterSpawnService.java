@@ -11,6 +11,7 @@ import rpg.monster.model.AiType;
 import rpg.monster.model.MonsterData;
 import rpg.monster.repository.MonsterRepository;
 import rpg.status.service.ScaledHealthService;
+import rpg.town.service.TownDetectionService;
 import rpg.util.ColorUtil;
 import rpg.util.MathUtil;
 
@@ -31,6 +32,12 @@ import java.util.UUID;
  * being set to the full scaled value directly, the same tradeoff players get (see
  * {@link ScaledHealthService}). The true current HP is tracked separately via
  * {@link MonsterKeys#scaledCurrentHp()} and kept proportional to vanilla health.
+ *
+ * <p>{@link #spawn(String, Location, UUID, Integer)} refuses to spawn at all inside a
+ * WorldGuard region configured as a town ({@link TownDetectionService}) - this is the single
+ * choke point every caller goes through (recurring spawn points via
+ * {@code MonsterSpawnPointService#tick()}, {@code /oladmin spawn}, and any future caller
+ * alike), so town suppression doesn't need to be re-checked at each call site.
  */
 public final class MonsterSpawnService {
 
@@ -38,14 +45,16 @@ public final class MonsterSpawnService {
     private final MonsterKeys keys;
     private final MonsterRepository repository;
     private final MonsterLevelScalingConfig levelScalingConfig;
+    private final TownDetectionService townDetectionService;
     private final MonsterHealthBarRenderer healthBarRenderer = new MonsterHealthBarRenderer();
 
     public MonsterSpawnService(OreliaPlugin plugin, MonsterKeys keys, MonsterRepository repository,
-                                MonsterLevelScalingConfig levelScalingConfig) {
+                                MonsterLevelScalingConfig levelScalingConfig, TownDetectionService townDetectionService) {
         this.plugin = plugin;
         this.keys = keys;
         this.repository = repository;
         this.levelScalingConfig = levelScalingConfig;
+        this.townDetectionService = townDetectionService;
     }
 
     public Optional<LivingEntity> spawn(String monsterId, Location location) {
@@ -65,6 +74,9 @@ public final class MonsterSpawnService {
     public Optional<LivingEntity> spawn(String monsterId, Location location, UUID spawnPointId, Integer targetLevel) {
         MonsterData data = repository.findById(monsterId).orElse(null);
         if (data == null) {
+            return Optional.empty();
+        }
+        if (townDetectionService.isInTown(location)) {
             return Optional.empty();
         }
 

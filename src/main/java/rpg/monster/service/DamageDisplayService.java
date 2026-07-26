@@ -50,7 +50,11 @@ public final class DamageDisplayService {
                 : config.getString(isCrit ? "combat.damage-display.crit-color" : "combat.damage-display.normal-color",
                         isCrit ? "&%e" : "&%f");
         float scale = isCrit ? (float) config.getDouble("combat.damage-display.crit-scale", 1.3) : 1.0f;
-        String text = isCrit ? "&%6✧" + color + Math.round(amount) + "&%6✧" : color + Math.round(amount);
+        // A no-element crit resets to plain white between the sparkles instead of tinting the
+        // number itself with the crit-color default - an elemental crit still tints the number
+        // with its own element color, unaffected.
+        String critNumberColor = elementColor != null ? color : "&r";
+        String text = isCrit ? "&%6✧" + critNumberColor + Math.round(amount) + "&%6✧" : color + Math.round(amount);
 
         Location spawnLocation = origin.clone().add(0, yOffset, 0);
         TextDisplay display = spawnLocation.getWorld().spawn(spawnLocation, TextDisplay.class, d -> {

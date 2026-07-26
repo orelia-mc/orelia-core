@@ -24,6 +24,8 @@ import rpg.economy.EconomyModule;
 import rpg.monster.MonsterModule;
 import rpg.boss.BossModule;
 import rpg.gui.GuiModule;
+import rpg.region.RegionModule;
+import rpg.town.TownModule;
 import rpg.api.ApiModule;
 
 /**
@@ -77,6 +79,9 @@ public final class OreliaPlugin extends JavaPlugin {
         // earlier ones via ModuleManager#get, never the reverse. ApiModule is always last
         // so every service it publishes is fully constructed first.
         moduleManager.register(new DatabaseModule());
+        // Registered early (no dependency of its own) since GatheringModule's fishing area
+        // detection needs its RegionQueryService before TownModule ever exists.
+        moduleManager.register(new RegionModule());
         moduleManager.register(new StatusModule());
         moduleManager.register(new JobModule());
         moduleManager.register(new GatheringModule());
@@ -87,6 +92,9 @@ public final class OreliaPlugin extends JavaPlugin {
         // Registered after EconomyModule (not alphabetically) - relics' upgrade cost needs
         // Vault's Economy, which EconomyModule only registers with Vault once it enables.
         moduleManager.register(new AccessoryModule());
+        // Registered right before MonsterModule - spawn suppression inside towns needs
+        // TownDetectionService already built.
+        moduleManager.register(new TownModule());
         moduleManager.register(new MonsterModule());
         moduleManager.register(new BossModule());
         moduleManager.register(new GuiModule());

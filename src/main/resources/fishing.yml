@@ -1,0 +1,87 @@
+# Fisherman job configuration (釣り人). Reload with: /oladmin reload
+#
+# Only a player whose current job (see jobs.yml) is FISHERMAN can cast a fishing rod -
+# enforced in rpg.gathering.listener.FishingListener, the PlayerFishEvent analogue of the
+# job/weapon-type gate every other job enforces on its own weapon category (a vanilla
+# fishing rod has no items.yml entry, so it can't go through the usual WeaponRequirement
+# check). Debug mode (orelia-debug's /oladmin debugmode) bypasses this the same way it
+# bypasses every other job/level weapon requirement.
+#
+# catch-time: bobber wait time (in ticks, 20 ticks = 1 second) shrinks as the fisherman's
+# own gathering level rises (GatherActionType.FISHING - tracked the same way as mining/
+# woodcutting/farming, see /ol gathering), so a higher-level fisherman catches noticeably
+# faster than a fresh one.
+#   base-min-ticks/base-max-ticks : wait-time range at level 1 (100/600 matches vanilla's
+#                                   own default 5s-30s range).
+#   ticks-reduction-per-level     : ticks shaved off both bounds per fisherman level above 1.
+#   min-ticks-floor               : lower bound so wait time never reaches (near) 0.
+#
+# xp-gain-per-catch: fishing experience granted per successful catch, toward the same
+# leveling curve mining/woodcutting/farming already use (gathering.yml: leveling).
+#
+# towns: which items are catchable, and how likely each one is, per area. Each key below is
+# tried in order of specificity: first any WorldGuard region ID at the bobber's location (if
+# WorldGuard is installed - see config.yml: town-detection), then the Bukkit world name the
+# player is fishing in, then "default" if nothing else matches. The natural setup without
+# WorldGuard is still one world per key, same as before. Each entry:
+#   item                   : vanilla Material caught.
+#   weight                 : relative chance among that town's own entries (not a percentage
+#                            - only relative to the other weights in the same town matters).
+#   min-amount/max-amount  : how many of that item are caught at once (inclusive range).
+# Add/remove towns or items and run /oladmin reload afterward - no code change needed.
+config-version: 1
+
+catch-time:
+  base-min-ticks: 100
+  base-max-ticks: 600
+  ticks-reduction-per-level: 4
+  min-ticks-floor: 20
+
+xp-gain-per-catch: 10
+
+towns:
+  default:
+    - item: COD
+      weight: 55
+      min-amount: 1
+      max-amount: 1
+    - item: SALMON
+      weight: 25
+      min-amount: 1
+      max-amount: 1
+    - item: TROPICAL_FISH
+      weight: 8
+      min-amount: 1
+      max-amount: 1
+    - item: PUFFERFISH
+      weight: 5
+      min-amount: 1
+      max-amount: 1
+    - item: EMERALD
+      weight: 5
+      min-amount: 1
+      max-amount: 2
+    - item: BOW
+      weight: 2
+      min-amount: 1
+      max-amount: 1
+
+  # Example second town - copy this block, rename the key to match a world name, and adjust
+  # the item list to give that town its own catchable-item table.
+  harbor_town:
+    - item: COD
+      weight: 40
+      min-amount: 1
+      max-amount: 2
+    - item: PRISMARINE_SHARD
+      weight: 20
+      min-amount: 1
+      max-amount: 2
+    - item: PRISMARINE_CRYSTALS
+      weight: 15
+      min-amount: 1
+      max-amount: 2
+    - item: NAUTILUS_SHELL
+      weight: 3
+      min-amount: 1
+      max-amount: 1
