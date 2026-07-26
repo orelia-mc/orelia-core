@@ -1,7 +1,9 @@
 package rpg.monster.listener;
 
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -58,7 +60,8 @@ public final class MonsterDeathListener implements Listener {
         if (!(event.getEntity().getLastDamageCause() instanceof EntityDamageByEntityEvent byEntity)) {
             return;
         }
-        if (!(byEntity.getDamager() instanceof LivingEntity attacker)) {
+        LivingEntity attacker = resolveAttacker(byEntity.getDamager());
+        if (attacker == null) {
             return;
         }
         MonsterData data = spawnService.dataOf(attacker).orElse(null);
@@ -68,5 +71,23 @@ public final class MonsterDeathListener implements Listener {
         String formatted = messages.format("monster.death-message",
                 "player", event.getEntity().getName(), "monster", data.getName());
         event.deathMessage(ColorUtil.component(formatted));
+    }
+
+    /**
+     * The living entity actually responsible for a hit - itself for a melee attacker, or
+     * whoever fired it for a projectile (an arrow/other projectile from a monster's ranged
+     * ability, see {@code MonsterAbilityCastService}/{@code BossAbilityCastService}). Without
+     * this, a player killed by a ranged monster attack fell through as an unrecognized damager
+     * (a {@link Projectile} is never itself a {@link LivingEntity}), leaving vanilla's own
+     * "X was slain by &lt;killer's live nametag&gt;" message - HP-bar decoration and all - in place.
+     */
+    private LivingEntity resolveAttacker(Entity damager) {
+        if (damager instanceof LivingEntity living) {
+            return living;
+        }
+        if (damager instanceof Projectile projectile && projectile.getShooter() instanceof LivingEntity shooter) {
+            return shooter;
+        }
+        return null;
     }
 }

@@ -1,5 +1,6 @@
 package rpg.skill.executor;
 
+import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -11,7 +12,9 @@ import rpg.skill.model.SkillData;
  * Fires one or more arrows dealing {@link SkillData#scaledDamageMultiplier} bonus damage
  * on top of vanilla bow damage. {@code radius == 0} fires a single, precise shot
  * (パワーショット); {@code radius > 0} fires three arrows spread across that many degrees
- * (マルチショット).
+ * (マルチショット). Pickup is disabled and {@code rpg.skill.listener.ArrowSkillDamageListener}
+ * removes each one a short time after it lands - without this, a player could farm free
+ * infinite-ammo arrows by repeatedly casting the skill and walking over what it fired.
  */
 public final class ArrowVolleyExecutor implements SkillExecutor {
 
@@ -34,6 +37,7 @@ public final class ArrowVolleyExecutor implements SkillExecutor {
             Vector direction = arrowCount == 1 ? base : rotateAroundY(base, spreadDegrees * (i - (arrowCount - 1) / 2.0) / arrowCount);
             Arrow arrow = caster.getWorld().spawnArrow(caster.getEyeLocation(), direction, 3.0f, 0f);
             arrow.setShooter(caster);
+            arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
             arrow.setMetadata(DAMAGE_MULTIPLIER_METADATA, new FixedMetadataValue(plugin, multiplier));
         }
     }

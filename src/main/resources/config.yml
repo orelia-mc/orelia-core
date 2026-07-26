@@ -5,7 +5,13 @@
 # added - on next startup, ConfigManager appends the new section (with its comments) to any
 # existing config.yml that's missing it, without touching anything you've already customized.
 # Never bump this for a value-only change (e.g. tweaking a default), only for new/removed keys.
-config-version: 5
+config-version: 6
+
+skill:
+  # Ticks after a skill-fired bow arrow (パワーショット/マルチショット) lands before it's
+  # removed - those arrows already can't be picked up, but they'd otherwise sit there
+  # indefinitely like a normal stuck arrow. 100 = 5 seconds.
+  arrow-despawn-ticks: 100
 
 database:
   # SQLITE or MYSQL
