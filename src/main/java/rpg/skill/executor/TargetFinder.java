@@ -30,13 +30,24 @@ final class TargetFinder {
     static List<LivingEntity> inCone(Player caster, double range) {
         Vector facing = caster.getLocation().getDirection().normalize();
         return caster.getWorld().getNearbyLivingEntities(caster.getLocation(), range, range, range, entity ->
-                entity != caster && isInFront(caster, facing, entity)).stream().collect(Collectors.toList());
+                entity != caster && isValidTarget(caster, entity) && isInFront(caster, facing, entity)).stream().collect(Collectors.toList());
     }
 
     /** Living entities within {@code radius} blocks of the caster, in any direction. */
     static List<LivingEntity> inRadius(Player caster, double radius) {
         return caster.getWorld().getNearbyLivingEntities(caster.getLocation(), radius, radius, radius,
-                entity -> entity != caster).stream().collect(Collectors.toList());
+                entity -> entity != caster && isValidTarget(caster, entity)).stream().collect(Collectors.toList());
+    }
+
+    /**
+     * A melee skill's damage/knockback must not touch another player when the world has PvP
+     * disabled - {@code SkillDamage#apply} delivers damage via a direct {@code Entity#damage}
+     * call rather than the vanilla attack path, and knockback is an even more direct
+     * {@code Entity#setVelocity}, so neither one goes through whatever normally enforces a
+     * world's PvP flag on an ordinary player-vs-player hit. Monsters are never affected by this.
+     */
+    private static boolean isValidTarget(Player caster, LivingEntity entity) {
+        return !(entity instanceof Player) || caster.getWorld().getPVP();
     }
 
     /**

@@ -44,14 +44,22 @@ public final class EconomyModule implements RpgModule {
         this.economyService = new EconomyService(repository);
 
         if (Bukkit.getPluginManager().getPlugin("Vault") != null) {
-            // High priority so Orelia's own balance wins ServicesManager.load(Economy.class)
-            // lookups (e.g. PetService/MountService unlock checks) over any other Economy
-            // provider that might also be registered at the default Normal priority.
+            // Highest priority (the top of ServicePriority, not just "High") so Orelia's own
+            // balance always wins ServicesManager.load(Economy.class) lookups (e.g.
+            // PetService/HousingService/AuctionService/MountService unlock/purchase checks)
+            // over any other Economy provider on the server, regardless of what priority that
+            // other provider registered at. Previously this used ServicePriority.High, which
+            // only beats a competitor at the default Normal priority - a second economy plugin
+            // registering at High or Highest would silently win the lookup instead, so those
+            // purchase checks would run against a balance the player never sees anywhere in
+            // Orelia's own UI (e.g. the status GUI's money display, which always reads
+            // EconomyService directly rather than going through Vault) - looking exactly like
+            // "I have enough money but it still says insufficient funds".
             Bukkit.getServicesManager().register(
                     net.milkbowl.vault.economy.Economy.class,
                     new OreliaVaultEconomy(economyService),
                     plugin,
-                    ServicePriority.High);
+                    ServicePriority.Highest);
             plugin.getLogger().info("Registered Orelia as the Vault economy provider.");
         }
     }
