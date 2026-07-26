@@ -14,6 +14,12 @@ public interface GuiApi {
 
     void openStatus(Player player);
 
+    /**
+     * @deprecated the standalone equipment screen is gone - equipping now happens directly in
+     *         the status screen's own slots, so this just opens {@link #openStatus}. Kept so
+     *         already-published orelia-world/orelia-debug builds keep linking.
+     */
+    @Deprecated
     void openEquipment(Player player);
 
     void openSkill(Player player);
