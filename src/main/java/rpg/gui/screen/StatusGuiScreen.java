@@ -59,7 +59,11 @@ public final class StatusGuiScreen {
     private static final int BASE_SLOT = 12;
     private static final int CRIT_SLOT = 13;
     private static final int ELEMENTAL_SLOT = 14;
-    private static final int[] ACCESSORY_SLOTS = {19, 20, 21, 22, 23, 24};
+    // Row 2 of the 27-slot (3x9) screen is 18-26; 6 equip slots can't split that 9-wide row
+    // evenly, so a 7th "what is this" info icon fills the dead-center slot (22) instead,
+    // leaving 3 equip slots symmetrically on either side and one filler slot at each end (18, 26).
+    private static final int INFO_SLOT = 22;
+    private static final int[] ACCESSORY_SLOTS = {19, 20, 21, 23, 24, 25};
 
     private static final List<StatType> BASE_STATS = List.of(
             StatType.HP, StatType.SP, StatType.ATK, StatType.DEF, StatType.SPD, StatType.SP_RECOVERY);
@@ -119,8 +123,10 @@ public final class StatusGuiScreen {
      * changed exactly the way {@link #build} painted it.
      */
     public static ItemStack equipSlotIcon(AccessoryType type, ItemStack equipped) {
+        // Red, not the same gray as the screen's plain filler panes, so an empty equip slot
+        // reads as "click me" rather than blending into the decorative background around it.
         return equipped == null || equipped.getType().isAir()
-                ? new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).name("&%7" + type.getDisplayName()).build()
+                ? new ItemBuilder(Material.RED_STAINED_GLASS_PANE).name("&%7" + type.getDisplayName()).build()
                 : equipped.clone();
     }
 
@@ -134,6 +140,7 @@ public final class StatusGuiScreen {
         gui.set(BASE_SLOT, GuiButton.display(baseStatsIcon(player)));
         gui.set(CRIT_SLOT, GuiButton.display(categoryIcon(player, Material.BLAZE_POWDER, "&%c会心", CRIT_STATS)));
         gui.set(ELEMENTAL_SLOT, GuiButton.display(categoryIcon(player, Material.FIRE_CHARGE, "&%6属性ダメージ増加", ELEMENTAL_STATS)));
+        gui.set(INFO_SLOT, GuiButton.display(equipInfoIcon()));
         AccessoryType[] types = AccessoryType.values();
         for (int i = 0; i < types.length; i++) {
             gui.set(ACCESSORY_SLOTS[i], GuiButton.display(accessoryIcon(player, types[i])));
@@ -159,6 +166,17 @@ public final class StatusGuiScreen {
         return new ItemBuilder(Material.GOLD_INGOT)
                 .name("&%6所持金")
                 .lore(List.of("&%f" + MoneyFormat.format(balance) + "G"))
+                .build();
+    }
+
+    /** Sits in {@link #INFO_SLOT}, the dead center of the equip-slot row, explaining what the 6 surrounding slots do. */
+    private ItemStack equipInfoIcon() {
+        return new ItemBuilder(Material.ITEM_FRAME)
+                .name("&%eアクセサリー・レリック装備")
+                .lore(List.of(
+                        "&%7左右のスロットに対応する部位のアイテムを",
+                        "&%7置くと装備されます。",
+                        "&%7取り出すと装備解除されます。"))
                 .build();
     }
 
