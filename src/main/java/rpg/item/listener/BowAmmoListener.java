@@ -54,6 +54,8 @@ import rpg.util.ColorUtil;
  */
 public final class BowAmmoListener implements Listener {
 
+    private static final NamespacedKey SEEDED_MODEL_KEY = NamespacedKey.minecraft("barrier");
+
     private final WeaponIdentityService identityService;
 
     public BowAmmoListener(WeaponIdentityService identityService) {
@@ -77,8 +79,8 @@ public final class BowAmmoListener implements Listener {
             return;
         }
         PlayerInventory inventory = event.getPlayer().getInventory();
-        if (isSeedArrow(inventory.getLeggings())) {
-            return; // already seeded
+        if (isFullySeeded(inventory.getLeggings())) {
+            return; // already seeded with the current visual/lock
         }
         inventory.setLeggings(seedArrow());
     }
@@ -105,6 +107,21 @@ public final class BowAmmoListener implements Listener {
 
     private boolean isSeedArrow(ItemStack stack) {
         return stack != null && stack.getType() == Material.ARROW;
+    }
+
+    /**
+     * True only for an arrow already carrying this listener's current visual/lock (item model
+     * + display name). A plain {@code Material.ARROW} with no such meta - e.g. one seeded by an
+     * older build of this listener, before the barrier-block visual existed - fails this check
+     * so {@link #onInteract} reseeds it instead of leaving the stale, unmodified-looking arrow
+     * in place forever.
+     */
+    private boolean isFullySeeded(ItemStack stack) {
+        if (!isSeedArrow(stack)) {
+            return false;
+        }
+        ItemMeta meta = stack.getItemMeta();
+        return meta != null && meta.hasItemModel() && SEEDED_MODEL_KEY.equals(meta.getItemModel());
     }
 
     private ItemStack seedArrow() {

@@ -14,6 +14,7 @@ import rpg.monster.model.MonsterData;
 import rpg.monster.service.MonsterDropService;
 import rpg.monster.service.MonsterSpawnService;
 import rpg.monster.spawnpoint.service.MonsterSpawnPointService;
+import rpg.status.combat.DamageFormula;
 import rpg.util.ColorUtil;
 
 /**
@@ -57,10 +58,7 @@ public final class MonsterDeathListener implements Listener {
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
-        if (!(event.getEntity().getLastDamageCause() instanceof EntityDamageByEntityEvent byEntity)) {
-            return;
-        }
-        LivingEntity attacker = resolveAttacker(byEntity.getDamager());
+        LivingEntity attacker = resolveAttacker(event.getEntity());
         if (attacker == null) {
             return;
         }
@@ -74,14 +72,36 @@ public final class MonsterDeathListener implements Listener {
     }
 
     /**
-     * The living entity actually responsible for a hit - itself for a melee attacker, or
-     * whoever fired it for a projectile (an arrow/other projectile from a monster's ranged
-     * ability, see {@code MonsterAbilityCastService}/{@code BossAbilityCastService}). Without
-     * this, a player killed by a ranged monster attack fell through as an unrecognized damager
-     * (a {@link Projectile} is never itself a {@link LivingEntity}), leaving vanilla's own
-     * "X was slain by &lt;killer's live nametag&gt;" message - HP-bar decoration and all - in place.
+     * The living entity actually responsible for the killing blow. Checked in two ways:
+     * {@link DamageFormula#LAST_ABILITY_ATTACKER_METADATA_KEY} first, since a monster/boss
+     * ability (AOE slam, fireball barrage) deals damage via a no-damager
+     * {@code player.damage(amount)} call that never produces an {@link EntityDamageByEntityEvent}
+     * for {@link #resolveDamager} to read a damager from at all - without this, those kills fell
+     * through to vanilla's plain "X died" message with no killer attribution whatsoever. Falls
+     * back to the real damager - itself for a melee attacker, or whoever fired it for a
+     * projectile - for every other kind of hit.
      */
-    private LivingEntity resolveAttacker(Entity damager) {
+    private LivingEntity resolveAttacker(Player victim) {
+        if (victim.hasMetadata(DamageFormula.LAST_ABILITY_ATTACKER_METADATA_KEY)) {
+            Object value = victim.getMetadata(DamageFormula.LAST_ABILITY_ATTACKER_METADATA_KEY).get(0).value();
+            if (value instanceof LivingEntity living && living.isValid()) {
+                return living;
+            }
+        }
+        if (!(victim.getLastDamageCause() instanceof EntityDamageByEntityEvent byEntity)) {
+            return null;
+        }
+        return resolveDamager(byEntity.getDamager());
+    }
+
+    /**
+     * The living entity actually responsible for a hit - itself for a melee attacker, or
+     * whoever fired it for a projectile. Without this, a player killed by a ranged monster
+     * attack fell through as an unrecognized damager (a {@link Projectile} is never itself a
+     * {@link LivingEntity}), leaving vanilla's own "X was slain by &lt;killer's live
+     * nametag&gt;" message - HP-bar decoration and all - in place.
+     */
+    private LivingEntity resolveDamager(Entity damager) {
         if (damager instanceof LivingEntity living) {
             return living;
         }

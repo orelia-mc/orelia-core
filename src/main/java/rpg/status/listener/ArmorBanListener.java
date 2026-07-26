@@ -5,7 +5,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -31,6 +34,15 @@ import rpg.core.message.MessageManager;
  * alone - they occupy an armor slot too, but contribute no defense value, so banning them would
  * serve no purpose under this rule's own rationale. Only the four families of items with an
  * actual defense contribution ({@link #isRealArmor}) are banned.
+ *
+ * <p>{@link #onInteract} additionally cancels the vanilla right-click-to-equip gesture itself
+ * (armor item in hand, right-click air/block) at {@link EventPriority#LOWEST} - without this,
+ * {@link #onArmorChange} still correctly reverts the slot, but not before vanilla's own equip
+ * logic has already handed the *displaced* item (e.g. a bow's seeded ammo arrow - see
+ * {@code rpg.item.listener.BowAmmoListener} - sitting in that armor slot) to the player's hand,
+ * duplicating it: {@code revertSlot} puts a fresh copy back in the armor slot while the original
+ * the player already received stays in their hand. Blocking the equip gesture up front avoids
+ * the swap ever happening in the first place.
  */
 public final class ArmorBanListener implements Listener {
 
@@ -50,6 +62,19 @@ public final class ArmorBanListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         stripBannedArmor(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onInteract(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
+        ItemStack item = event.getItem();
+        if (item == null || !isRealArmor(item.getType())) {
+            return;
+        }
+        event.setCancelled(true);
+        messages.send(event.getPlayer(), "item.armor-banned");
     }
 
     @EventHandler

@@ -13,6 +13,7 @@ import rpg.boss.model.BossAbility;
 import rpg.boss.model.BossData;
 import rpg.boss.repository.BossRepository;
 import rpg.monster.service.MonsterSpawnService;
+import rpg.status.combat.DamageFormula;
 import rpg.util.ColorUtil;
 
 import java.util.Collection;
@@ -105,7 +106,12 @@ public final class BossAbilityCastService {
         playSound(world, boss, ability.getSound());
         for (Player player : nearby) {
             if (player.getLocation().distance(boss.getLocation()) <= ability.getRadius()) {
-                player.damage(ability.getDamage());
+                player.setMetadata(DamageFormula.LAST_ABILITY_ATTACKER_METADATA_KEY, new FixedMetadataValue(plugin, boss));
+                try {
+                    player.damage(ability.getDamage());
+                } finally {
+                    player.removeMetadata(DamageFormula.LAST_ABILITY_ATTACKER_METADATA_KEY, plugin);
+                }
             }
         }
     }

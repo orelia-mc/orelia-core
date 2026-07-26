@@ -83,7 +83,7 @@ admin:
   spawned-boss: "&%aボス{id}を召喚しました。"
   unknown-boss: "&%c不明なボスIDです: {id}"
   usage-spawnpoint: "&%e使い方: /oladmin spawnpoint &%7<&%eadd &%7<&%emonsterId&%7>&%e [intervalSeconds] [maxAlive] [targetLevel]&%7|&%eremove &%7<&%eid&%7>&%e&%7|&%elist&%7>&%e"
-  usage-spawnpoint-add: "&%e使い方: /oladmin spawnpoint add &%7<&%emonsterId&%7>&%e [intervalSeconds] [maxAlive] [targetLevel]"
+  usage-spawnpoint-add: "&%e使い方: /oladmin spawnpoint add &%7<&%emonsterId&%7>&%e &%7<&%eintervalSeconds&%7>&%e &%7<&%emaxAlive&%7>&%e &%7<&%etargetLevel&%7>"
   spawnpoint-registered: "&%aスポーンポイント{id}（{monster}）をここに登録しました（{interval}秒毎、最大{max}体、目安レベル{level}）。"
   usage-spawnpoint-remove: "&%e使い方: /oladmin spawnpoint remove &%7<&%eid&%7>&%e"
   spawnpoint-removed: "&%aスポーンポイント{id}を削除しました。"

@@ -175,13 +175,18 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
                     messages.send(sender, "command.player-only");
                     return;
                 }
-                if (args.length < 3) {
+                // targetLevel is mandatory (unlike interval/maxAlive) - a spawn point never
+                // registers without one, so every monster it produces always has a level to
+                // show on its nametag (see MonsterSpawnService#displayNameOf). Pre-existing
+                // spawn points registered before this rule still have a null level in the DB
+                // and keep spawning unleveled monsters until re-registered.
+                Integer targetLevel = args.length >= 6 ? parseIntOrNull(args, 5) : null;
+                if (targetLevel == null) {
                     messages.send(sender, "admin.usage-spawnpoint-add");
                     return;
                 }
                 int intervalSeconds = parseIntOrDefault(args, 3, DEFAULT_SPAWN_POINT_INTERVAL_SECONDS);
                 int maxAlive = parseIntOrDefault(args, 4, DEFAULT_SPAWN_POINT_MAX_ALIVE);
-                Integer targetLevel = parseIntOrNull(args, 5);
                 var created = spawnPointService.add(player, args[2], intervalSeconds, maxAlive, targetLevel);
                 if (created.isEmpty()) {
                     messages.send(sender, "admin.unknown-monster", "id", args[2]);
@@ -189,7 +194,7 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
                 }
                 messages.send(sender, "admin.spawnpoint-registered",
                         "id", created.get().getId(), "monster", args[2], "interval", intervalSeconds, "max", maxAlive,
-                        "level", targetLevel != null ? targetLevel : "-");
+                        "level", targetLevel);
             }
             case "remove" -> {
                 if (args.length < 3) {
