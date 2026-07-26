@@ -37,9 +37,29 @@
 # items.yml field, see items.yml's comment header) per ore block broken.
 #   bonus-chance-per-level : percent chance (0-100) per luck level to add +1 to a random
 #                            drop from the broken block.
-config-version: 1
+#
+# regen-exclusion: WorldGuard region IDs where gathering is switched off entirely - blocks
+# broken inside them never regenerate, grant no gathering XP, and ignore the min-level gate.
+# This is how player builds and decorative trees are kept from behaving like natural
+# gathering nodes: put a region around the area rather than relying on how each block got
+# there, so naturally-grown trees left standing inside a build, WorldEdit pastes and
+# schematics are all covered the same way.
+#   enabled : master switch for the whole check.
+#   regions : flat, case-insensitive region ID allow-list. An area made of disjoint shapes
+#             needs one WorldGuard region per shape (region IDs are unique per world), with
+#             every ID listed here, e.g.:
+#               regions:
+#                 - town1_plaza
+#                 - town1_market
+#                 - player_base_alice
+# Requires WorldGuard; without it (or if its API doesn't match) nothing is ever excluded.
+config-version: 2
 
 regen-tick-period-ticks: 100 # 100 ticks = 5 seconds
+
+regen-exclusion:
+  enabled: true
+  regions: []
 
 gather-settings:
   MINING:

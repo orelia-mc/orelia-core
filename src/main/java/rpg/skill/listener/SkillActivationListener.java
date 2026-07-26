@@ -10,6 +10,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import rpg.core.message.MessageManager;
 import rpg.gui.service.ActionBarService;
+import rpg.item.model.WeaponData;
 import rpg.item.model.WeaponType;
 import rpg.item.service.WeaponIdentityService;
 import rpg.skill.model.SkillData;
@@ -19,21 +20,32 @@ import rpg.skill.service.SkillSocketService;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
- * Skill activation triggers for melee weapons (SWORD/SPEAR/AXE/PICKAXE/HATCHET): right-click
- * casts the weapon's first socketed skill, and the swap-hands key (F, cancelling the vanilla
- * item swap) casts the second - no weapon's {@code items.yml} {@code skill-slot-count} exceeds
- * 2 today, so these two triggers cover every socket that can actually be filled. (Previously
- * the second socket cast on shift+right-click instead; that was dropped in favor of F since
- * shift+right-click also means "sneak while attacking," which reads as an odd key for casting
- * a skill compared to the swap-hands key most players already associate with a secondary
- * action.) Each trigger only cancels its underlying vanilla event (block interaction / hand
- * swap) when a skill actually occupied that socket, so an empty slot falls back to normal
- * behavior. BOW and HOE are excluded from the right-click trigger - right-click is vanilla's
- * draw-and-shoot action for a bow (bow skill activation is being redesigned separately to fire
- * off the normal shot instead) and vanilla's till-farmland action for a hoe; the F-key trigger
- * still works for both in the meantime.
+ * Skill activation triggers, split by whether a weapon type's own vanilla right-click action
+ * can share the button with skill casting:
+ *
+ * <ul>
+ *   <li>SWORD/AXE/PICKAXE/HATCHET (no right-click action of their own worth preserving):
+ *       right-click casts socket 1, the swap-hands key (F, cancelling the vanilla item swap)
+ *       casts socket 2.
+ *   <li>{@link #RIGHT_CLICK_RESERVED} - BOW (draw-and-shoot), SPEAR (trident throw/Riptide), and
+ *       HOE (till farmland) - right-click is never intercepted at all here, so that action
+ *       always works exactly like vanilla whether or not a skill is socketed. Both of their
+ *       sockets instead live on the swap-hands key: plain F casts socket 1, sneaking + F casts
+ *       socket 2. (A trident with a skill socketed used to have its throw hijacked on every
+ *       right-click - {@code castSlot} cancels the vanilla event whenever a skill occupied that
+ *       slot, regardless of whether the cast itself succeeded - and a bow/crossbow/hoe's first
+ *       socket was simply unreachable, since their right-click was already skipped entirely
+ *       while F only ever targeted socket 2.)
+ * </ul>
+ *
+ * No weapon's {@code items.yml} {@code skill-slot-count} exceeds 2 today, so between the two
+ * physical buttons available per category, every socket that can actually be filled has a
+ * working trigger. Each trigger only cancels its underlying vanilla event (block interaction /
+ * hand swap) when a skill actually occupied that socket, so an empty slot falls back to normal
+ * behavior.
  *
  * <p>Cast feedback (success/on-cooldown/etc.) goes through {@link ActionBarService#showTransient}
  * rather than chat - a player casting repeatedly (e.g. spamming right-click while a skill is on
@@ -42,6 +54,9 @@ import java.util.Optional;
 public final class SkillActivationListener implements Listener {
 
     private static final long FEEDBACK_DURATION_MILLIS = 2000L;
+
+    /** Weapon types whose own right-click action must never be intercepted for skill casting - see the class javadoc. */
+    public static final Set<WeaponType> RIGHT_CLICK_RESERVED = Set.of(WeaponType.BOW, WeaponType.SPEAR, WeaponType.HOE);
 
     private final SkillCastService castService;
     private final SkillSocketService socketService;
@@ -70,9 +85,8 @@ public final class SkillActivationListener implements Listener {
             return;
         }
         Player player = event.getPlayer();
-        ItemStack mainHand = player.getInventory().getItemInMainHand();
-        WeaponType weaponType = weaponIdentityService.dataOf(mainHand).map(w -> w.getWeaponType()).orElse(null);
-        if (weaponType == null || weaponType == WeaponType.BOW || weaponType == WeaponType.HOE) {
+        WeaponType weaponType = weaponTypeOf(player);
+        if (weaponType == null || RIGHT_CLICK_RESERVED.contains(weaponType)) {
             return;
         }
 
@@ -83,9 +97,22 @@ public final class SkillActivationListener implements Listener {
 
     @EventHandler
     public void onSwapHands(PlayerSwapHandItemsEvent event) {
-        if (castSlot(event.getPlayer(), 1)) {
+        Player player = event.getPlayer();
+        WeaponType weaponType = weaponTypeOf(player);
+        // For a right-click-reserved weapon, F alone reaches socket 1 (right-click can't, since
+        // it must stay free for the weapon's own action) and sneak+F reaches socket 2. Every
+        // other weapon already got socket 1 from right-click, so plain F always means socket 2.
+        int slotIndex = weaponType != null && RIGHT_CLICK_RESERVED.contains(weaponType)
+                ? (player.isSneaking() ? 1 : 0)
+                : 1;
+        if (castSlot(player, slotIndex)) {
             event.setCancelled(true);
         }
+    }
+
+    private WeaponType weaponTypeOf(Player player) {
+        ItemStack mainHand = player.getInventory().getItemInMainHand();
+        return weaponIdentityService.dataOf(mainHand).map(WeaponData::getWeaponType).orElse(null);
     }
 
     /** Returns true if a skill occupied that socket slot (regardless of whether the cast itself succeeded). */
