@@ -15,6 +15,7 @@ import org.bukkit.plugin.Plugin;
 import rpg.core.message.MessageManager;
 import rpg.item.model.ElementType;
 import rpg.item.model.WeaponData;
+import rpg.item.model.WeaponType;
 import rpg.item.service.WeaponIdentityService;
 import rpg.item.service.WeaponRequirementService;
 import rpg.monster.model.MonsterData;
@@ -118,7 +119,14 @@ public final class CombatDamageListener implements Listener {
     private AttackInput resolveAttack(EntityDamageByEntityEvent event) {
         if (event.getDamager() instanceof Player attacker) {
             ItemStack weapon = attacker.getInventory().getItemInMainHand();
-            WeaponData data = identityService.dataOf(weapon).orElse(null);
+            WeaponData rawData = identityService.dataOf(weapon).orElse(null);
+            // A bow/crossbow's items.yml attack-power is tuned for the arrow it fires, not a
+            // melee swing - without this, punching with one held (no projectile involved at
+            // all) applied that same ranged attack-power directly, making melee hit harder
+            // than actually shooting. Treated exactly like bare hand instead, same as holding
+            // no Orelia weapon at all - the weapon-requirement gate below is skipped too,
+            // since a bow held for a melee swing isn't really "using" it as a bow.
+            WeaponData data = rawData != null && rawData.getWeaponType() != WeaponType.BOW ? rawData : null;
             StatSheet stats = statusService.getFinalStats(attacker.getUniqueId()).orElse(null);
             double critDmg = stats != null ? stats.get(StatType.CRT_DMG) : 0;
             double weaponCritRate = (data != null ? data.getCritRate() : 0.0) + (stats != null ? stats.get(StatType.CRT) : 0);
@@ -146,8 +154,9 @@ public final class CombatDamageListener implements Listener {
                 return new AttackInput(baseAttackPower, atkPercent, weaponCritRate, critMultiplier, critDmg, elementalDamageBonus, weaponElement);
             }
 
-            // Bare hand: the player's own ATK stat IS the base attack power directly - no
-            // separate ATK% layer on top of itself (that would double-count the same stat).
+            // Bare hand (or a bow/crossbow being swung in melee, treated the same way): the
+            // player's own ATK stat IS the base attack power directly - no separate ATK% layer
+            // on top of itself (that would double-count the same stat).
             double critRate = stats != null ? stats.get(StatType.CRT) : 0;
             return new AttackInput(atkPercent, 0, critRate, DamageFormula.DEFAULT_CRIT_MULTIPLIER, critDmg, 0, ElementType.NONE);
         }
@@ -224,18 +233,37 @@ public final class CombatDamageListener implements Listener {
     }
 
     private boolean isWeaknessHit(EntityDamageByEntityEvent event) {
-        if (!(event.getEntity() instanceof LivingEntity victim) || !(event.getDamager() instanceof Player attacker)) {
+        if (!(event.getEntity() instanceof LivingEntity victim)) {
             return false;
         }
         MonsterData data = spawnService.dataOf(victim).orElse(null);
         if (data == null || data.getWeakness() == ElementType.NONE) {
             return false;
         }
-        ItemStack weapon = attacker.getInventory().getItemInMainHand();
+        ItemStack weapon = weaponOf(event.getDamager());
+        if (weapon == null) {
+            return false;
+        }
         return identityService.dataOf(weapon)
                 .map(WeaponData::getElement)
                 .map(element -> element == data.getWeakness())
                 .orElse(false);
+    }
+
+    /**
+     * The main-hand weapon behind an attack, whether it landed as a melee swing or a shot
+     * arrow - {@code event.getDamager()} is a {@link Player} for the former and a
+     * {@link Projectile} for the latter, so an elemental bow's weakness bonus previously only
+     * applied when meleeing with it, never when actually shooting it.
+     */
+    private ItemStack weaponOf(Entity damager) {
+        if (damager instanceof Player attacker) {
+            return attacker.getInventory().getItemInMainHand();
+        }
+        if (damager instanceof Projectile projectile && projectile.getShooter() instanceof Player shooter) {
+            return shooter.getInventory().getItemInMainHand();
+        }
+        return null;
     }
 
     private void applyCritMetadata(Entity damager, boolean crit) {
