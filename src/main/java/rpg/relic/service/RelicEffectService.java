@@ -2,8 +2,9 @@ package rpg.relic.service;
 
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import rpg.accessory.manager.AccessorySlotLayout;
 import rpg.accessory.model.AccessoryType;
+import rpg.accessory.model.PlayerAccessoryEquipmentComponent;
+import rpg.core.player.PlayerDataManager;
 import rpg.relic.config.RelicConfig;
 import rpg.relic.model.RelicInstance;
 import rpg.relic.model.RelicLine;
@@ -20,18 +21,23 @@ import java.util.Map;
  * mechanism {@code StatusService#addBuff}/{@code removeBuffsFromSource} already offers - see
  * the relic system's Context note on reusing this pipeline instead of extending
  * {@code StatusCalculatorService}. Also recomputes the "wear 2+ relics from the same dungeon"
- * set bonus ({@code relics.yml}: {@code dungeon-set-bonuses}) whenever any accessory slot changes.
+ * set bonus ({@code relics.yml}: {@code dungeon-set-bonuses}) whenever any accessory slot
+ * changes. Reads what's equipped from {@link PlayerAccessoryEquipmentComponent} (a virtual,
+ * GUI-driven slot set), not the player's real inventory.
  */
 public final class RelicEffectService {
 
     private final StatusService statusService;
     private final RelicIdentityService identityService;
     private final RelicConfig config;
+    private final PlayerDataManager playerDataManager;
 
-    public RelicEffectService(StatusService statusService, RelicIdentityService identityService, RelicConfig config) {
+    public RelicEffectService(StatusService statusService, RelicIdentityService identityService, RelicConfig config,
+                               PlayerDataManager playerDataManager) {
         this.statusService = statusService;
         this.identityService = identityService;
         this.config = config;
+        this.playerDataManager = playerDataManager;
     }
 
     private static String sourceKey(AccessoryType type) {
@@ -43,7 +49,7 @@ public final class RelicEffectService {
     }
 
     public void applyFromSlot(Player player, AccessoryType type) {
-        ItemStack stack = player.getInventory().getStorageContents()[AccessorySlotLayout.slotFor(type)];
+        ItemStack stack = equippedItem(player, type);
         statusService.removeBuffsFromSource(player.getUniqueId(), sourceKey(type));
         identityService.read(stack).ifPresent(instance -> {
             List<RelicLine> lines = new ArrayList<>();
@@ -71,7 +77,7 @@ public final class RelicEffectService {
     private void recomputeSetBonus(Player player) {
         Map<String, Integer> countByDungeon = new HashMap<>();
         for (AccessoryType type : AccessoryType.values()) {
-            ItemStack stack = player.getInventory().getStorageContents()[AccessorySlotLayout.slotFor(type)];
+            ItemStack stack = equippedItem(player, type);
             identityService.read(stack).ifPresent(instance ->
                     countByDungeon.merge(instance.sourceDungeonId(), 1, Integer::sum));
         }
@@ -83,5 +89,12 @@ public final class RelicEffectService {
                         statusService.addBuff(player.getUniqueId(), key, bonus.stat(), bonus.modifier(), bonus.value(), 0));
             }
         }
+    }
+
+    private ItemStack equippedItem(Player player, AccessoryType type) {
+        return playerDataManager.get(player.getUniqueId())
+                .flatMap(data -> data.component(PlayerAccessoryEquipmentComponent.class))
+                .map(component -> component.getSlot(type))
+                .orElse(null);
     }
 }

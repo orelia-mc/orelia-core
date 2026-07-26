@@ -4,8 +4,9 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
-import rpg.accessory.manager.AccessorySlotLayout;
 import rpg.accessory.model.AccessoryType;
+import rpg.accessory.model.PlayerAccessoryEquipmentComponent;
+import rpg.core.player.PlayerDataManager;
 import rpg.economy.service.EconomyService;
 import rpg.gui.config.GuiConfig;
 import rpg.gui.framework.Gui;
@@ -25,19 +26,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
- * Read-only overview of the player's final stats, held-weapon attack power, current money, and
- * equipped accessories/relics (SOW section 17 "ステータス", extended to fold in the equipment
- * summary previously only visible in a separate screen so a player can see everything at a
- * glance). All of this can change while the screen is open (level-up, buff apply/expire,
- * equipment swap in the player's own inventory underneath) - since there's no single event that
- * covers every case, {@code GuiModule} periodically calls {@link #refresh} for any player with
- * this screen open (tag {@link #TAG}) instead. Actual equip/unequip of accessories/relics still
- * happens in the player's own inventory slots (see {@code AccessorySlotLayout}), which stays
- * interactive underneath this screen exactly like {@link EquipmentGuiScreen} - the icons here
- * are a read-only mirror, not separate interactive slots.
+ * Overview of the player's final stats, held-weapon attack power, current money, and equipped
+ * accessories/relics (SOW section 17 "ステータス", extended to fold in the equipment summary
+ * previously only visible in a separate screen so a player can see everything at a glance).
+ * Stats can change while the screen is open (level-up, buff apply/expire) - since there's no
+ * single event that covers every case, {@code GuiModule} periodically calls {@link #refresh}
+ * for any player with this screen open (tag {@link #TAG}) instead.
+ *
+ * <p>Unlike the stat category icons, the 6 accessory/relic slots ({@link #ACCESSORY_SLOTS}) are
+ * where equip/unequip actually happens, backed by {@link PlayerAccessoryEquipmentComponent} - a
+ * virtual slot set persisted independently of the player's real inventory, so no real inventory
+ * slot carries hidden "this one is the ring slot" meaning any more. Type enforcement, the swap
+ * itself and the resulting stat recompute all live in
+ * {@code rpg.gui.listener.StatusEquipmentSlotListener}, not this class. {@code refresh()}
+ * deliberately never re-renders these 6 slots: that listener already repaints the one slot it
+ * changed, and a periodic overwrite here would fight with an in-progress click.
  *
  * <p>Stats are split into 3 category icons (base / crit / elemental damage) rather than either
  * "one icon per stat" (too many icons once relics added 7 more {@link StatType} values) or
@@ -81,17 +88,44 @@ public final class StatusGuiScreen {
     private final GuiConfig guiConfig;
     private final EconomyService economyService;
     private final WeaponIdentityService weaponIdentityService;
+    private final PlayerDataManager playerDataManager;
 
     public StatusGuiScreen(StatusService statusService, GuiConfig guiConfig, EconomyService economyService,
-                            WeaponIdentityService weaponIdentityService) {
+                            WeaponIdentityService weaponIdentityService, PlayerDataManager playerDataManager) {
         this.statusService = statusService;
         this.guiConfig = guiConfig;
         this.economyService = economyService;
         this.weaponIdentityService = weaponIdentityService;
+        this.playerDataManager = playerDataManager;
+    }
+
+    /**
+     * The accessory/relic part a GUI slot equips, if any - the single mapping
+     * {@code StatusEquipmentSlotListener} shares with {@link #build}, so slot numbers stay
+     * defined in exactly one place.
+     */
+    public static Optional<AccessoryType> typeAtEquipSlot(int slot) {
+        for (int i = 0; i < ACCESSORY_SLOTS.length; i++) {
+            if (ACCESSORY_SLOTS[i] == slot) {
+                return Optional.of(AccessoryType.values()[i]);
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Icon for one equip slot: the equipped item itself, or a labelled placeholder naming the
+     * part when empty. Static so {@code StatusEquipmentSlotListener} repaints a slot it just
+     * changed exactly the way {@link #build} painted it.
+     */
+    public static ItemStack equipSlotIcon(AccessoryType type, ItemStack equipped) {
+        return equipped == null || equipped.getType().isAir()
+                ? new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).name("&%7" + type.getDisplayName()).build()
+                : equipped.clone();
     }
 
     public Gui build(Player player) {
-        Gui gui = new Gui(guiConfig.title("status", "&%8ステータス"), 27);
+        Gui gui = new Gui(guiConfig.title("status", "&%8ステータス"), 27).tag(TAG);
         for (int slot = 0; slot < 27; slot++) {
             gui.set(slot, GuiButton.display(fillerIcon()));
         }
@@ -114,10 +148,6 @@ public final class StatusGuiScreen {
         inventory.setItem(BASE_SLOT, baseStatsIcon(player));
         inventory.setItem(CRIT_SLOT, categoryIcon(player, Material.BLAZE_POWDER, "&%c会心", CRIT_STATS));
         inventory.setItem(ELEMENTAL_SLOT, categoryIcon(player, Material.FIRE_CHARGE, "&%6属性ダメージ増加", ELEMENTAL_STATS));
-        AccessoryType[] types = AccessoryType.values();
-        for (int i = 0; i < types.length; i++) {
-            inventory.setItem(ACCESSORY_SLOTS[i], accessoryIcon(player, types[i]));
-        }
     }
 
     private ItemStack fillerIcon() {
@@ -133,11 +163,11 @@ public final class StatusGuiScreen {
     }
 
     private ItemStack accessoryIcon(Player player, AccessoryType type) {
-        ItemStack[] storage = player.getInventory().getStorageContents();
-        ItemStack accessory = storage[AccessorySlotLayout.slotFor(type)];
-        return accessory == null || accessory.getType().isAir()
-                ? new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE).name("&%7" + type.getDisplayName()).build()
-                : accessory.clone();
+        ItemStack equipped = playerDataManager.get(player.getUniqueId())
+                .flatMap(data -> data.component(PlayerAccessoryEquipmentComponent.class))
+                .map(component -> component.getSlot(type))
+                .orElse(null);
+        return equipSlotIcon(type, equipped);
     }
 
     /** Adds a "現在攻撃力" line on top of the plain base-stat lines - the same number {@code CombatDamageListener} would actually deal. */

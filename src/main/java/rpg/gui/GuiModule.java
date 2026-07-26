@@ -13,11 +13,10 @@ import rpg.gui.config.GuiConfig;
 import rpg.gui.framework.GuiHolder;
 import rpg.gui.framework.GuiListener;
 import rpg.gui.framework.GuiManager;
-import rpg.gui.listener.EquipmentDisplayRefreshListener;
+import rpg.gui.listener.StatusEquipmentSlotListener;
 import rpg.gui.listener.WarehouseSaveListener;
 import rpg.gui.repository.WarehouseRepository;
 import rpg.gui.screen.CraftingGuiScreen;
-import rpg.gui.screen.EquipmentGuiScreen;
 import rpg.gui.screen.JobGuiScreen;
 import rpg.gui.screen.ShopGuiScreen;
 import rpg.gui.screen.SkillGuiScreen;
@@ -48,7 +47,6 @@ public final class GuiModule implements RpgModule {
     private OreliaPlugin plugin;
     private GuiManager guiManager;
     private StatusGuiScreen statusGuiScreen;
-    private EquipmentGuiScreen equipmentGuiScreen;
     private SkillGuiScreen skillGuiScreen;
     private JobGuiScreen jobGuiScreen;
     private ShopGuiScreen shopGuiScreen;
@@ -75,8 +73,8 @@ public final class GuiModule implements RpgModule {
 
         this.guiManager = new GuiManager();
         this.statusGuiScreen = new StatusGuiScreen(statusModule.getStatusService(), guiConfig,
-                economyModule.getEconomyService(), itemModule.getItemManager().getIdentityService());
-        this.equipmentGuiScreen = new EquipmentGuiScreen(guiConfig);
+                economyModule.getEconomyService(), itemModule.getItemManager().getIdentityService(),
+                plugin.getPlayerDataManager());
         this.skillGuiScreen = new SkillGuiScreen(skillModule.getSkillRepository(), skillModule.getProgressService(),
                 skillModule.getSocketService(), itemModule.getItemManager().getIdentityService(), guiConfig,
                 plugin.getMessageManager());
@@ -113,7 +111,10 @@ public final class GuiModule implements RpgModule {
         plugin.getServer().getPluginManager().registerEvents(new GuiListener(), plugin);
         plugin.getServer().getPluginManager().registerEvents(new WarehouseSaveListener(warehouseRepository), plugin);
         plugin.getServer().getPluginManager().registerEvents(
-                new EquipmentDisplayRefreshListener(equipmentGuiScreen, plugin.getSchedulerService()), plugin);
+                new StatusEquipmentSlotListener(accessoryModule.getIdentityService(),
+                        accessoryModule.getRelicIdentityService(), accessoryModule.getEffectService(),
+                        accessoryModule.getRelicEffectService(), accessoryModule.getEquipmentRepository(),
+                        plugin.getPlayerDataManager(), plugin.getSchedulerService()), plugin);
         StatusCommand statusCommand = new StatusCommand(guiManager, statusGuiScreen, plugin.getMessageManager());
         plugin.getPlayerCommandRegistry().register("status", statusCommand, "ステータス画面を開きます。", "status");
         CommandAliasUtil.registerAlias(plugin, "status", statusCommand, "ステータス画面を開きます。", "");
@@ -122,9 +123,10 @@ public final class GuiModule implements RpgModule {
         plugin.getPlayerCommandRegistry().register("craft", craftCommand, "合成画面を開きます。", "craft");
         CommandAliasUtil.registerAlias(plugin, "craft", craftCommand, "合成画面を開きます。", "");
 
-        // Stats can change from many unrelated sources (level-up, buffs, equipment swap) while
-        // this screen is open, unlike equipment's held-item/click events - periodic refresh is
-        // simpler than hooking every mutation site.
+        // Stats can change from many unrelated sources (level-up, buffs, held-weapon swap) while
+        // this screen is open - periodic refresh is simpler than hooking every mutation site.
+        // The 6 equip slots are excluded from that refresh (see StatusGuiScreen#refresh); their
+        // only mutation site is StatusEquipmentSlotListener, which repaints them itself.
         plugin.getSchedulerService().runTimer(() ->
                 plugin.getServer().getOnlinePlayers().forEach(player -> {
                     var top = player.getOpenInventory().getTopInventory();
@@ -169,10 +171,6 @@ public final class GuiModule implements RpgModule {
 
     public StatusGuiScreen getStatusGuiScreen() {
         return statusGuiScreen;
-    }
-
-    public EquipmentGuiScreen getEquipmentGuiScreen() {
-        return equipmentGuiScreen;
     }
 
     public SkillGuiScreen getSkillGuiScreen() {

@@ -22,8 +22,9 @@ final class GuiApiImpl implements GuiApi {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void openEquipment(Player player) {
-        guiManager.open(player, guiModule.getEquipmentGuiScreen().build(player));
+        openStatus(player);
     }
 
     @Override
