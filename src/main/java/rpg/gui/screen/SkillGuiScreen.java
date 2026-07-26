@@ -71,7 +71,14 @@ public final class SkillGuiScreen {
                 if (clickType.equals("SHIFT_RIGHT")) {
                     boolean unsocketed = socketService.unsocket(clicker.getInventory().getItemInMainHand(), skill.getId());
                     messages.send(clicker, unsocketed ? "skill.unsocketed" : "skill.unsocket-failed");
-                    clicker.getOpenInventory().getTopInventory().setItem(buttonSlot, skillIcon(clicker, skill));
+                    if (unsocketed) {
+                        // Removing a skill shifts every socketed skill after it down one slot
+                        // index (List#remove closes the gap) - every button's "装着中: N番目"
+                        // lore needs re-checking, not just the one that was just unsocketed.
+                        refreshAllSkillIcons(clicker, skills);
+                    } else {
+                        clicker.getOpenInventory().getTopInventory().setItem(buttonSlot, skillIcon(clicker, skill));
+                    }
                 } else if (clickType.contains("RIGHT")) {
                     boolean socketed = socketService.socket(clicker.getInventory().getItemInMainHand(), skill.getId(),
                             weaponIdentityService.dataOf(clicker.getInventory().getItemInMainHand())
@@ -100,6 +107,18 @@ public final class SkillGuiScreen {
             }));
         }
         return gui;
+    }
+
+    /** Re-renders every skill button's icon in place - see the unsocket branch above for why. */
+    private void refreshAllSkillIcons(Player player, Map<String, SkillData> skills) {
+        var topInventory = player.getOpenInventory().getTopInventory();
+        int slot = 10;
+        for (SkillData skill : skills.values()) {
+            if (slot >= 27) {
+                break;
+            }
+            topInventory.setItem(slot++, skillIcon(player, skill));
+        }
     }
 
     private ItemStack pointsHeaderIcon(Player player, WeaponType weaponType) {

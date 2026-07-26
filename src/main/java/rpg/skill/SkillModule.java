@@ -79,7 +79,10 @@ public final class SkillModule implements RpgModule {
         // SkillActivationListener itself is registered by GuiModule (registered after this
         // module), not here - it needs ActionBarService, which GuiModule owns and doesn't
         // exist yet at this point in the module enable order.
-        plugin.getServer().getPluginManager().registerEvents(new ArrowSkillDamageListener(), plugin);
+        YamlConfiguration coreConfig = plugin.getConfigManager().get("config.yml").get();
+        long arrowDespawnTicks = coreConfig.getLong("skill.arrow-despawn-ticks", 100L);
+        plugin.getServer().getPluginManager().registerEvents(
+                new ArrowSkillDamageListener(plugin.getSchedulerService(), arrowDespawnTicks), plugin);
         plugin.getServer().getPluginManager().registerEvents(new ExplosiveArrowHitListener(plugin), plugin);
     }
 

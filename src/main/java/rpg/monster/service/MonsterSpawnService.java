@@ -112,16 +112,22 @@ public final class MonsterSpawnService {
     /** Re-renders {@code entity}'s nametag as a live HP bar; also used at spawn time (full HP). */
     public void updateHealthBar(LivingEntity entity, MonsterData data, double currentHp, double maxHp) {
         var config = plugin.getConfigManager().get("config.yml").get();
+        String displayName = displayNameOf(entity, data);
         if (!config.getBoolean("monster.health-bar.enabled", true)) {
-            entity.customName(ColorUtil.component(data.getName()));
+            entity.customName(ColorUtil.component(displayName));
             return;
         }
         int length = config.getInt("monster.health-bar.length", 10);
         String format = config.getString("monster.health-bar.format", "{name} &%7[{bar}&%7] &%f{current}/{max}");
         String filledColor = config.getString("monster.health-bar.filled-color", "&%a");
         String emptyColor = config.getString("monster.health-bar.empty-color", "&%8");
-        String rendered = healthBarRenderer.render(data.getName(), currentHp, maxHp, length, format, filledColor, emptyColor);
+        String rendered = healthBarRenderer.render(displayName, currentHp, maxHp, length, format, filledColor, emptyColor);
         entity.customName(ColorUtil.component(rendered));
+    }
+
+    /** {@code data.getName()}, with its target level appended (e.g. "ゴブリンの略奪者 &%7Lv.12") if this instance was spawned with one via a leveled spawn point - blank for a plain/unleveled spawn, which has no level to show. */
+    private String displayNameOf(LivingEntity entity, MonsterData data) {
+        return targetLevelOf(entity).map(level -> data.getName() + " &%7Lv." + level).orElse(data.getName());
     }
 
     /** This monster instance's true current HP - defaults to {@link #scaledMaxHpOf} (full) for a legacy entity spawned before this PDC value existed. */
