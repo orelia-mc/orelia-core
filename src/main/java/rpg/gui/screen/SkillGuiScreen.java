@@ -9,6 +9,7 @@ import rpg.gui.framework.Gui;
 import rpg.gui.framework.GuiButton;
 import rpg.item.model.WeaponType;
 import rpg.item.service.WeaponIdentityService;
+import rpg.skill.listener.SkillActivationListener;
 import rpg.skill.model.SkillData;
 import rpg.skill.repository.SkillRepository;
 import rpg.skill.service.SkillProgressService;
@@ -49,11 +50,11 @@ public final class SkillGuiScreen {
 
     public Gui build(Player player) {
         Gui gui = new Gui(guiConfig.title("skill", "&%8武器スキル"), 27);
-        gui.set(POINTS_HEADER_SLOT, GuiButton.display(pointsHeaderIcon(player)));
 
         WeaponType weaponType = weaponIdentityService.dataOf(player.getInventory().getItemInMainHand())
                 .map(w -> w.getWeaponType())
                 .orElse(null);
+        gui.set(POINTS_HEADER_SLOT, GuiButton.display(pointsHeaderIcon(player, weaponType)));
         if (weaponType == null) {
             gui.set(13, GuiButton.display(new ItemBuilder(Material.BARRIER).name("&%c武器を持っていません").build()));
             return gui;
@@ -93,7 +94,7 @@ public final class SkillGuiScreen {
                         // after a click.
                         var topInventory = clicker.getOpenInventory().getTopInventory();
                         topInventory.setItem(buttonSlot, skillIcon(clicker, skill));
-                        topInventory.setItem(POINTS_HEADER_SLOT, pointsHeaderIcon(clicker));
+                        topInventory.setItem(POINTS_HEADER_SLOT, pointsHeaderIcon(clicker, weaponType));
                     }
                 }
             }));
@@ -101,16 +102,26 @@ public final class SkillGuiScreen {
         return gui;
     }
 
-    private ItemStack pointsHeaderIcon(Player player) {
+    private ItemStack pointsHeaderIcon(Player player, WeaponType weaponType) {
         int points = progressService.getSkillPoints(player.getUniqueId());
+        // BOW/SPEAR/HOE keep their own vanilla right-click action (draw-and-shoot, throw,
+        // till) - see SkillActivationListener - so both their sockets live on the swap-hands
+        // key instead, freeing right-click entirely.
+        List<String> castKeyLines = weaponType != null && SkillActivationListener.RIGHT_CLICK_RESERVED.contains(weaponType)
+                ? List.of(
+                        "&%7持ち替え(Fキー) &%f→ 1番目のスキル発動",
+                        "&%7Shift+持ち替え(Fキー) &%f→ 2番目のスキル発動")
+                : List.of(
+                        "&%7右クリック &%f→ 1番目のスキル発動",
+                        "&%7持ち替え(Fキー) &%f→ 2番目のスキル発動");
+        List<String> lore = new ArrayList<>(List.of(
+                "&%7スキルの習得・レベルアップに使います（消費: 1ポイント/回）。",
+                "",
+                "&%e装着したスキルの発動方法:"));
+        lore.addAll(castKeyLines);
         return new ItemBuilder(Material.EXPERIENCE_BOTTLE)
                 .name("&%e&lスキル習得ポイント&%7: &%f" + points)
-                .lore(List.of(
-                        "&%7スキルの習得・レベルアップに使います（消費: 1ポイント/回）。",
-                        "",
-                        "&%e装着したスキルの発動方法:",
-                        "&%7右クリック &%f→ 1番目のスキル発動",
-                        "&%7持ち替え(Fキー) &%f→ 2番目のスキル発動"))
+                .lore(lore)
                 .build();
     }
 
