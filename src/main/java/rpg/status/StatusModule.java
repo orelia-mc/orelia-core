@@ -6,6 +6,7 @@ import rpg.core.module.RpgModule;
 import rpg.database.DatabaseModule;
 import rpg.status.config.LevelingConfig;
 import rpg.status.config.StatusGrowthConfig;
+import rpg.status.listener.ArmorBanListener;
 import rpg.status.listener.ScaledHealthEnvironmentalDamageListener;
 import rpg.status.listener.ScaledHealthJoinListener;
 import rpg.status.listener.ScaledHealthRegenListener;
@@ -66,6 +67,14 @@ public final class StatusModule implements RpgModule {
         plugin.getServer().getPluginManager().registerEvents(new ScaledHealthJoinListener(statusService), plugin);
         plugin.getServer().getPluginManager().registerEvents(new ScaledHealthRegenListener(statusService), plugin);
         plugin.getServer().getPluginManager().registerEvents(new ScaledHealthEnvironmentalDamageListener(statusService), plugin);
+
+        // Vanilla armor is banned - defense comes entirely from DEF (see ArmorBanListener's
+        // javadoc for why letting both stack would be a problem). banArmorForOnlinePlayers()
+        // catches anyone already wearing armor from before this rule existed (a plugin
+        // reload/restart, not just future joins).
+        ArmorBanListener armorBanListener = new ArmorBanListener(plugin.getMessageManager());
+        plugin.getServer().getPluginManager().registerEvents(armorBanListener, plugin);
+        armorBanListener.banArmorForOnlinePlayers();
 
         YamlConfiguration config = plugin.getConfigManager().get("config.yml").get();
         double hpRegen = config.getDouble("status.regen.hp-percent-per-tick", 0.5);
