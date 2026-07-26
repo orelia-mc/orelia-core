@@ -1,7 +1,7 @@
 # Centralized user-facing text. Every chat message the plugin sends goes through
 # rpg.core.message.MessageManager, keyed by the dotted paths below - do not hardcode
 # ChatColor + literal strings in command/listener/service code, add a key here instead.
-config-version: 4
+config-version: 5
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -24,6 +24,7 @@ item:
   not-holding-weapon: "&%c武器を持っていません。"
   weapon-leveled-up: "&%a武器のレベルが{level}になりました！"
   weapon-level-capped: "&%cこれ以上武器のレベルを上げるには、プレイヤーレベルが足りません。"
+  armor-banned: "&%cこのサーバーでは防具の装備を禁止しています。防御力はステータスのDEFで決まります。"
 
 job:
   not-chosen: "&%e職業がまだ選択されていません。ギルドで職業を選びましょう。"

@@ -1,43 +1,56 @@
 package rpg.item.listener;
 
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.EquippableComponent;
 import rpg.item.model.WeaponData;
 import rpg.item.model.WeaponType;
 import rpg.item.service.WeaponIdentityService;
+import rpg.util.ColorUtil;
 
 /**
- * Grants a single vanilla arrow when a player draws an Orelia-identified BOW-type weapon
- * (bow/crossbow) with none in inventory - runs at {@link EventPriority#LOWEST} so it happens
- * before vanilla's own "does this player have arrows" check cancels the shot. Combined with
- * {@link rpg.item.service.WeaponFactory}'s hidden Infinity enchant on those weapons, that one
- * arrow is never actually consumed - the bow/crossbow itself is the only "ammo" needed from
- * then on. Does nothing for a plain vanilla bow with no Orelia weapon id, which has no such
- * Infinity enchant and would just run out again after one more shot.
+ * Seeds a single vanilla arrow, worn in the leggings slot, the first time a player draws an
+ * Orelia-identified BOW-type weapon (bow/crossbow) with none present - runs at
+ * {@link EventPriority#LOWEST} so it happens before vanilla's own "does this player have
+ * arrows" check cancels the draw. Combined with {@link rpg.item.service.WeaponFactory}'s hidden
+ * Infinity enchant on those weapons, that one arrow is never actually consumed - the
+ * bow/crossbow itself is the only "ammo" needed from then on. Does nothing for a plain vanilla
+ * bow with no Orelia weapon id, which has no such Infinity enchant and would just run out again
+ * after one more shot.
  *
- * <p>This one-time grant can't be avoided entirely with plain Bukkit API: vanilla's own bow-draw
- * check only ever *skips consuming* an arrow the Infinity enchant already found in inventory -
- * it never conjures one from nothing, so a player who somehow has zero arrows (sold/dropped the
- * seed one, or never had it) still can't even start drawing without at least one physically
- * present, and that check happens before any event this class (or any other plugin) can hook -
- * bypassing it entirely would need NMS/reflection, which this codebase otherwise avoids
- * entirely (Paper API + relocated shaded libs only).
+ * <p>The seeded arrow carries a {@code minecraft:equippable} component (slot {@code LEGS}) and
+ * is placed directly via {@link PlayerInventory#setLeggings}, rather than sitting as a normal
+ * inventory item - vanilla's own ammo search scans the player's full 41-slot container
+ * (hotbar/storage, armor, and off-hand alike, confirmed against Paper's own decompiled
+ * {@code Player#getProjectile} source), so an arrow worn in the leggings slot satisfies the
+ * "has ammo" check exactly the same as one sitting loose in a backpack slot would. Since real
+ * armor is banned outright (see {@code rpg.status.listener.ArmorBanListener}), the leggings
+ * slot is guaranteed to always be free for this - unlike the general 36-slot inventory (which
+ * can fill up with loot) or the off-hand (which a shield or second weapon can occupy), this
+ * reserved slot can never be unavailable.
  *
- * <p>Rather than fighting the player's 36-slot main inventory for room, the seed arrow goes into
- * the off-hand slot instead whenever it's empty - vanilla's own ammo search already checks the
- * off-hand for arrows (that's the mechanic that lets a player normally carry reserve arrows
- * there), so this is a legitimate ammo location, not a workaround, and it's a slot a bow user
- * essentially never has anything else in. Only if the off-hand is already occupied (a shield,
- * a second weapon, ...) does this fall back to the main inventory, dropping the arrow at the
- * player's feet if even that has no room - Paper's own pickup radius picks it right back up for
- * a stationary player, so the shot still goes through instead of failing with no explanation.
+ * <p>{@link EquippableComponent#setModel} (the "asset_id") only controls how the item renders
+ * *worn on the body* - left unset, that's invisible in every non-head slot, which is what we
+ * want. It does nothing for how the item looks *as an icon* (inventory screen, held in hand,
+ * dropped on the ground), which still shows a plain arrow unless the item's own
+ * {@code item_model} is overridden - {@link #seedArrow} sets that to a barrier block and names
+ * it "No Slot" so a player who opens their inventory sees something that visibly isn't a normal
+ * item, rather than a mysteriously immovable arrow. {@link #onClick}/{@link #onDrag} additionally
+ * block moving it out of the legs slot via the inventory screen (this is a swap-in-place lock,
+ * not a real removal - reaching for it does nothing, rather than duplicating it into the
+ * player's cursor while a replacement re-seeds into the now-current-if-different legs slot).
  */
 public final class BowAmmoListener implements Listener {
 
@@ -64,25 +77,46 @@ public final class BowAmmoListener implements Listener {
             return;
         }
         PlayerInventory inventory = event.getPlayer().getInventory();
-        if (hasArrow(inventory)) {
-            return;
+        if (isSeedArrow(inventory.getLeggings())) {
+            return; // already seeded
         }
-        ItemStack offHand = inventory.getItemInOffHand();
-        if (offHand.getType().isAir()) {
-            inventory.setItemInOffHand(new ItemStack(Material.ARROW, 1));
-            return;
-        }
-        var leftover = inventory.addItem(new ItemStack(Material.ARROW, 1));
-        if (!leftover.isEmpty()) {
-            // Off-hand was occupied and the main inventory had no free/stackable slot either -
-            // drop at the player's feet rather than silently losing the grant (which would
-            // otherwise leave the shot cancelled by vanilla's own arrow check right after this
-            // listener returns, with no feedback).
-            leftover.values().forEach(stack -> event.getPlayer().getWorld().dropItem(event.getPlayer().getLocation(), stack));
+        inventory.setLeggings(seedArrow());
+    }
+
+    /** Locks the seeded arrow in place - clicking it (armor-slot icon or a shift-click targeting it) does nothing, rather than moving it to the cursor. */
+    @EventHandler
+    public void onClick(InventoryClickEvent event) {
+        if (event.getSlotType() == InventoryType.SlotType.ARMOR && isSeedArrow(event.getCurrentItem())) {
+            event.setCancelled(true);
         }
     }
 
-    private boolean hasArrow(PlayerInventory inventory) {
-        return inventory.getItemInOffHand().getType() == Material.ARROW || inventory.containsAtLeast(new ItemStack(Material.ARROW), 1);
+    /** Same lock for the drag-to-fill-multiple-slots gesture, in case it ever targets the legs slot. */
+    @EventHandler
+    public void onDrag(InventoryDragEvent event) {
+        for (int rawSlot : event.getRawSlots()) {
+            if (event.getView().getSlotType(rawSlot) == InventoryType.SlotType.ARMOR
+                    && isSeedArrow(event.getView().getItem(rawSlot))) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+    }
+
+    private boolean isSeedArrow(ItemStack stack) {
+        return stack != null && stack.getType() == Material.ARROW;
+    }
+
+    private ItemStack seedArrow() {
+        ItemStack arrow = new ItemStack(Material.ARROW);
+        ItemMeta meta = arrow.getItemMeta();
+        EquippableComponent equippable = meta.getEquippable();
+        equippable.setSlot(EquipmentSlot.LEGS);
+        equippable.setSwappable(false);
+        meta.setEquippable(equippable);
+        meta.setItemModel(NamespacedKey.minecraft("barrier"));
+        meta.displayName(ColorUtil.component("&%cNo Slot"));
+        arrow.setItemMeta(meta);
+        return arrow;
     }
 }

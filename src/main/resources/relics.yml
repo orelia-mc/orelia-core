@@ -26,8 +26,8 @@ config-version: 2
 
 upgrade-cost-base: 500
 upgrade-cost-per-level: 300
-substat-upgrade-min: 1
-substat-upgrade-max: 2
+substat-upgrade-min: 3
+substat-upgrade-max: 5
 initial-substat-count-min: 3
 initial-substat-count-max: 4
 

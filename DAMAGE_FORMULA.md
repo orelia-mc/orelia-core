@@ -45,6 +45,8 @@ public static double mitigate(double damage, double defense) {
 
 `defense = 100`で50%軽減、`defense = 0`で軽減なし、という緩やかな逓減曲線です。防御力がどれだけ高くても100%軽減にはなりません。
 
+プレイヤーはバニラの防具(ヘルメット/チェストプレート/レギンス/ブーツ)を装備できません(`rpg.status.listener.ArmorBanListener`)。装備できてしまうと、ここで計算するDEF軽減とは別に、Bukkitの`EntityDamageEvent`が装備中の防具から独自にARMORモディファイアを再計算して二重に軽減がかかってしまうためです。
+
 ## 4. クリティカル判定
 
 DEF軽減の**後**にクリティカル判定を行います。
