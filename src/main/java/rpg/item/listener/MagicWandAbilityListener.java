@@ -49,10 +49,12 @@ import java.util.stream.Collectors;
  * The mage's three fixed wand actions (魔法の杖):
  *
  * <ul>
- *   <li>Right-click (main hand) - fires a snowball-based ice bolt at a single target.
+ *   <li>Right-click (main hand) - fires a snowball-based ice bolt at a single target. Short
+ *       cooldown and low SP cost, so it's the wand's rapid-fire option.
  *   <li>Left-click (main hand) - erupts Evoker Fangs in a radius around the caster.
  *   <li>Swapping the wand into the off-hand (F by default) - opens a magic circle (魔法陣) at
- *       the caster's feet and fires lasers outward in every horizontal direction.
+ *       the caster's feet and fires {@link #LASER_WAVES} staggered volleys of lasers outward in
+ *       every horizontal direction.
  * </ul>
  *
  * Unlike every other weapon type, these aren't player-chosen sockets cast through
@@ -79,19 +81,24 @@ import java.util.stream.Collectors;
 public final class MagicWandAbilityListener implements Listener {
 
     private static final String ICE_BOLT_METADATA = "orelia_wand_ice_bolt_damage";
-    private static final double ICE_BOLT_SP_COST = 8.0;
-    private static final long ICE_BOLT_COOLDOWN_MILLIS = 2000L;
-    private static final double ICE_BOLT_DAMAGE_MULTIPLIER = 1.3;
+    /** The wand's rapid-fire option - cheap and short-cooldown enough to be held down. */
+    private static final double ICE_BOLT_SP_COST = 5.0;
+    private static final long ICE_BOLT_COOLDOWN_MILLIS = 400L;
+    private static final double ICE_BOLT_DAMAGE_MULTIPLIER = 2.2;
 
-    private static final double FANGS_SP_COST = 14.0;
-    private static final long FANGS_COOLDOWN_MILLIS = 5000L;
-    private static final double FANGS_DAMAGE_MULTIPLIER = 1.2;
-    private static final double FANGS_RADIUS = 2.0;
-    private static final int FANGS_VISUAL_COUNT = 3;
+    private static final double FANGS_SP_COST = 16.0;
+    private static final long FANGS_COOLDOWN_MILLIS = 4000L;
+    private static final double FANGS_DAMAGE_MULTIPLIER = 2.2;
+    private static final double FANGS_RADIUS = 5.0;
+    private static final int FANGS_VISUAL_COUNT = 8;
 
-    private static final double MAGIC_CIRCLE_SP_COST = 20.0;
-    private static final long MAGIC_CIRCLE_COOLDOWN_MILLIS = 8000L;
-    private static final double LASER_DAMAGE_MULTIPLIER = 1.5;
+    private static final double MAGIC_CIRCLE_SP_COST = 24.0;
+    private static final long MAGIC_CIRCLE_COOLDOWN_MILLIS = 9000L;
+    /** Per wave - one cast fires {@link #LASER_WAVES} of them, so a target standing still takes this much once per wave. */
+    private static final double LASER_DAMAGE_MULTIPLIER = 2.0;
+    /** Staggered volleys per cast, and the gap between the start of each one. */
+    private static final int LASER_WAVES = 3;
+    private static final long LASER_WAVE_INTERVAL_TICKS = 20L;
     /** Radius of the 魔法陣 drawn at the caster's feet. */
     private static final double MAGIC_CIRCLE_RADIUS = 2.0;
     private static final int MAGIC_CIRCLE_POINTS = 48;
@@ -192,8 +199,8 @@ public final class MagicWandAbilityListener implements Listener {
      * {@link PlayerInteractEvent}'s LEFT_CLICK_AIR/LEFT_CLICK_BLOCK only fires when swinging at
      * nothing or at a block, never when the swing directly lands on an entity (that instead
      * fires {@code EntityDamageByEntityEvent}, a known Bukkit/Paper limitation) - acceptable
-     * here since this is a self-centered radius-2 AOE, so swinging near (not necessarily
-     * directly at) nearby enemies is enough to hit them.
+     * here since this is a self-centered {@link #FANGS_RADIUS}-block AOE, so swinging near (not
+     * necessarily directly at) nearby enemies is enough to hit them.
      */
     @EventHandler(priority = EventPriority.LOW)
     public void onLeftClick(PlayerInteractEvent event) {
@@ -252,35 +259,68 @@ public final class MagicWandAbilityListener implements Listener {
     }
 
     /**
-     * Draws the magic circle at the caster's feet and extends {@link #LASER_COUNT} lasers outward
-     * from it over {@link #LASER_ANIMATION_TICKS} ticks, damaging each entity the beams sweep
-     * through exactly once.
+     * Opens the magic circle at the caster's feet and fires {@link #LASER_WAVES} staggered laser
+     * volleys out of it, {@link #LASER_WAVE_INTERVAL_TICKS} apart.
      *
-     * <p>The origin is captured (and cloned) at cast time, so the circle stays where it was
-     * opened even if the caster walks away mid-animation. {@code alreadyHit} is an
-     * identity-based set held across every tick of the animation, so an entity standing where
-     * two beams overlap - or one that a beam passes through over several ticks - still only
-     * takes damage once.
+     * <p>The origin is captured (and cloned) at cast time, so the circle and every wave stay
+     * where the circle was opened even if the caster walks away. Each wave tracks its own
+     * already-hit set, so a target that stays in the beams takes damage once per wave - three
+     * times over a full cast - rather than only once for the whole cast.
+     */
+    private void castMagicCircle(Player caster, double amount) {
+        Location origin = caster.getLocation().clone();
+        long totalTicks = (LASER_WAVES - 1) * LASER_WAVE_INTERVAL_TICKS + LASER_ANIMATION_TICKS;
+
+        origin.getWorld().playSound(origin, Sound.BLOCK_BEACON_ACTIVATE, 1f, 1.6f);
+        runCircleVisual(caster, origin, totalTicks);
+        for (int wave = 0; wave < LASER_WAVES; wave++) {
+            long delayTicks = wave * LASER_WAVE_INTERVAL_TICKS;
+            plugin.getSchedulerService().runLater(() -> fireLaserWave(caster, origin, amount), delayTicks);
+        }
+    }
+
+    /** Keeps the 魔法陣 drawn for the whole cast, across all of its laser waves. */
+    private void runCircleVisual(Player caster, Location origin, long durationTicks) {
+        long[] ticksElapsed = {0};
+        AtomicReference<BukkitTask> taskRef = new AtomicReference<>();
+        taskRef.set(plugin.getSchedulerService().runTimer(() -> {
+            if (!caster.isOnline() || ticksElapsed[0] >= durationTicks) {
+                taskRef.get().cancel();
+                return;
+            }
+            drawMagicCircle(origin);
+            ticksElapsed[0]++;
+        }, 1L, 1L));
+    }
+
+    /**
+     * One volley: extends {@link #LASER_COUNT} lasers outward from {@code origin} over
+     * {@link #LASER_ANIMATION_TICKS} ticks, damaging each entity the beams sweep through once.
+     *
+     * <p>{@code alreadyHit} is an identity-based set held across every tick of this wave, so an
+     * entity standing where two beams overlap - or one a beam passes through over several ticks -
+     * still only takes damage once per wave. It is deliberately not shared between waves.
      *
      * <p>Follows {@code rpg.monster.service.DamageDisplayService}'s self-cancelling timer idiom
      * ({@link AtomicReference} holding the task so the lambda can cancel itself); the animation
      * also stops early if the caster logs out.
      */
-    private void castMagicCircle(Player caster, double amount) {
-        Location origin = caster.getLocation().clone();
+    private void fireLaserWave(Player caster, Location origin, double amount) {
+        if (!caster.isOnline()) {
+            return;
+        }
         Set<LivingEntity> alreadyHit = Collections.newSetFromMap(new IdentityHashMap<>());
         boolean[] blocked = new boolean[LASER_COUNT];
         long[] ticksElapsed = {0};
         AtomicReference<BukkitTask> taskRef = new AtomicReference<>();
 
-        origin.getWorld().playSound(origin, Sound.BLOCK_BEACON_ACTIVATE, 1f, 1.6f);
+        origin.getWorld().playSound(origin, Sound.ENTITY_EVOKER_CAST_SPELL, 1f, 1.4f);
 
         taskRef.set(plugin.getSchedulerService().runTimer(() -> {
             if (!caster.isOnline() || ticksElapsed[0] >= LASER_ANIMATION_TICKS) {
                 taskRef.get().cancel();
                 return;
             }
-            drawMagicCircle(origin);
             double from = LASER_RANGE * ticksElapsed[0] / LASER_ANIMATION_TICKS;
             double to = LASER_RANGE * (ticksElapsed[0] + 1) / LASER_ANIMATION_TICKS;
             advanceLasers(caster, origin, from, to, amount, alreadyHit, blocked);
