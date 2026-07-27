@@ -1,7 +1,7 @@
 # Centralized user-facing text. Every chat message the plugin sends goes through
 # rpg.core.message.MessageManager, keyed by the dotted paths below - do not hardcode
 # ChatColor + literal strings in command/listener/service code, add a key here instead.
-config-version: 5
+config-version: 6
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -41,6 +41,7 @@ skill:
   on-cooldown: "&%cスキルはクールタイム中です。"
   not-enough-sp: "&%cSPが足りません。"
   unknown: "&%cこのスキルは設定されていません。"
+  no-weapon: "&%cホットバーの一番左に武器がありません。"
   socketed: "&%aスキルを装着しました。"
   socket-failed: "&%c空きスロットがありません。"
   unsocketed: "&%aスキルの装着を解除しました。"
