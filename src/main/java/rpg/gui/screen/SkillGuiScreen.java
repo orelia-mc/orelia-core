@@ -7,6 +7,7 @@ import rpg.core.message.MessageManager;
 import rpg.gui.config.GuiConfig;
 import rpg.gui.framework.Gui;
 import rpg.gui.framework.GuiButton;
+import rpg.item.model.WeaponData;
 import rpg.item.model.WeaponType;
 import rpg.item.service.WeaponIdentityService;
 import rpg.skill.listener.SkillActivationListener;
@@ -20,6 +21,7 @@ import rpg.util.ItemBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Weapon skill screen (SOW section 17 "武器スキル"): shows every skill for the weapon
@@ -82,23 +84,33 @@ public final class SkillGuiScreen {
             }
             int buttonSlot = slot++;
             gui.set(buttonSlot, new GuiButton(skillIcon(player, skill), (clicker, clickType) -> {
-                if (clickType.equals("SHIFT_RIGHT")) {
-                    boolean unsocketed = socketService.unsocket(weaponSlotItem(clicker), skill.getId());
-                    messages.send(clicker, unsocketed ? "skill.unsocketed" : "skill.unsocket-failed");
-                    if (unsocketed) {
-                        // Removing a skill shifts every socketed skill after it down one slot
-                        // index (List#remove closes the gap) - every button's "装着中: N番目"
-                        // lore needs re-checking, not just the one that was just unsocketed.
-                        refreshAllSkillIcons(clicker, skills);
+                if (clickType.contains("RIGHT")) {
+                    // Both socket actions need the weapon to still be there. A Gui leaves the
+                    // player's own inventory freely usable (see GuiListener), so the weapon this
+                    // screen was built around can be moved out of the slot while it's open -
+                    // socketing into an empty slot would otherwise NPE in SkillSocketService.
+                    ItemStack weapon = weaponSlotItem(clicker);
+                    Optional<WeaponData> weaponData = weaponIdentityService.dataOf(weapon);
+                    if (weaponData.isEmpty()) {
+                        messages.send(clicker, "skill.no-weapon");
+                        return;
+                    }
+                    if (clickType.equals("SHIFT_RIGHT")) {
+                        boolean unsocketed = socketService.unsocket(weapon, skill.getId());
+                        messages.send(clicker, unsocketed ? "skill.unsocketed" : "skill.unsocket-failed");
+                        if (unsocketed) {
+                            // Removing a skill shifts every socketed skill after it down one slot
+                            // index (List#remove closes the gap) - every button's "装着中: N番目"
+                            // lore needs re-checking, not just the one that was just unsocketed.
+                            refreshAllSkillIcons(clicker, skills);
+                        } else {
+                            clicker.getOpenInventory().getTopInventory().setItem(buttonSlot, skillIcon(clicker, skill));
+                        }
                     } else {
+                        boolean socketed = socketService.socket(weapon, skill.getId(), weaponData.get().getSkillSlotCount());
+                        messages.send(clicker, socketed ? "skill.socketed" : "skill.socket-failed");
                         clicker.getOpenInventory().getTopInventory().setItem(buttonSlot, skillIcon(clicker, skill));
                     }
-                } else if (clickType.contains("RIGHT")) {
-                    boolean socketed = socketService.socket(weaponSlotItem(clicker), skill.getId(),
-                            weaponIdentityService.dataOf(weaponSlotItem(clicker))
-                                    .map(w -> w.getSkillSlotCount()).orElse(1));
-                    messages.send(clicker, socketed ? "skill.socketed" : "skill.socket-failed");
-                    clicker.getOpenInventory().getTopInventory().setItem(buttonSlot, skillIcon(clicker, skill));
                 } else {
                     UpgradeResult result = progressService.upgradeSkill(clicker.getUniqueId(), skill.getId());
                     String key = switch (result) {
