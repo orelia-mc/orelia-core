@@ -22,11 +22,22 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Weapon skill screen (SOW section 17 "武器スキル"): shows every skill for the currently
- * held weapon's type, its learned level, and lets the player spend a skill point
- * (left click) or socket it into the held weapon (right click).
+ * Weapon skill screen (SOW section 17 "武器スキル"): shows every skill for the weapon
+ * sitting in the player's leftmost hotbar slot ({@link #WEAPON_HOTBAR_SLOT}), its learned
+ * level, and lets the player spend a skill point (left click) or socket it into that weapon
+ * (right click).
+ *
+ * <p>This screen is reachable from the "プレイヤー情報" Nether Star menu
+ * (orelia-world's {@code PlayerInfoSkillGuiScreen}), which the player must be holding in
+ * their main hand to right-click - so the weapon can't be identified by main hand at that
+ * point, it's the Nether Star. The leftmost hotbar slot is used instead as a fixed,
+ * always-inspectable "weapon slot": nothing pins a weapon there, but the player needs to
+ * keep one there for this screen (and the socketing it does) to recognize it.
  */
 public final class SkillGuiScreen {
+
+    /** Fixed "weapon slot" this screen reads from - see the class doc above for why. */
+    private static final int WEAPON_HOTBAR_SLOT = 0;
 
     private final SkillRepository skillRepository;
     private final SkillProgressService progressService;
@@ -51,12 +62,15 @@ public final class SkillGuiScreen {
     public Gui build(Player player) {
         Gui gui = new Gui(guiConfig.title("skill", "&%8武器スキル"), 27);
 
-        WeaponType weaponType = weaponIdentityService.dataOf(player.getInventory().getItemInMainHand())
+        WeaponType weaponType = weaponIdentityService.dataOf(weaponSlotItem(player))
                 .map(w -> w.getWeaponType())
                 .orElse(null);
         gui.set(POINTS_HEADER_SLOT, GuiButton.display(pointsHeaderIcon(player, weaponType)));
         if (weaponType == null) {
-            gui.set(13, GuiButton.display(new ItemBuilder(Material.BARRIER).name("&%c武器を持っていません").build()));
+            gui.set(13, GuiButton.display(new ItemBuilder(Material.BARRIER)
+                    .name("&%c武器を持っていません")
+                    .lore("&%7ホットバーの一番左に武器を入れてください")
+                    .build()));
             return gui;
         }
 
@@ -69,7 +83,7 @@ public final class SkillGuiScreen {
             int buttonSlot = slot++;
             gui.set(buttonSlot, new GuiButton(skillIcon(player, skill), (clicker, clickType) -> {
                 if (clickType.equals("SHIFT_RIGHT")) {
-                    boolean unsocketed = socketService.unsocket(clicker.getInventory().getItemInMainHand(), skill.getId());
+                    boolean unsocketed = socketService.unsocket(weaponSlotItem(clicker), skill.getId());
                     messages.send(clicker, unsocketed ? "skill.unsocketed" : "skill.unsocket-failed");
                     if (unsocketed) {
                         // Removing a skill shifts every socketed skill after it down one slot
@@ -80,8 +94,8 @@ public final class SkillGuiScreen {
                         clicker.getOpenInventory().getTopInventory().setItem(buttonSlot, skillIcon(clicker, skill));
                     }
                 } else if (clickType.contains("RIGHT")) {
-                    boolean socketed = socketService.socket(clicker.getInventory().getItemInMainHand(), skill.getId(),
-                            weaponIdentityService.dataOf(clicker.getInventory().getItemInMainHand())
+                    boolean socketed = socketService.socket(weaponSlotItem(clicker), skill.getId(),
+                            weaponIdentityService.dataOf(weaponSlotItem(clicker))
                                     .map(w -> w.getSkillSlotCount()).orElse(1));
                     messages.send(clicker, socketed ? "skill.socketed" : "skill.socket-failed");
                     clicker.getOpenInventory().getTopInventory().setItem(buttonSlot, skillIcon(clicker, skill));
@@ -107,6 +121,11 @@ public final class SkillGuiScreen {
             }));
         }
         return gui;
+    }
+
+    /** The weapon this screen reads from/socket into - see {@link #WEAPON_HOTBAR_SLOT}. */
+    private ItemStack weaponSlotItem(Player player) {
+        return player.getInventory().getItem(WEAPON_HOTBAR_SLOT);
     }
 
     /** Re-renders every skill button's icon in place - see the unsocket branch above for why. */
@@ -147,7 +166,7 @@ public final class SkillGuiScreen {
     private ItemStack skillIcon(Player player, SkillData skill) {
         int level = progressService.getSkillLevel(player.getUniqueId(), skill.getId());
         boolean learned = level > 0;
-        List<String> socketed = socketService.getSocketedSkills(player.getInventory().getItemInMainHand());
+        List<String> socketed = socketService.getSocketedSkills(weaponSlotItem(player));
         int socketIndex = socketed.indexOf(skill.getId());
 
         List<String> lore = new ArrayList<>(List.of(
