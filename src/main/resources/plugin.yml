@@ -2,7 +2,7 @@ name: OreliaCore
 version: '${version}'
 main: rpg.core.OreliaPlugin
 api-version: '1.21'
-author: rasp1220
+authors: [rasp1220, Nyaffle]
 description: RPG foundation plugin (combat, player, status) - weapons, skills, jobs, status, accessories, monsters, bosses, effects, economy, GUI, database, public API
 folia-supported: false
 
