@@ -7,6 +7,16 @@ on:
 permissions:
   contents: write
 
+# Two merges landing close together used to race: both runs read the same
+# pre-bump version, one's tag push won while its branch push lost (or vice
+# versa), leaving a tag on the remote with no matching commit - every run
+# after that failed forever on "tag already exists" since build.gradle.kts
+# never actually advanced. Serializing runs (not cancelling in-flight ones,
+# since each is a real version bump that must land) removes the race.
+concurrency:
+  group: version-bump
+  cancel-in-progress: false
+
 jobs:
   bump:
     if: ${{ !contains(github.event.head_commit.message, '[ci-version-bump]') }}
