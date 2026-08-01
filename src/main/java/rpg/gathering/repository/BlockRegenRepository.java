@@ -12,12 +12,16 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Persists pending block-regeneration tasks (SOW 3.1 "server restart data protection") so
  * a block broken right before a crash still restores once the server comes back.
  */
 public final class BlockRegenRepository implements SchemaOwner {
+
+    private static final Logger LOGGER = Logger.getLogger(BlockRegenRepository.class.getName());
 
     private final DatabaseManager databaseManager;
 
@@ -81,7 +85,7 @@ public final class BlockRegenRepository implements SchemaOwner {
             statement.setLong(7, task.restoreAtMillis());
             statement.executeUpdate();
         } catch (SQLException e) {
-            throw new IllegalStateException("Failed to save block regen task " + task.id(), e);
+            handleFailure("save block regen task " + task.id(), e);
         }
     }
 
@@ -91,7 +95,7 @@ public final class BlockRegenRepository implements SchemaOwner {
             statement.setString(1, id.toString());
             statement.executeUpdate();
         } catch (SQLException e) {
-            throw new IllegalStateException("Failed to delete block regen task " + id, e);
+            handleFailure("delete block regen task " + id, e);
         }
     }
 
@@ -100,7 +104,25 @@ public final class BlockRegenRepository implements SchemaOwner {
              Statement statement = connection.createStatement()) {
             statement.executeUpdate("DELETE FROM block_regen_task");
         } catch (SQLException e) {
-            throw new IllegalStateException("Failed to delete all block regen tasks", e);
+            handleFailure("delete all block regen tasks", e);
         }
+    }
+
+    /**
+     * The regen tick timer runs on its own schedule independent of any player action, so
+     * unlike every other repository's writes it can still have an async save/delete in
+     * flight when the server stops - {@code GatheringModule} cancels the timer on disable,
+     * but that only stops *future* ticks, not one already dispatched to the async pool
+     * before {@code DatabaseManager#shutdown} closes the connection out from under it. That
+     * race is harmless here (the row is just reloaded and reconciled by
+     * {@code BlockRegenService#loadPending} next boot), so it's logged quietly instead of
+     * surfacing as an uncaught exception; any other failure still throws.
+     */
+    private void handleFailure(String action, SQLException e) {
+        if (databaseManager.isShuttingDown()) {
+            LOGGER.log(Level.FINE, "Failed to " + action + " during shutdown (will reconcile on next load)", e);
+            return;
+        }
+        throw new IllegalStateException("Failed to " + action, e);
     }
 }

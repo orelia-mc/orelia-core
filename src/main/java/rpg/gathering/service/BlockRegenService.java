@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitTask;
 import rpg.core.scheduler.SchedulerService;
 import rpg.gathering.model.BlockRegenTask;
 import rpg.gathering.model.GatherBlockTemplate;
@@ -32,6 +33,7 @@ public final class BlockRegenService {
     private final GatheringDefinitionRepository definitions;
     private final RegenExclusionService exclusionService;
     private final List<BlockRegenTask> pending = new CopyOnWriteArrayList<>();
+    private BukkitTask regenTask;
 
     public BlockRegenService(Plugin plugin, SchedulerService scheduler, BlockRegenRepository repository,
                               GatheringDefinitionRepository definitions, RegenExclusionService exclusionService) {
@@ -49,7 +51,20 @@ public final class BlockRegenService {
     }
 
     public void start(long periodTicks) {
-        scheduler.runTimer(this::tick, periodTicks, periodTicks);
+        regenTask = scheduler.runTimer(this::tick, periodTicks, periodTicks);
+    }
+
+    /**
+     * Cancels the regen tick timer. Called from {@code GatheringModule#onDisable} so the
+     * timer - which fires on its own schedule regardless of player activity - stops queuing
+     * new async database writes once the plugin starts shutting down, ahead of
+     * {@code DatabaseModule} (registered first, so disabled last) closing the connection.
+     */
+    public void stop() {
+        if (regenTask != null) {
+            regenTask.cancel();
+            regenTask = null;
+        }
     }
 
     /**
