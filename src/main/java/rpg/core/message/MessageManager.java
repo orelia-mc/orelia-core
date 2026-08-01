@@ -1,7 +1,9 @@
 package rpg.core.message;
 
 import net.kyori.adventure.text.Component;
+import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import rpg.core.config.ConfigFile;
 import rpg.util.ColorUtil;
 
@@ -55,6 +57,18 @@ public final class MessageManager {
     /** Like {@link #send} but without the {@code prefix} (for multi-line lists, GUI titles, ...). */
     public void sendRaw(CommandSender sender, String key, Object... placeholders) {
         sender.sendMessage(ColorUtil.component(format(key, placeholders)));
+    }
+
+    /**
+     * Like {@link #send} but also plays {@code sound} to {@code sender} if it's a {@link Player}
+     * (a no-op sound otherwise). Opt-in only - callers pick this instead of {@link #send} for the
+     * specific messages worth a sound cue, rather than every message getting one automatically.
+     */
+    public void sendWithSound(CommandSender sender, String key, Sound sound, Object... placeholders) {
+        send(sender, key, placeholders);
+        if (sender instanceof Player player) {
+            player.playSound(player.getLocation(), sound, 1f, 1f);
+        }
     }
 
     private String getString(String dottedKey) {
