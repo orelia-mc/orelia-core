@@ -4,6 +4,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import rpg.core.OreliaPlugin;
 import rpg.core.module.RpgModule;
 import rpg.database.DatabaseModule;
+import rpg.status.config.LevelUpEffectConfig;
 import rpg.status.config.LevelingConfig;
 import rpg.status.config.StatusGrowthConfig;
 import rpg.status.listener.ArmorBanListener;
@@ -14,6 +15,7 @@ import rpg.status.manager.StatusManager;
 import rpg.status.repository.StatusRepository;
 import rpg.status.model.StatType;
 import rpg.status.service.LevelGrowthService;
+import rpg.status.service.LevelUpFeedbackService;
 import rpg.status.service.StatusCalculatorService;
 import rpg.status.service.StatusService;
 
@@ -28,7 +30,9 @@ public final class StatusModule implements RpgModule {
 
     private StatusGrowthConfig growthConfig;
     private LevelingConfig levelingConfig;
+    private LevelUpEffectConfig levelUpEffectConfig;
     private StatusService statusService;
+    private LevelUpFeedbackService levelUpFeedbackService;
     private OreliaPlugin plugin;
 
     @Override
@@ -44,7 +48,10 @@ public final class StatusModule implements RpgModule {
 
         this.growthConfig = new StatusGrowthConfig();
         this.levelingConfig = new LevelingConfig();
+        this.levelUpEffectConfig = new LevelUpEffectConfig();
         loadGrowthConfig(plugin);
+
+        this.levelUpFeedbackService = new LevelUpFeedbackService(plugin.getMessageManager(), levelUpEffectConfig);
 
         LevelGrowthService levelGrowthService = new LevelGrowthService(growthConfig);
         StatusRepository repository = new StatusRepository(databaseModule.getDatabaseManager(), levelGrowthService);
@@ -58,7 +65,7 @@ public final class StatusModule implements RpgModule {
         plugin.getPlayerDataManager().registerLoader(statusManager);
 
         StatusCalculatorService calculatorService = new StatusCalculatorService();
-        this.statusService = new StatusService(plugin.getPlayerDataManager(), calculatorService, levelGrowthService, levelingConfig, repository);
+        this.statusService = new StatusService(plugin.getPlayerDataManager(), calculatorService, levelGrowthService, levelingConfig, repository, levelUpFeedbackService);
 
         // Damage-computation logic (ATK%/DEF/crit/weakness) lives in
         // rpg.monster.listener.CombatDamageListener, registered by MonsterModule - see its
@@ -103,9 +110,14 @@ public final class StatusModule implements RpgModule {
         YamlConfiguration config = plugin.getConfigManager().get("config.yml").get();
         growthConfig.load(config);
         levelingConfig.load(config);
+        levelUpEffectConfig.load(config);
     }
 
     public StatusService getStatusService() {
         return statusService;
+    }
+
+    public LevelUpFeedbackService getLevelUpFeedbackService() {
+        return levelUpFeedbackService;
     }
 }

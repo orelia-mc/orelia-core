@@ -5,8 +5,10 @@ import rpg.status.model.StatSheet;
 import rpg.status.model.StatType;
 
 /**
- * Turns a character level into a base {@link StatSheet}, using the per-stat base value
- * and per-level growth configured in {@code config.yml: status.growth}.
+ * Turns a character level into a base {@link StatSheet}. HP/SP/ATK/DEF grow exponentially
+ * ({@code base * growthRate^(level-1)}, mirroring {@link rpg.monster.config.MonsterLevelScalingConfig}
+ * via the shared {@code stat-scaling.growth-rate}); the remaining stats keep the flat
+ * {@code base + per-level * (level-1)} growth configured in {@code config.yml: status.growth}.
  */
 public final class LevelGrowthService {
 
@@ -20,8 +22,14 @@ public final class LevelGrowthService {
         StatSheet sheet = StatSheet.empty();
         for (StatType type : StatType.values()) {
             double base = growthConfig.getBaseValue(type);
-            double perLevel = growthConfig.getPerLevel(type);
-            sheet.set(type, base + perLevel * Math.max(0, level - 1));
+            double value;
+            if (growthConfig.isExponential(type)) {
+                value = base * Math.pow(growthConfig.getGrowthRate(type), Math.max(0, level - 1));
+            } else {
+                double perLevel = growthConfig.getPerLevel(type);
+                value = base + perLevel * Math.max(0, level - 1);
+            }
+            sheet.set(type, value);
         }
         return sheet;
     }

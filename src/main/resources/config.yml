@@ -5,7 +5,7 @@
 # added - on next startup, ConfigManager appends the new section (with its comments) to any
 # existing config.yml that's missing it, without touching anything you've already customized.
 # Never bump this for a value-only change (e.g. tweaking a default), only for new/removed keys.
-config-version: 6
+config-version: 7
 
 skill:
   # Ticks after a skill-fired bow arrow (パワーショット/マルチショット) lands before it's
@@ -37,23 +37,23 @@ status:
     period-ticks: 100
   leveling:
     exp-per-level: 100
-    max-level: 100
-  # Base value and per-level growth for each stat, used to compute base stats at a given level.
+    max-level: 80
+  # Base value for each stat, used to compute base stats at a given level. HP/SP/ATK/DEF grow
+  # exponentially via the shared stat-scaling.growth-rate below (base * rate^(level-1)); the
+  # remaining ratio-like stats (CRT/CRT_DMG/SPD) keep a flat base + per-level growth so a crit
+  # chance/speed stat doesn't blow past 100%-equivalent within a few dozen levels.
   growth:
-    # This is the "scaled" HP max - it can be in the hundreds/thousands, real vanilla health
-    # stays fixed near 20 hearts and is kept proportional to this instead (ScaledHealthService).
+    # This is the "scaled" HP max - it can be in the hundreds/thousands/millions, real vanilla
+    # health stays fixed near 20 hearts and is kept proportional to this instead
+    # (ScaledHealthService).
     HP:
       base: 100
-      per-level: 10
     SP:
       base: 50
-      per-level: 5
     ATK:
       base: 5
-      per-level: 1
     DEF:
       base: 5
-      per-level: 1
     CRT:
       base: 5
       per-level: 1
@@ -63,6 +63,12 @@ status:
     SPD:
       base: 5
       per-level: 1
+  # Feedback shown when a character levels up (StatusService#addExperience). particle/sound are
+  # resolved via Particle.valueOf/Sound.valueOf - an invalid name just skips that effect.
+  level-up-effect:
+    enabled: true
+    sound: "ENTITY_PLAYER_LEVELUP"
+    particle: "TOTEM"
 
 economy:
   starting-balance: 100.0
@@ -104,13 +110,14 @@ combat:
     crit-scale: 1.3
 
 # Periodic HUD text shown in the action bar (the line just above the hotbar). {hp}/{max_hp}/
-# {sp}/{max_sp}/{atk} are the only placeholders - {atk} is the player's current effective
-# attack power (base attack power after ATK%, before the target's own DEF/crit/weakness -
-# see ActionBarService).
+# {sp}/{max_sp}/{atk} are the player's current effective attack power (base attack power after
+# ATK%, before the target's own DEF/crit/weakness - see ActionBarService). {level} is the
+# character level, {exp_bar} is a "[██████░░░░] 1234/3000" progress bar toward the next level
+# (or "MAX" at the level cap).
 action-bar:
   enabled: true
   period-ticks: 20
-  format: "&%c♥ {hp}/{max_hp} &%7| &%b✦ {sp}/{max_sp} &%7| &%e⚔ {atk}"
+  format: "&%eLv.{level} {exp_bar} &%7| &%c♥ {hp}/{max_hp} &%7| &%b✦ {sp}/{max_sp} &%7| &%e⚔ {atk}"
 
 # Whether a Location is "inside a town" (rpg.town.service.TownDetectionService), used to
 # suppress Orelia monster spawns there (see monster: below) and published as rpg.api.TownApi
@@ -149,14 +156,16 @@ monster:
     filled-color: "&%a"
     empty-color: "&%8"
 
-# Optional per-spawn-point monster stat scaling (/oladmin spawnpoint add ... [targetLevel]).
-# A spawn point's targetLevel scales a spawned monster's monsters.yml hp/attack-power/defense
-# up or down from its template values, exponentially per level: scaled = base *
-# factor^(targetLevel - 1). Each *-factor is the per-level growth multiplier itself (e.g. 1.1 =
-# +10% per level, compounding), not an additive "extra percent". targetLevel 1, or leaving it
-# unset (the default for every existing spawn point), leaves the monster exactly as its
-# monsters.yml template - fully backward compatible.
-monster-level-scaling:
-  hp-factor: 1.12
-  attack-factor: 1.10
-  defense-factor: 1.08
+# Shared exponential growth rate for HP/ATK/DEF, used both by per-spawn-point monster stat
+# scaling (/oladmin spawnpoint add ... [targetLevel]) and by player character stat growth
+# (status.growth above): scaled = base * growth-rate^(level - 1). Each value is the per-level
+# growth multiplier itself (e.g. 1.045 = +4.5% per level, compounding), not an additive "extra
+# percent". Monster spawn-point targetLevel 1, or leaving it unset (the default for every
+# existing spawn point), leaves the monster exactly as its monsters.yml template - fully
+# backward compatible. SP has no monster equivalent, so it's player-only.
+stat-scaling:
+  growth-rate:
+    HP: 1.045
+    SP: 1.04
+    ATK: 1.035
+    DEF: 1.03
