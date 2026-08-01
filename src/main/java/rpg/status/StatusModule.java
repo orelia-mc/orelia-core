@@ -51,7 +51,8 @@ public final class StatusModule implements RpgModule {
         this.levelUpEffectConfig = new LevelUpEffectConfig();
         loadGrowthConfig(plugin);
 
-        this.levelUpFeedbackService = new LevelUpFeedbackService(plugin.getMessageManager(), levelUpEffectConfig);
+        this.levelUpFeedbackService = new LevelUpFeedbackService(plugin.getMessageManager(), levelUpEffectConfig,
+                plugin.getSchedulerService());
 
         LevelGrowthService levelGrowthService = new LevelGrowthService(growthConfig);
         StatusRepository repository = new StatusRepository(databaseModule.getDatabaseManager(), levelGrowthService);

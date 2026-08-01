@@ -5,7 +5,7 @@
 # added - on next startup, ConfigManager appends the new section (with its comments) to any
 # existing config.yml that's missing it, without touching anything you've already customized.
 # Never bump this for a value-only change (e.g. tweaking a default), only for new/removed keys.
-config-version: 7
+config-version: 8
 
 skill:
   # Ticks after a skill-fired bow arrow (パワーショット/マルチショット) lands before it's
@@ -54,12 +54,12 @@ status:
       base: 5
     DEF:
       base: 5
+    # Fixed regardless of level - per-level is intentionally not read for CRT/CRT_DMG
+    # (StatusGrowthConfig#isFixed), only relic/accessory bonuses move these.
     CRT:
       base: 5
-      per-level: 1
     CRT_DMG:
       base: 5
-      per-level: 1
     SPD:
       base: 5
       per-level: 1
@@ -69,6 +69,11 @@ status:
     enabled: true
     sound: "ENTITY_PLAYER_LEVELUP"
     particle: "TOTEM"
+    # Staggers the level-up sequence (title -> chat line -> stat-diff lines) instead of
+    # sending everything in the same tick - chat-delay-ticks after the title, then
+    # stat-delay-ticks after the chat line. Set both to 0 to restore all-at-once behavior.
+    chat-delay-ticks: 15
+    stat-delay-ticks: 10
 
 economy:
   starting-balance: 100.0
@@ -161,6 +166,17 @@ monster:
     format: "{name} &%7[{bar}&%7] &%f{current}/{max}"
     filled-color: "&%a"
     empty-color: "&%8"
+  # Extra multiplier layered on top of stat-scaling.growth-rate below, applying ONLY to a
+  # monster spawned with a targetLevel (leaving level-less monsters completely untouched -
+  # MonsterLevelScalingConfig#scale's null-targetLevel guard runs before this is ever used).
+  # A monster growing at exactly the player-shared rate turned out to fall far behind by max
+  # level (a geared player one-shotting a same-level monster) - this restores some of the
+  # extra edge monsters had before stat growth was unified with players, without going back to
+  # the old, far more extreme monster-only rates. effective rate = growth-rate.X * this value.
+  target-level-bonus:
+    HP: 1.02
+    ATK: 1.015
+    DEF: 1.012
 
 # Shared exponential growth rate for HP/ATK/DEF, used both by per-spawn-point monster stat
 # scaling (/oladmin spawnpoint add ... [targetLevel]) and by player character stat growth
