@@ -22,7 +22,6 @@ import rpg.gathering.model.GatherActionType;
 import rpg.gathering.repository.GatheringDefinitionRepository;
 import rpg.gathering.service.BulkRadiusResolver;
 import rpg.gathering.service.GatheringLevelService;
-import rpg.gathering.service.RegionProtectionService;
 import rpg.item.ItemModule;
 import rpg.item.model.WeaponType;
 
@@ -42,16 +41,13 @@ public final class FarmingListener implements Listener {
     private final GatheringDefinitionRepository definitions;
     private final GatheringLevelService levelService;
     private final LevelRadiusConfig radiusConfig;
-    private final RegionProtectionService protectionService;
     private final OreliaPlugin plugin;
 
     public FarmingListener(GatheringDefinitionRepository definitions, GatheringLevelService levelService,
-                            LevelRadiusConfig radiusConfig, RegionProtectionService protectionService,
-                            OreliaPlugin plugin) {
+                            LevelRadiusConfig radiusConfig, OreliaPlugin plugin) {
         this.definitions = definitions;
         this.levelService = levelService;
         this.radiusConfig = radiusConfig;
-        this.protectionService = protectionService;
         this.plugin = plugin;
     }
 
@@ -92,9 +88,6 @@ public final class FarmingListener implements Listener {
                 }
                 Block above = farmland.getRelative(0, 1, 0);
                 if (above.getType() != Material.AIR) {
-                    continue;
-                }
-                if (!protectionService.canModify(player, above)) {
                     continue;
                 }
                 above.setType(cropType, false);
@@ -152,9 +145,6 @@ public final class FarmingListener implements Listener {
         for (Block target : targets) {
             if (harvested >= durability) {
                 break;
-            }
-            if (!protectionService.canModify(player, target)) {
-                continue;
             }
             CropTemplate targetTemplate = definitions.getCrops().get(target.getType());
             target.breakNaturally(tool);

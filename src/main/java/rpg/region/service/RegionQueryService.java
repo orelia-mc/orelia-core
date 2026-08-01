@@ -17,17 +17,16 @@ import java.util.Set;
 import java.util.logging.Level;
 
 /**
- * Best-effort WorldGuard integration via reflection - same rationale as
- * {@link rpg.gathering.service.RegionProtectionService}: this build environment cannot reach
+ * Best-effort WorldGuard integration via reflection: this build environment cannot reach
  * WorldGuard's Maven repo, so orelia-core carries no compile-time dependency on its jar/API.
  * Targets the WorldGuard 7 API ({@code WorldGuard.getInstance().getPlatform().getRegionContainer()});
  * {@code WorldGuardPlugin.getRegionManager(World)} was removed when WorldGuard moved off the
- * Bukkit-plugin-as-API-entrypoint shape. Where {@code RegionProtectionService} only asks "can
- * this player build here", {@link #getRegionIds(Location)} answers the more general "which
- * WorldGuard region IDs apply at this location" - the shared building block both
- * {@code rpg.town} (town detection) and fishing's per-area loot table need. If WorldGuard isn't
- * installed, or its API doesn't match what's expected, every query just returns an empty list
- * (fail-open: no known regions, same as if no region plugin exists).
+ * Bukkit-plugin-as-API-entrypoint shape. {@link #getRegionIds(Location)} answers "which
+ * WorldGuard region IDs apply at this location" - the shared building block
+ * {@code rpg.town} (town detection), {@code rpg.gathering.service.RegenExclusionService}, and
+ * fishing's per-area loot table all need. If WorldGuard isn't installed, or its API doesn't
+ * match what's expected, every query just returns an empty list (fail-open: no known regions,
+ * same as if no region plugin exists).
  */
 public final class RegionQueryService {
 

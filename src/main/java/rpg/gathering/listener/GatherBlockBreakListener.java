@@ -19,7 +19,6 @@ import rpg.gathering.service.BlockRegenService;
 import rpg.gathering.service.BulkRadiusResolver;
 import rpg.gathering.service.GatheringLevelService;
 import rpg.gathering.service.RegenExclusionService;
-import rpg.gathering.service.RegionProtectionService;
 import rpg.item.ItemModule;
 import rpg.item.model.WeaponData;
 import rpg.item.model.WeaponType;
@@ -62,20 +61,18 @@ public final class GatherBlockBreakListener implements Listener {
     private final GatheringDefinitionRepository definitions;
     private final BlockRegenService regenService;
     private final GatheringLevelService levelService;
-    private final RegionProtectionService protectionService;
     private final JobManager jobManager;
     private final RegenExclusionService exclusionService;
     private final MiningLuckConfig miningLuckConfig;
     private final OreliaPlugin plugin;
 
     public GatherBlockBreakListener(GatheringDefinitionRepository definitions, BlockRegenService regenService,
-                                     GatheringLevelService levelService, RegionProtectionService protectionService,
+                                     GatheringLevelService levelService,
                                      JobManager jobManager, RegenExclusionService exclusionService,
                                      MiningLuckConfig miningLuckConfig, OreliaPlugin plugin) {
         this.definitions = definitions;
         this.regenService = regenService;
         this.levelService = levelService;
-        this.protectionService = protectionService;
         this.jobManager = jobManager;
         this.exclusionService = exclusionService;
         this.miningLuckConfig = miningLuckConfig;
@@ -104,10 +101,6 @@ public final class GatherBlockBreakListener implements Listener {
             String jobName = jobManager.getDefinition(actionType.jobType()).map(Job::getDisplayName)
                     .orElse(actionType.jobType().name());
             player.sendMessage(Component.text(jobName + "レベルが不足しています。(必要Lv: " + template.minLevel() + ")", NamedTextColor.RED));
-            return;
-        }
-        if (!protectionService.canModify(player, block)) {
-            event.setCancelled(true);
             return;
         }
 
@@ -221,12 +214,8 @@ public final class GatherBlockBreakListener implements Listener {
                         continue;
                     }
                     // Checked per swept block rather than once at the centre: the cube can
-                    // straddle a region boundary, and canModify below already costs a
-                    // WorldGuard lookup per block anyway.
+                    // straddle a region-exclusion boundary.
                     if (exclusionService.isExcluded(target.getLocation())) {
-                        continue;
-                    }
-                    if (!protectionService.canModify(player, target)) {
                         continue;
                     }
                     // breakNaturally() removes the block and spawns drops immediately, so
