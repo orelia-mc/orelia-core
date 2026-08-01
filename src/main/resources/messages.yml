@@ -1,7 +1,7 @@
 # Centralized user-facing text. Every chat message the plugin sends goes through
 # rpg.core.message.MessageManager, keyed by the dotted paths below - do not hardcode
 # ChatColor + literal strings in command/listener/service code, add a key here instead.
-config-version: 6
+config-version: 7
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -65,6 +65,8 @@ economy:
   insufficient-funds: "&%c所持金が足りません。"
   item-unavailable: "&%c商品を取得できませんでした。"
   purchase-success: "&%a{item}を{price}Gで購入しました。"
+  confirm-purchase-title: "&%8購入確認"
+  confirm-purchase-line: "&%f{item} を &%6{price} &%fで購入しますか？"
 
 dungeon:
   party-too-small: "&%cパーティ人数が足りません。"
