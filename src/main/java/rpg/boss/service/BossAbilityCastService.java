@@ -12,9 +12,12 @@ import org.bukkit.util.Vector;
 import rpg.boss.model.BossAbility;
 import rpg.boss.model.BossData;
 import rpg.boss.repository.BossRepository;
+import rpg.monster.model.MonsterData;
 import rpg.monster.service.MonsterSpawnService;
 import rpg.status.combat.DamageFormula;
 import rpg.util.ColorUtil;
+
+import java.util.Optional;
 
 import java.util.Collection;
 import java.util.List;
@@ -24,11 +27,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Periodically casts a currently-tracked boss's {@link BossAbility}s at nearby players (SOW
- * follow-up: "スキルを発動するボス"). Damage is applied via {@code player.damage(amount)}
- * with no damager entity - deliberately sidesteps
- * {@code rpg.monster.listener.CombatDamageListener}, which would otherwise overwrite an
- * ability's damage with the boss's plain melee attack power the same way it does for any
- * other monster hit.
+ * follow-up: "スキルを発動するボス"). Damage is delivered via the damager-carrying
+ * {@code player.damage(amount, boss)} so it still runs through
+ * {@code rpg.monster.listener.CombatDamageListener} (DEF/crit/weakness, and the scaled-to-vanilla
+ * health conversion) - {@link DamageFormula#ABILITY_OVERRIDE_METADATA} tells that listener the
+ * base amount is already resolved (the boss's own attack power times {@link BossAbility#getDamage()}
+ * as a multiplier) rather than substituting its plain melee attack power.
  */
 public final class BossAbilityCastService {
 
@@ -104,13 +108,14 @@ public final class BossAbilityCastService {
         World world = boss.getWorld();
         playParticle(world, boss, ability.getParticle());
         playSound(world, boss, ability.getSound());
+        double scaledDamage = abilityDamage(boss, ability);
         for (Player player : nearby) {
             if (player.getLocation().distance(boss.getLocation()) <= ability.getRadius()) {
-                player.setMetadata(DamageFormula.LAST_ABILITY_ATTACKER_METADATA_KEY, new FixedMetadataValue(plugin, boss));
+                boss.setMetadata(DamageFormula.ABILITY_OVERRIDE_METADATA, new FixedMetadataValue(plugin, true));
                 try {
-                    player.damage(ability.getDamage());
+                    player.damage(scaledDamage, boss);
                 } finally {
-                    player.removeMetadata(DamageFormula.LAST_ABILITY_ATTACKER_METADATA_KEY, plugin);
+                    boss.removeMetadata(DamageFormula.ABILITY_OVERRIDE_METADATA, plugin);
                 }
             }
         }
@@ -118,6 +123,7 @@ public final class BossAbilityCastService {
 
     private void castFireballBarrage(LivingEntity boss, BossAbility ability, Collection<Player> nearby) {
         playSound(boss.getWorld(), boss, ability.getSound());
+        double scaledDamage = abilityDamage(boss, ability);
         for (Player target : nearby) {
             Vector direction = target.getEyeLocation().toVector().subtract(boss.getEyeLocation().toVector()).normalize();
             SmallFireball fireball = boss.getWorld().spawn(boss.getEyeLocation(), SmallFireball.class, projectile -> {
@@ -126,8 +132,21 @@ public final class BossAbilityCastService {
                 projectile.setIsIncendiary(false);
                 projectile.setYield(0f);
             });
-            fireball.setMetadata(FIREBALL_METADATA, new FixedMetadataValue(plugin, new double[] {ability.getDamage(), ability.getRadius()}));
+            fireball.setMetadata(FIREBALL_METADATA, new FixedMetadataValue(plugin, new double[] {scaledDamage, ability.getRadius()}));
         }
+    }
+
+    /**
+     * {@link BossAbility#getDamage()} is a multiplier on the boss's own (level-scaled) attack
+     * power, not an absolute amount - keeps ability damage in step with
+     * {@code MonsterLevelScalingConfig} the same way the boss's plain melee attack already is.
+     * Falls back to the raw configured value if the boss has no resolvable {@code MonsterData}
+     * (shouldn't normally happen for a spawned, tracked boss).
+     */
+    private double abilityDamage(LivingEntity boss, BossAbility ability) {
+        Optional<MonsterData> data = monsterSpawnService.dataOf(boss);
+        return data.map(d -> ability.getDamage() * monsterSpawnService.scaledAttackPowerOf(boss, d))
+                .orElse(ability.getDamage());
     }
 
     private void playParticle(World world, LivingEntity boss, String particleName) {

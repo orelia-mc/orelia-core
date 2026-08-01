@@ -173,6 +173,11 @@ public final class CombatDamageListener implements Listener {
         if (event.getDamager() instanceof LivingEntity attacker) {
             MonsterData data = spawnService.dataOf(attacker).orElse(null);
             if (data != null) {
+                if (attacker.hasMetadata(DamageFormula.ABILITY_OVERRIDE_METADATA)) {
+                    // AOE_SLAM/FIREBALL_BARRAGE already folded the ability's damage multiplier
+                    // into event.getDamage() - only DEF/crit/weakness are left to resolve here.
+                    return new AttackInput(event.getDamage(), 0, data.getCritRate(), data.getCritMultiplier(), 0, 0, data.getElement());
+                }
                 return new AttackInput(spawnService.scaledAttackPowerOf(attacker, data), 0, data.getCritRate(), data.getCritMultiplier(), 0, 0, data.getElement());
             }
         }
