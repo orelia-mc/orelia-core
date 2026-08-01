@@ -11,8 +11,10 @@ import rpg.api.ShopEntry;
 import rpg.core.message.MessageManager;
 import rpg.economy.service.EconomyService;
 import rpg.gui.config.GuiConfig;
+import rpg.gui.framework.ConfirmGuiScreen;
 import rpg.gui.framework.Gui;
 import rpg.gui.framework.GuiButton;
+import rpg.gui.framework.GuiManager;
 import rpg.item.manager.ItemManager;
 import rpg.item.model.WeaponData;
 import rpg.relic.service.RelicShopService;
@@ -34,10 +36,12 @@ public final class ShopGuiScreen {
     private final EconomyService economyService;
     private final GuiConfig guiConfig;
     private final MessageManager messages;
+    private final GuiManager guiManager;
 
     public ShopGuiScreen(ItemManager itemManager, AccessoryRepository accessoryRepository,
                           AccessoryFactory accessoryFactory, RelicShopService relicShopService,
-                          EconomyService economyService, GuiConfig guiConfig, MessageManager messages) {
+                          EconomyService economyService, GuiConfig guiConfig, MessageManager messages,
+                          GuiManager guiManager) {
         this.itemManager = itemManager;
         this.accessoryRepository = accessoryRepository;
         this.accessoryFactory = accessoryFactory;
@@ -45,6 +49,7 @@ public final class ShopGuiScreen {
         this.economyService = economyService;
         this.guiConfig = guiConfig;
         this.messages = messages;
+        this.guiManager = guiManager;
     }
 
     public Gui build(Player player, List<ShopEntry> stock) {
@@ -60,9 +65,20 @@ public final class ShopGuiScreen {
                     .name(Component.text(displayName))
                     .lore("&%7価格: " + MoneyFormat.format(entry.price()))
                     .build();
-            gui.set(slot++, new GuiButton(icon, (clicker, clickType) -> buy(clicker, entry, displayName)));
+            gui.set(slot++, new GuiButton(icon, (clicker, clickType) -> confirmPurchase(clicker, entry, displayName)));
         }
         return gui;
+    }
+
+    private void confirmPurchase(Player player, ShopEntry entry, String displayName) {
+        String title = messages.raw("economy.confirm-purchase-title");
+        List<String> description = List.of(messages.format("economy.confirm-purchase-line",
+                "item", displayName, "price", MoneyFormat.format(entry.price())));
+        Gui confirm = ConfirmGuiScreen.build(title, description,
+                () -> buy(player, entry, displayName),
+                () -> {
+                });
+        guiManager.open(player, confirm);
     }
 
     private void buy(Player player, ShopEntry entry, String displayName) {
@@ -79,7 +95,8 @@ public final class ShopGuiScreen {
         ItemStack purchased = stack.get();
         player.getInventory().addItem(purchased).values()
                 .forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
-        messages.send(player, "economy.purchase-success", "item", displayName, "price", MoneyFormat.format(entry.price()));
+        messages.sendWithSound(player, "economy.purchase-success", GuiButton.DEFAULT_CLICK_SOUND,
+                "item", displayName, "price", MoneyFormat.format(entry.price()));
     }
 
     /** Static label shown in the shop GUI/purchase message - avoids round-tripping the preview ItemStack's Component name into a String. */
