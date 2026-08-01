@@ -51,5 +51,9 @@ Orelia は以下のプラグイン群で構成されています。
 - 職業変更GUIのページング(`/ol job`相当) — 職業数が7を超えると、共通ページングフレームワーク(`GuiPaginator`/`GuiPageLayout`)で2ページ目に自動で振り分けられます。以前は境界チェックが画面全体の末尾しか無く、8種目以降が本来空けるべきスロットに侵食していました。
 - モンスター/ボスのアビリティ攻撃(AOE_SLAM/FIREBALL_BARRAGE)がscaledステータス計算を正しく経由するようになりました — 以前はdamagerなしの`player.damage(amount)`を直接呼んでいたため、`monsters.yml`/`bosses.yml`の`damage:`固定値がDEF軽減もscaled→vanilla変換も一切経ずにプレイヤーのバニラ体力から直接引かれていました。`damage:`は今後「そのモンスター/ボス自身の(レベルスケール済み)攻撃力に対する倍率」として扱われ、通常攻撃と同じDEF/crit/属性弱点パイプラインを通ります。
 - モンスターを殴った際のバニラ被ダメージ演出(赤黒いハートエフェクト)が過剰だった問題を緩和 — `config.yml: combat.scaled-health.vanilla-cap`のデフォルトを1024→20に変更しました。モンスターの体力表示自体は名札(scaled値を直接参照)が担っており、vanilla側のMAX_HEALTH属性値はゲームプレイ上見えない内部値のため、器を小さくしても体力バーの精度・即死判定には影響しません。
+- 会心倍率の武器別設定を廃止(`items.yml`から`crit-multiplier`を削除) — プレイヤーの会心ダメージ倍率は常に基礎値`DamageFormula.DEFAULT_CRIT_MULTIPLIER`(1.5倍)固定+`CRT_DMG`ステータスのみで決まります。「会心倍率」という武器ごとの値がステータスGUIの「会心ダメージ」と何の関係があるのか分かりにくいという指摘を受けた変更で、モンスター/ボス側の`crit-multiplier`(`monsters.yml`/`bosses.yml`)は今回のスコープ外のため従来通りです。
+- レベルアップ時のステータス上昇メッセージの属性名を日本語化 — 火属性ダメージ増加等の表記が`FIRE_DMG`のような内部enum名のまま表示されていたのを、`LevelUpFeedbackService#STAT_LABELS`に6属性(火/水/土/風/光/闇属性ダメージ)分のラベルを追加して解消しました。
+- プレイヤーのデフォルト会心率/会心ダメージを`config.yml: status.growth.CRT/CRT_DMG.base`でそれぞれ10/50に変更(旧デフォルトは5/5)。CRT/CRT_DMGは前述の通りレベルでは変わらず固定のため、この値がそのままキャラクターの基礎会心率10%・会心ダメージ+50%になります。
+- 経験値バーの色抜けバグを修正 — `ActionBarService#expBar`が`&r`(全リセット)で終わっていたため、続く`] 1234/3000`の部分だけ他のHUD要素と揃わない白色表示になっていました。専用の色定数を`]`以降にも明示的に適用するよう修正しています。
 - 戦闘ダメージ計算式の詳細は [DAMAGE_FORMULA.md](DAMAGE_FORMULA.md) を参照してください。
 - orelia-core/world/extra 3リポジトリを横断した未実装機能一覧は [UNIMPLEMENTED_FEATURES.md](UNIMPLEMENTED_FEATURES.md) を参照してください。

@@ -75,6 +75,8 @@ public final class StatusGrowthConfig {
         return switch (type) {
             case HP -> 100.0;
             case SP -> 50.0;
+            case CRT -> 10.0;
+            case CRT_DMG -> 50.0;
             default -> 5.0;
         };
     }

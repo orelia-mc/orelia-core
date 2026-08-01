@@ -52,7 +52,7 @@ public static double mitigate(double damage, double defense) {
 DEF軽減の**後**にクリティカル判定を行います。
 
 - **判定確率** = 武器/モンスター自身の`crit-rate` + 攻撃者の`CRT`ステータス(プレイヤーのみ加算、モンスターは自身の`crit-rate`のみ)
-- **命中したときの倍率** = `武器/モンスター自身のcrit-multiplier + 攻撃者のCRT_DMGステータス ÷ 100`(プレイヤーのみ加算)
+- **命中したときの倍率** = `基礎倍率 + 攻撃者のCRT_DMGステータス ÷ 100`(プレイヤーのみ加算)。プレイヤーの基礎倍率は武器ごとの個別設定ではなく`DamageFormula.DEFAULT_CRIT_MULTIPLIER`(1.5)で固定 — 「会心の効き目」は`CRT_DMG`ステータス一本に統一されており、武器の`items.yml`に会心倍率の設定はありません。モンスターは引き続き`monsters.yml`/`bosses.yml`の`crit-multiplier`を基礎倍率として使います。
 
 ```java
 public static boolean rollCrit(double critRatePercent) {
@@ -63,7 +63,7 @@ public static double criticalMultiplier(double baseCritMultiplier, double critDm
 }
 ```
 
-例: 武器の`crit-multiplier: 1.5`、プレイヤーの`CRT_DMG: 20`のとき → `1.5 + 20/100 = 1.7倍`。
+例: プレイヤーの基礎倍率1.5、`CRT_DMG: 20`のとき → `1.5 + 20/100 = 1.7倍`。
 
 ## 5. 属性弱点倍率(モンスターが被弾側の場合のみ)
 
@@ -89,7 +89,7 @@ public static double applyElementalDamageBonus(double damage, double elementalDa
 
 ## 実例
 
-**条件**: プレイヤー(見習いの剣、`attack-power: 4.0` `crit-rate: 5.0` `crit-multiplier: 1.5`、強化倍率1.0)が、`森のスライム`(`defense: 0` `weakness: FIRE`、装備武器は無属性のため弱点不一致)を攻撃。プレイヤーの最終ステータスは`ATK: 10` `CRT: 5` `CRT_DMG: 20`。
+**条件**: プレイヤー(見習いの剣、`attack-power: 4.0` `crit-rate: 5.0`、強化倍率1.0、基礎会心倍率1.5固定)が、`森のスライム`(`defense: 0` `weakness: FIRE`、装備武器は無属性のため弱点不一致)を攻撃。プレイヤーの最終ステータスは`ATK: 10` `CRT: 5` `CRT_DMG: 20`。
 
 ### 通常時(クリティカル不発生)
 
