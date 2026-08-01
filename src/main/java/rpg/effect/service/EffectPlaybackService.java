@@ -38,10 +38,20 @@ public final class EffectPlaybackService {
         } catch (IllegalArgumentException ignored) {
         }
         if (effect.getSound() != null && !effect.getSound().isBlank()) {
-            try {
-                location.getWorld().playSound(location, Sound.valueOf(effect.getSound()), effect.getSoundVolume(), effect.getSoundPitch());
-            } catch (IllegalArgumentException ignored) {
-            }
+            playSound(location, effect);
+        }
+    }
+
+    // effects.yml stores legacy enum-style sound names (e.g. ENTITY_PLAYER_LEVELUP) rather than
+    // namespaced keys - Sound.valueOf is deprecated but remains the only lossless way to resolve
+    // those without maintaining our own legacy-name-to-key table (a mechanical "_" -> "."
+    // rewrite is wrong for names like ENTITY_PLAYER_ATTACK_CRIT, whose real key is
+    // entity.player.attack_crit).
+    @SuppressWarnings("deprecation")
+    private void playSound(Location location, EffectData effect) {
+        try {
+            location.getWorld().playSound(location, Sound.valueOf(effect.getSound()), effect.getSoundVolume(), effect.getSoundPitch());
+        } catch (IllegalArgumentException ignored) {
         }
     }
 }

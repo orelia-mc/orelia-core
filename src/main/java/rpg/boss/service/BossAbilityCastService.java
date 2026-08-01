@@ -137,6 +137,12 @@ public final class BossAbilityCastService {
         }
     }
 
+    // bosses.yml stores legacy enum-style sound names (e.g. ENTITY_BLAZE_SHOOT) rather than
+    // namespaced keys - Sound.valueOf is deprecated but remains the only lossless way to
+    // resolve those without maintaining our own legacy-name-to-key table (a mechanical
+    // "_" -> "." rewrite is wrong for names like ENTITY_IRON_GOLEM_ATTACK, whose real key is
+    // entity.iron_golem.attack).
+    @SuppressWarnings("deprecation")
     private void playSound(World world, LivingEntity boss, String soundName) {
         try {
             world.playSound(boss.getLocation(), Sound.valueOf(soundName), 2.0f, 0.9f);

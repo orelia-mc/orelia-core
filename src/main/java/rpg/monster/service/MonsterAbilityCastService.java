@@ -153,6 +153,12 @@ public final class MonsterAbilityCastService {
         }
     }
 
+    // monsters.yml stores legacy enum-style sound names (e.g. ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR)
+    // rather than namespaced keys - Sound.valueOf is deprecated but remains the only lossless
+    // way to resolve those without maintaining our own legacy-name-to-key table (a mechanical
+    // "_" -> "." rewrite is wrong for names like ENTITY_EXPERIENCE_ORB_PICKUP, whose real key is
+    // entity.experience_orb.pickup).
+    @SuppressWarnings("deprecation")
     private void playSound(World world, LivingEntity monster, String soundName) {
         try {
             world.playSound(monster.getLocation(), Sound.valueOf(soundName), 0.6f, 0.9f);
