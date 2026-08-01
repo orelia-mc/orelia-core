@@ -1,0 +1,30 @@
+# Story progression (SOW StoryModule). Chapters unlock in "order" once their
+# required-flags are all held (set via quest rewards, dialogue choices, etc. through the
+# story/dialogue flag services). Endings unlock the same way.
+config-version: 1
+
+chapters:
+  chapter_1:
+    order: 1
+    title: "第一章 - 始まりの町"
+    description:
+      - "主人公が始まりの町に到着する。"
+    required-flags: []
+    unlock-message: "&%6&l第一章「始まりの町」が始まりました。"
+
+  chapter_2:
+    order: 2
+    title: "第二章 - ゴブリンの脅威"
+    description:
+      - "ゴブリンキングの脅威が町に迫る。"
+    required-flags:
+      - "cleared_goblin_supplies"
+    unlock-message: "&%6&l第二章「ゴブリンの脅威」が始まりました。"
+
+endings:
+  true_ending:
+    title: "真のエンディング"
+    message:
+      - "&%d&l祝福のエンディングを迎えました！"
+    required-flags:
+      - "defeated_goblin_king"

@@ -1,18 +1,18 @@
 <img src="https://orelia-mc.github.io/assets/logo_wide.jpg" />
 <h1 align="center">Orelia Core</h1>
-<p align="center">RPG Foundation Plugin of Orelia-MC</p>
+<p align="center">RPG Suite Plugin of Orelia-MC</p>
 
 ## About
 
-`orelia-core` は Minecraft RPG プラグイン群 **Orelia** の基盤プラグイン(Paper 1.21.x / Java 21)です。戦闘・プレイヤー・ステータス関連のシステムを提供します。
+`orelia-core` は Minecraft RPG プラグイン群 **Orelia** のメインプラグイン(Paper 1.21.x / Java 21)です。旧 orelia-core(戦闘・プレイヤー・ステータス基盤)・orelia-world(クエスト等のコンテンツ層)・orelia-extra(パーティ等のソーシャル/経済層)の3リポジトリは単一プラグインへ統合され、現在は本リポジトリ1つですべての機能を提供します。
 
 Orelia は以下のプラグイン群で構成されています。
 
-- **orelia-core**(本リポジトリ) — Core, Item, Skill, Job, Status, Accessory, Relic, Monster, Boss, Effect, Economy, GUI, Gathering, Region, Town, Database, API, Util
-- [orelia-world](https://github.com/orelia-mc/orelia-world) — Quest, NPC, Dialogue, Story, Dungeon, Region, CutScene, Event
-- [orelia-extra](https://github.com/orelia-mc/orelia-extra) — 後発の MMORPG 系機能(Party, Guild, Trade, ...)
-- [orelia-debug](https://github.com/orelia-mc/orelia-debug) — orelia-core/world/extra のテストプレイを助ける管理者向けデバッグツール
+- **orelia-core**(本リポジトリ) — Core, Item, Skill, Job, Status, Accessory, Relic, Monster, Boss, Effect, Economy, GUI, Gathering, Region, Town, Database, API, Util(旧orelia-core)、Quest, NPC, Dialogue, Story, Dungeon, CutScene, Event, PlayerInfo(旧orelia-world)、Party, Friend, Guild, Chat, Trade, Mail, Auction, Housing, Pet, Mount, Ranking, Achievement(旧orelia-extra)
+- [orelia-debug](https://github.com/orelia-mc/orelia-debug) — orelia-core のテストプレイを助ける管理者向けデバッグツール(独立したプラグインとして残存)
 - [orelia-serverutil](https://github.com/orelia-mc/orelia-serverutil) — RPG機能非依存のサーバー運用・UXプラグイン(ハブ転送、スコアボード/タブリストAPI、joinメッセージ等)
+
+旧 `orelia-world`/`orelia-extra` リポジトリの `rpg.world.api`/`rpg.extra.api` インターフェースは内部のモジュール境界として引き続き存在し、`ServicesManager` にも公開され続けます(`orelia-debug` が実行時にこれらへ依存しているため)。ただし本リポジトリ内のモジュール同士は、もはや「相手のプラグインが読み込まれているか」を気にする必要はありません — 全モジュールが単一の決定的な順序で1つのプラグインとして起動します。
 
 ## Setup
 
@@ -24,7 +24,7 @@ Orelia は以下のプラグイン群で構成されています。
 
 ## Structure
 
-- 公開 API — 他プラグイン(orelia-world / orelia-extra を含む)は `rpg.api` 経由(Bukkit の `ServicesManager` で公開)でのみ本プラグインと連携します。内部モジュールクラスへ直接アクセスすることはありません。`rpg.api.OreliaApi` と、より narrow な `StatusApi` / `JobApi` / `ItemApi` / `AccessoryApi` / `SkillApi` / `GuiApi` / `EffectApi` / `CombatApi` / `RelicApi` / `TownApi` を参照してください。
+- 公開 API — `orelia-debug` のような独立した他プラグインは `rpg.api` / `rpg.world.api` / `rpg.extra.api` 経由(Bukkit の `ServicesManager` で公開)でのみ本プラグインと連携します。内部モジュールクラスへ直接アクセスすることはありません。`rpg.api.OreliaApi` と、より narrow な `StatusApi` / `JobApi` / `ItemApi` / `AccessoryApi` / `SkillApi` / `GuiApi` / `EffectApi` / `CombatApi` / `RelicApi` / `TownApi` / `EconomyApi` / `DebugApi`、および `rpg.world.api.QuestApi` / `WorldDebugApi`、`rpg.extra.api.GuildApi` / `PartyApi` / `AchievementApi` / `ExtraDebugApi` を参照してください。
 - 設定ファイル — 各モジュールが `src/main/resources/` 配下の専用ファイル(`items.yml`, `skills.yml`, `jobs.yml`, `accessories.yml`, `relics.yml`, `monsters.yml`, `bosses.yml`, `effects.yml`, `gui.yml`, `crafting.yml`, `gathering.yml`, `fishing.yml`, `messages.yml`, `config.yml`)を読み込みます。`/oladmin reload` で一括リロードできます。全ファイルが先頭の `config-version` で管理されており、新しいjarで起動すると新規追加されたキー(ネストした階層のキーも含む)は既存ファイルの正しい位置へ自動で追記されます(`rpg.core.config.ConfigMigrator`)。新しいトップレベルセクション・キーを追加したら、そのファイルの `config-version` を1つ上げてください。
 - レリック(厳選アクセサリー) — `accessories.yml`の完全固定ステータスとは別に、ダンジョンのボス討伐でランダムな部位・メインステータスを1本持って生成される個体差ありのアクセサリー(`rpg.api.RelicApi#generateRelic`、orelia-worldから利用)。アクセサリー枠は4→6種(お守り/指輪/ネックリス/羽根/耳飾り/ベルト)に拡張。メインステータスは部位ごとの固定プール(`relics.yml`)からランダムに1本、サブステータス(最大4本)は生成時点で`initial-substat-count-min/max`(既定3〜4本)だけ既に付いた状態で出現します。`/ol relic upgrade`(タブ補完対応)で3レベル毎(最大15、計5回)にプレイヤー自身が「新規追加するステータス」または「既存ステータスを強化」のどちらかを自由に選んで伸ばせます(4本目までは両方の選択肢が同時に提示されます)。1回の増加量は`relics.yml`の`substat-upgrade-min/max`(既定1〜2)からランダム — 完全ランダム厳選との差別化です。同じダンジョン産のレリックを2つ以上装備すると、そのダンジョン専用のセットボーナスが自動で付与されます(`relics.yml`の`dungeon-set-bonuses`)。ボスドロップとは別に、`relics.yml`の`shop-relics:`セクションで固定ステータス・最大レベル(だが控えめな数値)のレリックをNPCショップに並べることもできます(`npc.yml`のshop-stockで`kind: RELIC`)。厳選(`/ol relic upgrade`)はNPC経由でも開けます(`npc.yml`の`type: RELIC_UPGRADE`、`rpg.api.RelicApi#openUpgradeGui`)。
 - ボスバー — ボスをスポーンさせると、7ブロック以内にいるプレイヤーにバニラのボスバー(HP進捗)が表示されます。名札のHPバーと同じスケール済みHPを参照するため数値は一致します。

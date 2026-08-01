@@ -1,0 +1,21 @@
+# Pet definitions for /pet (SOW PetModule).
+# Reload with: /rpgextraadmin reload
+config-version: 1
+
+pets:
+  wolf:
+    name: "オオカミ"
+    entity-type: WOLF
+    price: 500
+  cat:
+    name: "ネコ"
+    entity-type: CAT
+    price: 500
+  parrot:
+    name: "オウム"
+    entity-type: PARROT
+    price: 800
+  fox:
+    name: "キツネ"
+    entity-type: FOX
+    price: 1200

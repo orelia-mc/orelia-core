@@ -5,7 +5,7 @@
 # added - on next startup, ConfigManager appends the new section (with its comments) to any
 # existing config.yml that's missing it, without touching anything you've already customized.
 # Never bump this for a value-only change (e.g. tweaking a default), only for new/removed keys.
-config-version: 6
+config-version: 7
 
 skill:
   # Ticks after a skill-fired bow arrow (パワーショット/マルチショット) lands before it's
@@ -160,3 +160,20 @@ monster-level-scaling:
   hp-factor: 1.12
   attack-factor: 1.10
   defense-factor: 1.08
+
+quest:
+  # How often (in ticks) each online player's COLLECT_ITEM / DELIVER_ITEM / REACH_LOCATION
+  # objectives are re-checked. 40 ticks = 2 seconds.
+  objective-check-period-ticks: 40
+
+dungeon:
+  # Relics (rpg.api.RelicApi#generateRelic) granted to each member when a bossed dungeon is
+  # cleared - boss-less dungeons never drop relics regardless of these values.
+  relic-drop-min: 1
+  relic-drop-max: 3
+
+party:
+  max-size: 6
+
+friend:
+  max-friends: 50

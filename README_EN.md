@@ -1,18 +1,18 @@
 <img src="https://orelia-mc.github.io/assets/logo_wide.jpg" />
 <h1 align="center">Orelia Core</h1>
-<p align="center">RPG Foundation Plugin of Orelia-MC</p>
+<p align="center">RPG Suite Plugin of Orelia-MC</p>
 
 ## About
 
-`orelia-core` is the foundation plugin (Paper 1.21.x / Java 21) of the Minecraft RPG plugin suite **Orelia**, providing combat, player, and status systems.
+`orelia-core` is the main plugin (Paper 1.21.x / Java 21) of the Minecraft RPG plugin suite **Orelia**. The former 3-repo split — orelia-core (combat/player/status foundation), orelia-world (content layer: quest, ...), and orelia-extra (social/economy layer: party, ...) — has been merged into this single plugin; this one repo now provides every feature.
 
 Orelia is split into the following plugins:
 
-- **orelia-core** (this repo) — Core, Item, Skill, Job, Status, Accessory, Relic, Monster, Boss, Effect, Economy, GUI, Gathering, Region, Town, Database, API, Util
-- [orelia-world](https://github.com/orelia-mc/orelia-world) — Quest, NPC, Dialogue, Story, Dungeon, Region, CutScene, Event
-- [orelia-extra](https://github.com/orelia-mc/orelia-extra) — later MMORPG features (Party, Guild, Trade, ...)
-- [orelia-debug](https://github.com/orelia-mc/orelia-debug) — admin-only testplay/debug tooling for orelia-core/world/extra
+- **orelia-core** (this repo) — Core, Item, Skill, Job, Status, Accessory, Relic, Monster, Boss, Effect, Economy, GUI, Gathering, Region, Town, Database, API, Util (formerly orelia-core), Quest, NPC, Dialogue, Story, Dungeon, CutScene, Event, PlayerInfo (formerly orelia-world), Party, Friend, Guild, Chat, Trade, Mail, Auction, Housing, Pet, Mount, Ranking, Achievement (formerly orelia-extra)
+- [orelia-debug](https://github.com/orelia-mc/orelia-debug) — admin-only testplay/debug tooling for orelia-core (remains a separate plugin)
 - [orelia-serverutil](https://github.com/orelia-mc/orelia-serverutil) — gameplay-independent server operations/UX plugin (hub transfer, scoreboard/tab-list API, join messages, ...)
+
+The former orelia-world/orelia-extra `rpg.world.api`/`rpg.extra.api` interfaces still exist as internal module-boundary facades and are still published via `ServicesManager` — `orelia-debug` depends on them at runtime. Modules within this repo, however, no longer need to worry about "is the other plugin loaded yet" - the whole suite boots as one plugin in a single deterministic order.
 
 ## Setup
 
@@ -24,7 +24,7 @@ Produces `build/libs/orelia-core-1.0.0.jar`. Requires network access to `repo.pa
 
 ## Structure
 
-- Public API — other plugins (including orelia-world/orelia-extra) integrate through `rpg.api`, published via Bukkit's `ServicesManager` — never through this plugin's internal module classes. See `rpg.api.OreliaApi` and the narrower `StatusApi`/`JobApi`/`ItemApi`/`AccessoryApi`/`SkillApi`/`GuiApi`/`EffectApi`/`CombatApi`/`RelicApi`/`TownApi` interfaces.
+- Public API — a genuinely separate plugin (e.g. orelia-debug) integrates through `rpg.api`/`rpg.world.api`/`rpg.extra.api`, published via Bukkit's `ServicesManager` — never through this plugin's internal module classes. See `rpg.api.OreliaApi` and the narrower `StatusApi`/`JobApi`/`ItemApi`/`AccessoryApi`/`SkillApi`/`GuiApi`/`EffectApi`/`CombatApi`/`RelicApi`/`TownApi`/`EconomyApi`/`DebugApi` interfaces, plus `rpg.world.api.QuestApi`/`WorldDebugApi` and `rpg.extra.api.GuildApi`/`PartyApi`/`AchievementApi`/`ExtraDebugApi`.
 - Config — every module reads its own file under `src/main/resources/` (`items.yml`, `skills.yml`, `jobs.yml`, `accessories.yml`, `relics.yml`, `monsters.yml`, `bosses.yml`, `effects.yml`, `gui.yml`, `crafting.yml`, `gathering.yml`, `fishing.yml`, `messages.yml`, `config.yml`). Reload all of them with `/oladmin reload`. Every file is tracked by a top-of-file `config-version`; newly added keys (including ones nested inside a section you already have) are automatically spliced into an existing file at the correct position on next startup (`rpg.core.config.ConfigMigrator`). Bump a file's `config-version` whenever you add a new top-level section or key.
 - Relics (rollable accessories) — unlike `accessories.yml`'s fully static items, a relic is generated on a dungeon boss kill (`rpg.api.RelicApi#generateRelic`, called from orelia-world) with a random part and one random main stat rolled from that part's `relics.yml` pool. Accessory slots expanded from 4 to 6 (charm/ring/necklace/wing/earring/belt). A relic already rolls `initial-substat-count-min`/`max` (3-4 by default) of its up to-4 substats at generation instead of starting blank, and grows via `/ol relic upgrade` (tab-completed) every 3 levels (max 15, 5 upgrades total) — up until all 4 lines are filled, the player freely picks between adding a new one or growing an existing one each time, then only growing once full (only the magnitude, from `relics.yml`'s `substat-upgrade-min`/`max`, is randomized), a deliberate departure from a pure-RNG artifact system. Wearing 2+ relics from the same source dungeon grants that dungeon's set bonus automatically (`relics.yml`'s `dungeon-set-bonuses`). Separately, `relics.yml`'s `shop-relics:` section defines fixed, already-max-level (but deliberately weaker) relics NPC shops can sell via a `RELIC` shop-entry kind (`npc.yml` shop-stock), and an NPC can open the upgrade GUI directly too (`npc.yml`'s `type: RELIC_UPGRADE`, `rpg.api.RelicApi#openUpgradeGui`).
 - Boss bars — spawning a boss shows a vanilla boss bar (HP progress) to any player within 7 blocks, reading the same scaled HP the nametag health bar already uses so the numbers always agree.
