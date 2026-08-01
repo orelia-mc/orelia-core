@@ -6,6 +6,7 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import rpg.core.message.MessageManager;
+import rpg.core.scheduler.SchedulerService;
 import rpg.status.config.LevelUpEffectConfig;
 import rpg.status.model.StatSheet;
 import rpg.status.model.StatType;
@@ -21,6 +22,13 @@ import java.util.UUID;
  * levels ({@link StatusService#addExperience}) and job/gathering levels
  * ({@code rpg.gathering.service.GatheringLevelService}) so both play the same effect and go
  * through {@code messages.yml} via {@link MessageManager} instead of hardcoded strings.
+ *
+ * <p>Character level-up staggers title -&gt; chat -&gt; stat-diff lines across a couple of
+ * short delays ({@code config.yml: status.level-up-effect.chat-delay-ticks}/
+ * {@code stat-delay-ticks}) instead of sending everything in the same tick, so the sequence
+ * reads as one connected moment rather than a wall of text appearing at once. Each delayed
+ * stage re-resolves {@code Bukkit.getPlayer(uuid)} via {@link #withPlayer}, so a player who
+ * logs out mid-sequence simply causes the remaining stages to no-op rather than throwing.
  */
 public final class LevelUpFeedbackService {
 
@@ -41,28 +49,42 @@ public final class LevelUpFeedbackService {
 
     private final MessageManager messageManager;
     private final LevelUpEffectConfig effectConfig;
+    private final SchedulerService schedulerService;
 
-    public LevelUpFeedbackService(MessageManager messageManager, LevelUpEffectConfig effectConfig) {
+    public LevelUpFeedbackService(MessageManager messageManager, LevelUpEffectConfig effectConfig,
+                                   SchedulerService schedulerService) {
         this.messageManager = messageManager;
         this.effectConfig = effectConfig;
+        this.schedulerService = schedulerService;
     }
 
-    /** Character level-up: title/sound/particle plus a chat line per stat that grew. */
+    /**
+     * Character level-up: title/sound/particle immediately, then the "レベルが上がりました"
+     * chat line after {@code chat-delay-ticks}, then the per-stat diff lines after a further
+     * {@code stat-delay-ticks} - one connected sequence instead of everything landing at once.
+     */
     public void announceCharacterLevelUp(UUID uuid, int newLevel, StatSheet oldStats, StatSheet newStats) {
         withPlayer(uuid, player -> {
             playEffects(player);
             showTitle(player, newLevel);
-            messageManager.send(player, "status.level-up-chat", "level", newLevel);
-            for (StatType type : StatType.values()) {
-                double diff = newStats.get(type) - oldStats.get(type);
-                if (diff <= DIFF_EPSILON) {
-                    continue;
-                }
-                String label = STAT_LABELS.getOrDefault(type, type.name());
-                player.sendMessage(ColorUtil.component(
-                        messageManager.format("status.level-up-stat-line", "stat", label, "value", formatDiff(diff))));
-            }
+            schedulerService.runLater(() -> withPlayer(uuid, chatPlayer -> {
+                messageManager.send(chatPlayer, "status.level-up-chat", "level", newLevel);
+                schedulerService.runLater(() -> withPlayer(uuid, statPlayer -> sendStatLines(statPlayer, oldStats, newStats)),
+                        effectConfig.getStatDelayTicks());
+            }), effectConfig.getChatDelayTicks());
         });
+    }
+
+    private void sendStatLines(Player player, StatSheet oldStats, StatSheet newStats) {
+        for (StatType type : StatType.values()) {
+            double diff = newStats.get(type) - oldStats.get(type);
+            if (diff <= DIFF_EPSILON) {
+                continue;
+            }
+            String label = STAT_LABELS.getOrDefault(type, type.name());
+            player.sendMessage(ColorUtil.component(
+                    messageManager.format("status.level-up-stat-line", "stat", label, "value", formatDiff(diff))));
+        }
     }
 
     /** Job/gathering level-up: same title/sound/particle, caller supplies its own chat message key. */

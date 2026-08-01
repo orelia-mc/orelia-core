@@ -112,15 +112,25 @@ public final class ActionBarService {
     }
 
     private static final int EXP_BAR_LENGTH = 10;
+    private static final String EXP_BAR_FILLED_COLOR = "&%e";
+    private static final String EXP_BAR_EMPTY_COLOR = "&%8";
 
-    /** {@code "[██████░░░░] 1234/3000"}, or {@code "MAX"} once the player is at the level cap. */
+    /**
+     * {@code "[<filled &m spaces><empty &m spaces>] 1234/3000"} using the same strikethrough
+     * (`&m` + spaces) trick as {@code rpg.monster.service.MonsterHealthBarRenderer} - block
+     * characters read poorly in the compact action-bar font, a colored strikethrough line reads
+     * cleanly at any size. Returns {@code "MAX"} once the player is at the level cap.
+     */
     private String expBar(int level, long experience) {
         if (level >= statusService.getMaxLevel()) {
             return "MAX";
         }
         long required = statusService.requiredExperience(level);
         double ratio = required > 0 ? MathUtil.clamp((double) experience / required, 0, 1) : 0;
-        int filled = (int) Math.round(ratio * EXP_BAR_LENGTH);
-        return "[" + "█".repeat(filled) + "░".repeat(EXP_BAR_LENGTH - filled) + "] " + experience + "/" + required;
+        int filled = MathUtil.clamp((int) Math.round(ratio * EXP_BAR_LENGTH), 0, EXP_BAR_LENGTH);
+        int empty = EXP_BAR_LENGTH - filled;
+        String bar = EXP_BAR_FILLED_COLOR + "&m" + " ".repeat(filled) + "&r"
+                + EXP_BAR_EMPTY_COLOR + "&m" + " ".repeat(empty) + "&r";
+        return "[" + bar + "] " + experience + "/" + required;
     }
 }

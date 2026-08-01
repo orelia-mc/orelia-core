@@ -38,4 +38,20 @@ class MonsterLevelScalingConfigTest {
         assertEquals(0.0, config.scaledAttackPower(10.0, -1000), DELTA);
         assertEquals(0.0, config.scaledDefense(5.0, -1000), DELTA);
     }
+
+    @Test
+    void targetLevelBonusMultipliesTheSharedGrowthRate() {
+        MonsterLevelScalingConfig withBonus = new MonsterLevelScalingConfig(1.1, 1.2, 1.05, 1.02, 1.01, 1.005);
+        assertEquals(50.0 * Math.pow(1.1 * 1.02, 9), withBonus.scaledHp(50.0, 10), DELTA);
+        assertEquals(10.0 * Math.pow(1.2 * 1.01, 9), withBonus.scaledAttackPower(10.0, 10), DELTA);
+        assertEquals(5.0 * Math.pow(1.05 * 1.005, 9), withBonus.scaledDefense(5.0, 10), DELTA);
+    }
+
+    @Test
+    void targetLevelBonusNeverAppliesWithoutATargetLevel() {
+        MonsterLevelScalingConfig withBonus = new MonsterLevelScalingConfig(1.1, 1.2, 1.05, 1.02, 1.01, 1.005);
+        assertEquals(50.0, withBonus.scaledHp(50.0, null), DELTA);
+        assertEquals(10.0, withBonus.scaledAttackPower(10.0, null), DELTA);
+        assertEquals(5.0, withBonus.scaledDefense(5.0, null), DELTA);
+    }
 }
