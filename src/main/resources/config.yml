@@ -94,7 +94,13 @@ combat:
     # high-difficulty boss, far past what's safe to put directly into vanilla's MAX_HEALTH
     # attribute - their vanilla health is capped to this instead and kept proportional to the
     # real value (same idea as players staying at ~20 hearts regardless of their real HP pool).
-    vanilla-cap: 1024
+    # Kept small (matching the player's fixed 20) rather than large: ScaledHealthService converts
+    # a scaled hit into "the same percentage of vanilla-cap", so a bigger cap means each hit
+    # swings the monster's vanilla health by a bigger absolute amount - which is what drove
+    # the exaggerated vanilla hurt-flash/heart-shake effect on high-level monsters at the old
+    # default of 1024. Death/kill logic itself is unaffected (still driven by scaled HP hitting
+    # 0), only the vanilla-side visual swing per hit shrinks.
+    vanilla-cap: 20
   damage-display:
     enabled: true
     duration-ticks: 20

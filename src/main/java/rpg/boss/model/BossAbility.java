@@ -43,6 +43,7 @@ public final class BossAbility {
         return type;
     }
 
+    /** Multiplier on this boss's own (level-scaled) attack power - see {@code rpg.boss.service.BossAbilityCastService#abilityDamage}. */
     public double getDamage() {
         return damage;
     }

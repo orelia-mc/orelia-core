@@ -47,5 +47,8 @@ Orelia は以下のプラグイン群で構成されています。
 - キャラクター成長の指数関数化(`config.yml: status.growth` / `stat-scaling.growth-rate`) — HP/SP/ATK/DEFは`scaled = base * growthRate^(level-1)`の指数成長になり、モンスターのレベルスケーリング(`stat-scaling.growth-rate.HP/ATK/DEF`)と同じ値を共有します(同じレベルのモンスターとプレイヤーが同じ倍率で伸びる設計)。CRT/CRT_DMG/SPDは従来通り`base + per-level`の線形成長のままです。レベル上限のデフォルトは100→80に変更(データ上は300まで対応)。桁が大きくなるため、モンスターの名札HPバー表示も`int`から`long`に変更しています。
 - レベルアップ演出の統一(`rpg.status.service.LevelUpFeedbackService`) — キャラクターレベルアップ時にタイトル・サウンド・パーティクル(`config.yml: status.level-up-effect`で設定、無効なSound/Particle名は黙ってスキップ)に加え、伸びたステータスだけをチャットに一覧表示します。職業/採取レベルのレベルアップ(`GatheringLevelService`)も同じサービス経由になり、演出が統一されました。
 - 経験値の常時可視化 — アクションバー(`config.yml: action-bar.format`の`{level}`/`{exp_bar}`)に現在レベルと次レベルまでの進捗バーを常時表示。ステータスGUI(`/ol status`)の頭アイコンのloreにも経験値(現在値/必要値、上限到達時は`MAX`)を表示します。
+- 職業変更GUIのページング(`/ol job`相当) — 職業数が7を超えると、共通ページングフレームワーク(`GuiPaginator`/`GuiPageLayout`)で2ページ目に自動で振り分けられます。以前は境界チェックが画面全体の末尾しか無く、8種目以降が本来空けるべきスロットに侵食していました。
+- モンスター/ボスのアビリティ攻撃(AOE_SLAM/FIREBALL_BARRAGE)がscaledステータス計算を正しく経由するようになりました — 以前はdamagerなしの`player.damage(amount)`を直接呼んでいたため、`monsters.yml`/`bosses.yml`の`damage:`固定値がDEF軽減もscaled→vanilla変換も一切経ずにプレイヤーのバニラ体力から直接引かれていました。`damage:`は今後「そのモンスター/ボス自身の(レベルスケール済み)攻撃力に対する倍率」として扱われ、通常攻撃と同じDEF/crit/属性弱点パイプラインを通ります。
+- モンスターを殴った際のバニラ被ダメージ演出(赤黒いハートエフェクト)が過剰だった問題を緩和 — `config.yml: combat.scaled-health.vanilla-cap`のデフォルトを1024→20に変更しました。モンスターの体力表示自体は名札(scaled値を直接参照)が担っており、vanilla側のMAX_HEALTH属性値はゲームプレイ上見えない内部値のため、器を小さくしても体力バーの精度・即死判定には影響しません。
 - 戦闘ダメージ計算式の詳細は [DAMAGE_FORMULA.md](DAMAGE_FORMULA.md) を参照してください。
 - orelia-core/world/extra 3リポジトリを横断した未実装機能一覧は [UNIMPLEMENTED_FEATURES.md](UNIMPLEMENTED_FEATURES.md) を参照してください。

@@ -5,6 +5,9 @@
 #
 # abilities.type: AOE_SLAM (instant radius damage burst) | FIREBALL_BARRAGE (fires a
 # SmallFireball at every nearby player, entity-damage-only impact, no block damage).
+# damage is a MULTIPLIER on the underlying monster's own (level-scaled) attack-power, not an
+# absolute amount - e.g. damage: 1.2 hits for 1.2x this boss's current scaled attack power.
+# See monsters.yml's abilities comment for why (DEF/crit/weakness pipeline + level scaling).
 # particle must be a valid org.bukkit.Particle name, sound a valid org.bukkit.Sound name.
 # At most one due ability fires per boss per tick (checked every second), oldest-cooldown
 # first in the order they're listed.
@@ -38,7 +41,7 @@ bosses:
       meteor_slam:
         name: "業火の一撃"
         type: AOE_SLAM
-        damage: 18
+        damage: 1.2
         radius: 6
         cooldown-seconds: 12
         particle: FLAME
@@ -47,7 +50,7 @@ bosses:
       fire_barrage:
         name: "火炎弾幕"
         type: FIREBALL_BARRAGE
-        damage: 10
+        damage: 0.67
         radius: 3
         cooldown-seconds: 8
         sound: ENTITY_BLAZE_SHOOT
@@ -68,7 +71,7 @@ bosses:
       root_slam:
         name: "根の一撃"
         type: AOE_SLAM
-        damage: 16
+        damage: 1.15
         radius: 5
         cooldown-seconds: 10
         particle: BLOCK_CRACK
@@ -90,7 +93,7 @@ bosses:
       void_barrage:
         name: "虚無弾幕"
         type: FIREBALL_BARRAGE
-        damage: 12
+        damage: 0.75
         radius: 3
         cooldown-seconds: 9
         sound: ENTITY_WITHER_SHOOT
@@ -111,7 +114,7 @@ bosses:
       venom_slam:
         name: "毒撃"
         type: AOE_SLAM
-        damage: 13
+        damage: 1.0
         radius: 4
         cooldown-seconds: 10
         particle: WITCH

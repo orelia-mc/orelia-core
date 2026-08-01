@@ -42,6 +42,7 @@ public final class MonsterAbility {
         return type;
     }
 
+    /** Multiplier on this monster's own (level-scaled) attack power - see {@code rpg.monster.service.MonsterAbilityCastService#abilityDamage}. */
     public double getDamage() {
         return damage;
     }
