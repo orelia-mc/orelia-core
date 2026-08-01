@@ -118,6 +118,9 @@ public final class GatheringModule implements RpgModule {
 
     @Override
     public void onDisable() {
+        if (regenService != null) {
+            regenService.stop();
+        }
     }
 
     @Override

@@ -15,6 +15,7 @@ public final class DatabaseManager {
 
     private final DatabaseType type;
     private final ConnectionProvider connectionProvider;
+    private volatile boolean shuttingDown;
 
     public DatabaseManager(DatabaseType type, ConnectionProvider connectionProvider) {
         this.type = type;
@@ -29,7 +30,18 @@ public final class DatabaseManager {
         return type;
     }
 
+    /**
+     * Whether {@link #shutdown()} has been called. A background async task (e.g.
+     * {@code BlockRegenService}'s regen tick) that raced the plugin's disable sequence and
+     * lost can check this to tell "the connection closed out from under me because the
+     * server is stopping" apart from a genuine database error.
+     */
+    public boolean isShuttingDown() {
+        return shuttingDown;
+    }
+
     public void shutdown() {
+        shuttingDown = true;
         connectionProvider.close();
     }
 }
