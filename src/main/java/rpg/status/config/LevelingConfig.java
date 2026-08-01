@@ -9,11 +9,11 @@ import org.bukkit.configuration.file.YamlConfiguration;
 public final class LevelingConfig {
 
     private long expPerLevel = 100;
-    private int maxLevel = 100;
+    private int maxLevel = 80;
 
     public void load(YamlConfiguration config) {
         this.expPerLevel = config.getLong("status.leveling.exp-per-level", 100);
-        this.maxLevel = config.getInt("status.leveling.max-level", 100);
+        this.maxLevel = config.getInt("status.leveling.max-level", 80);
     }
 
     /** Total experience required to advance from {@code level} to {@code level + 1}. */

@@ -1,7 +1,7 @@
 # Centralized user-facing text. Every chat message the plugin sends goes through
 # rpg.core.message.MessageManager, keyed by the dotted paths below - do not hardcode
 # ChatColor + literal strings in command/listener/service code, add a key here instead.
-config-version: 6
+config-version: 7
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -25,6 +25,12 @@ item:
   weapon-leveled-up: "&%a武器のレベルが{level}になりました！"
   weapon-level-capped: "&%cこれ以上武器のレベルを上げるには、プレイヤーレベルが足りません。"
   armor-banned: "&%cこのサーバーでは防具の装備を禁止しています。防御力はステータスのDEFで決まります。"
+
+status:
+  level-up-title: "&%eレベルアップ！"
+  level-up-subtitle: "&%aLv.{level}"
+  level-up-chat: "&%aレベルが{level}に上がりました！"
+  level-up-stat-line: "&%7  {stat} &%f+{value}"
 
 job:
   not-chosen: "&%e職業がまだ選択されていません。ギルドで職業を選びましょう。"
@@ -100,6 +106,7 @@ gathering:
   usage: "&%e使い方: /{label} resetregen confirm"
   resetregen-confirm: "&%e全ワールドの再生成待ちタスクを取り消します（プレイヤーの建築には影響しません）。実行するには /{label} resetregen confirm"
   resetregen-done: "&%a再生成待ちタスクを{regen}件取り消しました。"
+  level-up: "&%a{job}のレベルが{level}に上がりました"
 
 relic:
   usage: "&%e使い方: /ol relic upgrade"

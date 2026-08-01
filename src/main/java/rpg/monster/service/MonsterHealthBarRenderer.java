@@ -28,7 +28,7 @@ public final class MonsterHealthBarRenderer {
         return format
                 .replace("{name}", name)
                 .replace("{bar}", bar)
-                .replace("{current}", String.valueOf((int) Math.ceil(Math.max(0, currentHp))))
-                .replace("{max}", String.valueOf((int) Math.ceil(maxHp)));
+                .replace("{current}", String.valueOf((long) Math.ceil(Math.max(0, currentHp))))
+                .replace("{max}", String.valueOf((long) Math.ceil(maxHp)));
     }
 }

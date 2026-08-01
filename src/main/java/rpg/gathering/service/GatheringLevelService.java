@@ -1,16 +1,12 @@
 package rpg.gathering.service;
 
-import org.bukkit.Bukkit;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Sound;
-import org.bukkit.entity.Player;
 import rpg.core.player.PlayerDataManager;
 import rpg.gathering.config.GatheringLevelingConfig;
 import rpg.gathering.model.GatherActionType;
 import rpg.gathering.model.PlayerGatheringComponent;
 import rpg.job.manager.JobManager;
 import rpg.job.model.Job;
+import rpg.status.service.LevelUpFeedbackService;
 
 import java.util.UUID;
 
@@ -29,12 +25,14 @@ public final class GatheringLevelService {
     private final PlayerDataManager playerDataManager;
     private final GatheringLevelingConfig levelingConfig;
     private final JobManager jobManager;
+    private final LevelUpFeedbackService levelUpFeedbackService;
 
     public GatheringLevelService(PlayerDataManager playerDataManager, GatheringLevelingConfig levelingConfig,
-                                  JobManager jobManager) {
+                                  JobManager jobManager, LevelUpFeedbackService levelUpFeedbackService) {
         this.playerDataManager = playerDataManager;
         this.levelingConfig = levelingConfig;
         this.jobManager = jobManager;
+        this.levelUpFeedbackService = levelUpFeedbackService;
     }
 
     /** Adds experience to the player's level for {@code activity}, applying every level-up earned. */
@@ -63,15 +61,10 @@ public final class GatheringLevelService {
         });
     }
 
-    /** Plays a level-up sound and notifies the player privately of their new job level. */
+    /** Plays the shared level-up title/sound/particle and notifies the player of their new job level. */
     private void announceLevelUp(UUID uuid, GatherActionType activity, int newLevel) {
-        Player player = Bukkit.getPlayer(uuid);
-        if (player == null) {
-            return;
-        }
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
         String jobName = jobManager.getDefinition(activity.jobType()).map(Job::getDisplayName).orElse(NO_JOB_LABEL);
-        player.sendMessage(Component.text(player.getName() + ":" + jobName + "のレベルが" + newLevel + "に上がりました", NamedTextColor.GREEN));
+        levelUpFeedbackService.announceJobLevelUp(uuid, jobName, newLevel);
     }
 
     public int getLevel(UUID uuid, GatherActionType activity) {

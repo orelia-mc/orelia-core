@@ -26,6 +26,7 @@ import rpg.gathering.service.RegenExclusionService;
 import rpg.gathering.service.RegionProtectionService;
 import rpg.job.JobModule;
 import rpg.region.RegionModule;
+import rpg.status.StatusModule;
 
 import java.util.logging.Level;
 
@@ -62,6 +63,8 @@ public final class GatheringModule implements RpgModule {
                 .orElseThrow(() -> new IllegalStateException("gathering module requires job module"));
         RegionModule regionModule = plugin.getModuleManager().get(RegionModule.class)
                 .orElseThrow(() -> new IllegalStateException("gathering module requires region module"));
+        StatusModule statusModule = plugin.getModuleManager().get(StatusModule.class)
+                .orElseThrow(() -> new IllegalStateException("gathering module requires status module"));
 
         this.definitions = new GatheringDefinitionRepository(plugin.getLogger());
         this.levelingConfig = new GatheringLevelingConfig();
@@ -85,7 +88,7 @@ public final class GatheringModule implements RpgModule {
         plugin.getPlayerDataManager().registerLoader(gatheringManager);
 
         this.levelService = new GatheringLevelService(plugin.getPlayerDataManager(), levelingConfig,
-                jobModule.getJobManager());
+                jobModule.getJobManager(), statusModule.getLevelUpFeedbackService());
 
         RegenExclusionService exclusionService = new RegenExclusionService(regionModule.getQueryService(),
                 regenExclusionConfig);
