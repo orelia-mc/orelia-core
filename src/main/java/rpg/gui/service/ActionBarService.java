@@ -114,6 +114,7 @@ public final class ActionBarService {
     private static final int EXP_BAR_LENGTH = 10;
     private static final String EXP_BAR_FILLED_COLOR = "&%e";
     private static final String EXP_BAR_EMPTY_COLOR = "&%8";
+    private static final String EXP_BAR_TEXT_COLOR = "&%f";
 
     /**
      * {@code "[<filled &m spaces><empty &m spaces>] 1234/3000"} using the same strikethrough
@@ -131,6 +132,9 @@ public final class ActionBarService {
         int empty = EXP_BAR_LENGTH - filled;
         String bar = EXP_BAR_FILLED_COLOR + "&m" + " ".repeat(filled) + "&r"
                 + EXP_BAR_EMPTY_COLOR + "&m" + " ".repeat(empty) + "&r";
-        return "[" + bar + "] " + experience + "/" + required;
+        // The trailing &r above resets all formatting - without an explicit color here, "]" and
+        // the number after it fall back to plain white/default instead of matching the rest of
+        // the HUD line's palette.
+        return EXP_BAR_TEXT_COLOR + "[" + bar + EXP_BAR_TEXT_COLOR + "] " + experience + "/" + required;
     }
 }

@@ -41,7 +41,6 @@ weapons:
     attack-power: 4.0
     element: NONE
     crit-rate: 5.0
-    crit-multiplier: 1.5
     required-job: FENCER
     required-level: 1
     description:
@@ -58,7 +57,6 @@ weapons:
     attack-power: 22.0
     element: FIRE
     crit-rate: 10.0
-    crit-multiplier: 1.8
     required-job: FENCER
     required-level: 10
     description:
@@ -75,7 +73,6 @@ weapons:
     attack-power: 8.0
     element: NONE
     crit-rate: 6.0
-    crit-multiplier: 1.5
     required-job: FENCER
     required-level: 3
     description:
@@ -92,7 +89,6 @@ weapons:
     attack-power: 48.0
     element: DARK
     crit-rate: 18.0
-    crit-multiplier: 2.2
     required-job: FENCER
     required-level: 20
     description:
@@ -109,7 +105,6 @@ weapons:
     attack-power: 12.0
     element: NONE
     crit-rate: 8.0
-    crit-multiplier: 1.6
     # No job currently has SPEAR in allowed-weapons (jobs.yml), so this weapon can't
     # deal weapon damage for any job right now regardless of required-job.
     required-job:
@@ -128,7 +123,6 @@ weapons:
     attack-power: 34.0
     element: WATER
     crit-rate: 12.0
-    crit-multiplier: 1.9
     # No job currently has SPEAR in allowed-weapons (jobs.yml), same limitation as hunters_spear.
     required-job:
     required-level: 15
@@ -146,7 +140,6 @@ weapons:
     attack-power: 11.0
     element: NONE
     crit-rate: 5.0
-    crit-multiplier: 1.6
     required-job: WARRIOR
     required-level: 4
     description:
@@ -163,7 +156,6 @@ weapons:
     attack-power: 26.0
     element: NONE
     crit-rate: 6.0
-    crit-multiplier: 2.0
     required-job: WARRIOR
     required-level: 8
     description:
@@ -180,7 +172,6 @@ weapons:
     attack-power: 14.0
     element: WIND
     crit-rate: 15.0
-    crit-multiplier: 1.7
     required-job: ARCHER
     required-level: 6
     description:
@@ -197,7 +188,6 @@ weapons:
     attack-power: 4.0
     element: NONE
     crit-rate: 5.0
-    crit-multiplier: 1.5
     required-job: MINER
     required-level: 1
     description:
@@ -220,7 +210,6 @@ weapons:
     attack-power: 10.0
     element: NONE
     crit-rate: 6.0
-    crit-multiplier: 1.6
     required-job: MINER
     required-level: 10
     description:
@@ -239,7 +228,6 @@ weapons:
     attack-power: 18.0
     element: NONE
     crit-rate: 8.0
-    crit-multiplier: 1.8
     required-job: MINER
     required-level: 25
     description:
@@ -258,7 +246,6 @@ weapons:
     attack-power: 4.0
     element: NONE
     crit-rate: 5.0
-    crit-multiplier: 1.5
     required-job: FARMER
     required-level: 1
     description:
@@ -275,7 +262,6 @@ weapons:
     attack-power: 4.0
     element: NONE
     crit-rate: 5.0
-    crit-multiplier: 1.5
     required-job: WOODCUTTER
     required-level: 1
     description:
@@ -294,7 +280,6 @@ weapons:
     attack-power: 10.0
     element: NONE
     crit-rate: 6.0
-    crit-multiplier: 1.6
     required-job: WOODCUTTER
     required-level: 10
     description:
@@ -313,7 +298,6 @@ weapons:
     attack-power: 18.0
     element: NONE
     crit-rate: 8.0
-    crit-multiplier: 1.8
     required-job: WOODCUTTER
     required-level: 25
     description:
@@ -332,7 +316,6 @@ weapons:
     attack-power: 4.0
     element: WATER
     crit-rate: 5.0
-    crit-multiplier: 1.5
     required-job: MAGE
     required-level: 1
     description:

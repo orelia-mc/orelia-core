@@ -43,6 +43,12 @@ public final class LevelUpFeedbackService {
         STAT_LABELS.put(StatType.CRT, "会心率");
         STAT_LABELS.put(StatType.CRT_DMG, "会心ダメージ");
         STAT_LABELS.put(StatType.SP_RECOVERY, "SP回復効率");
+        STAT_LABELS.put(StatType.FIRE_DMG, "火属性ダメージ");
+        STAT_LABELS.put(StatType.WATER_DMG, "水属性ダメージ");
+        STAT_LABELS.put(StatType.EARTH_DMG, "土属性ダメージ");
+        STAT_LABELS.put(StatType.WIND_DMG, "風属性ダメージ");
+        STAT_LABELS.put(StatType.LIGHT_DMG, "光属性ダメージ");
+        STAT_LABELS.put(StatType.DARK_DMG, "闇属性ダメージ");
     }
 
     private static final double DIFF_EPSILON = 1e-6;
