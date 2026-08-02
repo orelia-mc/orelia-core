@@ -135,6 +135,6 @@ public final class ActionBarService {
         // The trailing &r above resets all formatting - without an explicit color here, "]" and
         // the number after it fall back to plain white/default instead of matching the rest of
         // the HUD line's palette.
-        return EXP_BAR_TEXT_COLOR + "[" + bar + EXP_BAR_TEXT_COLOR + "] " + experience + "/" + required;
+        return EXP_BAR_TEXT_COLOR + "&%7[" + bar + EXP_BAR_TEXT_COLOR + "&%7] &%e" + experience + "&%7/&%e" + required;
     }
 }
