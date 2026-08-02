@@ -7,7 +7,6 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import rpg.core.message.MessageManager;
 import rpg.core.scheduler.SchedulerService;
-import rpg.gui.service.ActionBarService;
 import rpg.status.config.LevelUpEffectConfig;
 import rpg.status.model.StatSheet;
 import rpg.status.model.StatType;
@@ -53,27 +52,16 @@ public final class LevelUpFeedbackService {
     }
 
     private static final double DIFF_EPSILON = 1e-6;
-    private static final long STAT_LINE_ACTION_BAR_DURATION_MILLIS = 4000L;
 
     private final MessageManager messageManager;
     private final LevelUpEffectConfig effectConfig;
     private final SchedulerService schedulerService;
-    private ActionBarService actionBarService;
 
     public LevelUpFeedbackService(MessageManager messageManager, LevelUpEffectConfig effectConfig,
                                    SchedulerService schedulerService) {
         this.messageManager = messageManager;
         this.effectConfig = effectConfig;
         this.schedulerService = schedulerService;
-    }
-
-    /**
-     * Wired in from {@code GuiModule.onEnable} rather than the constructor, since
-     * {@code ActionBarService} doesn't exist until the gui module enables (Status registers
-     * before Gui) - same pattern as {@code BossAbilityCastService}.
-     */
-    public void setActionBarService(ActionBarService actionBarService) {
-        this.actionBarService = actionBarService;
     }
 
     /**
@@ -94,28 +82,21 @@ public final class LevelUpFeedbackService {
     }
 
     /**
-     * Every raised stat used to be its own chat line (up to a dozen for a big level-up gap) -
-     * now collapsed into a single action-bar line so a level-up doesn't bury the chat scroll.
-     * No-ops if the gui module hasn't wired {@link ActionBarService} in yet.
+     * One chat line per raised stat. Tried collapsing this into a single action-bar line
+     * instead, but the action bar can't wrap/break onto multiple lines - a level-up with
+     * several raised stats just ran the whole summary together illegibly, so this stays in
+     * chat (level-ups are rare enough that this doesn't repeat the "floods chat" problem the
+     * boss/skill announcements had).
      */
     private void sendStatLines(Player player, StatSheet oldStats, StatSheet newStats) {
-        if (actionBarService == null) {
-            return;
-        }
-        StringBuilder summary = new StringBuilder();
         for (StatType type : StatType.values()) {
             double diff = newStats.get(type) - oldStats.get(type);
             if (diff <= DIFF_EPSILON) {
                 continue;
             }
             String label = STAT_LABELS.getOrDefault(type, type.name());
-            if (summary.length() > 0) {
-                summary.append(" &%7/ ");
-            }
-            summary.append(messageManager.format("status.level-up-stat-line", "stat", label, "value", formatDiff(diff)));
-        }
-        if (summary.length() > 0) {
-            actionBarService.showTransient(player, summary.toString(), STAT_LINE_ACTION_BAR_DURATION_MILLIS);
+            player.sendMessage(ColorUtil.component(
+                    messageManager.format("status.level-up-stat-line", "stat", label, "value", formatDiff(diff))));
         }
     }
 
