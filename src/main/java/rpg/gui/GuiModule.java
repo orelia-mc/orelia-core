@@ -101,7 +101,6 @@ public final class GuiModule implements RpgModule {
         // its own constructor - wire it in here once it exists, same pattern as
         // SkillActivationListener below.
         bossModule.getAbilityCastService().setActionBarService(actionBarService);
-        statusModule.getLevelUpFeedbackService().setActionBarService(actionBarService);
         reloadActionBarConfig();
         YamlConfiguration coreConfig = plugin.getConfigManager().get("config.yml").get();
         long actionBarPeriodTicks = coreConfig.getLong("action-bar.period-ticks", 20L);
