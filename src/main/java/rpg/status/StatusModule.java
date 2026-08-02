@@ -64,6 +64,7 @@ public final class StatusModule implements RpgModule {
 
         StatusManager statusManager = new StatusManager(repository);
         plugin.getPlayerDataManager().registerLoader(statusManager);
+        plugin.getPlayerDataManager().registerNameSyncListener(repository::syncName);
 
         StatusCalculatorService calculatorService = new StatusCalculatorService();
         this.statusService = new StatusService(plugin.getPlayerDataManager(), calculatorService, levelGrowthService, levelingConfig, repository, levelUpFeedbackService);

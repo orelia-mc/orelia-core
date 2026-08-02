@@ -1,6 +1,7 @@
 package rpg.gui;
 
 import rpg.accessory.AccessoryModule;
+import rpg.boss.BossModule;
 import rpg.core.OreliaPlugin;
 import rpg.core.command.CommandAliasUtil;
 import rpg.core.module.RpgModule;
@@ -70,6 +71,7 @@ public final class GuiModule implements RpgModule {
         SkillModule skillModule = require(plugin, SkillModule.class);
         AccessoryModule accessoryModule = require(plugin, AccessoryModule.class);
         EconomyModule economyModule = require(plugin, EconomyModule.class);
+        BossModule bossModule = require(plugin, BossModule.class);
 
         this.guiManager = new GuiManager();
         this.statusGuiScreen = new StatusGuiScreen(statusModule.getStatusService(), guiConfig,
@@ -95,6 +97,11 @@ public final class GuiModule implements RpgModule {
         this.warehouseGuiScreen = new WarehouseGuiScreen(warehouseRepository, guiConfig);
 
         this.actionBarService = new ActionBarService(statusModule.getStatusService(), itemModule.getItemManager().getIdentityService());
+        // Boss registers before Gui, so BossAbilityCastService can't take ActionBarService in
+        // its own constructor - wire it in here once it exists, same pattern as
+        // SkillActivationListener below.
+        bossModule.getAbilityCastService().setActionBarService(actionBarService);
+        statusModule.getLevelUpFeedbackService().setActionBarService(actionBarService);
         reloadActionBarConfig();
         YamlConfiguration coreConfig = plugin.getConfigManager().get("config.yml").get();
         long actionBarPeriodTicks = coreConfig.getLong("action-bar.period-ticks", 20L);

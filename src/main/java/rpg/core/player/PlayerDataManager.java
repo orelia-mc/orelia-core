@@ -22,6 +22,7 @@ public final class PlayerDataManager {
     private final SchedulerService scheduler;
     private final Map<UUID, PlayerData> online = new ConcurrentHashMap<>();
     private final List<PlayerDataComponentLoader<?>> loaders = new ArrayList<>();
+    private final List<PlayerNameSyncListener> nameSyncListeners = new ArrayList<>();
 
     public PlayerDataManager(Logger logger, SchedulerService scheduler) {
         this.logger = logger;
@@ -33,6 +34,15 @@ public final class PlayerDataManager {
     }
 
     /**
+     * Registers a listener notified with (uuid, name) as soon as a player's name is known
+     * on join - lets a module (e.g. status leaderboard) persist a name against its own table
+     * without {@link PlayerDataComponentLoader#save} needing to carry one.
+     */
+    public void registerNameSyncListener(PlayerNameSyncListener listener) {
+        nameSyncListeners.add(listener);
+    }
+
+    /**
      * Loads every registered component for the given player off the main thread, then
      * invokes {@code onLoaded} back on the main thread once the data is cached.
      */
@@ -41,6 +51,13 @@ public final class PlayerDataManager {
             PlayerData data = new PlayerData(uuid, name);
             for (PlayerDataComponentLoader<?> loader : loaders) {
                 attachLoaded(data, loader, uuid);
+            }
+            for (PlayerNameSyncListener listener : nameSyncListeners) {
+                try {
+                    listener.onNameKnown(uuid, name);
+                } catch (Exception e) {
+                    logger.log(Level.SEVERE, "Failed to sync name for " + uuid, e);
+                }
             }
             online.put(uuid, data);
             scheduler.runSync(onLoaded);
