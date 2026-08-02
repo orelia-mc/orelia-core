@@ -12,10 +12,10 @@ import org.bukkit.util.Vector;
 import rpg.boss.model.BossAbility;
 import rpg.boss.model.BossData;
 import rpg.boss.repository.BossRepository;
+import rpg.gui.service.ActionBarService;
 import rpg.monster.model.MonsterData;
 import rpg.monster.service.MonsterSpawnService;
 import rpg.status.combat.DamageFormula;
-import rpg.util.ColorUtil;
 
 import java.util.Optional;
 
@@ -39,17 +39,29 @@ public final class BossAbilityCastService {
     public static final String FIREBALL_METADATA = "orelia_boss_ability_fireball";
 
     private static final double AGGRO_RANGE = 24.0;
+    private static final long ANNOUNCE_ACTION_BAR_DURATION_MILLIS = 2500L;
 
     private final Plugin plugin;
     private final MonsterSpawnService monsterSpawnService;
     private final BossRepository bossRepository;
     private final Map<UUID, LivingEntity> activeBosses = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, Long>> lastCastAtMillis = new ConcurrentHashMap<>();
+    private ActionBarService actionBarService;
 
     public BossAbilityCastService(Plugin plugin, MonsterSpawnService monsterSpawnService, BossRepository bossRepository) {
         this.plugin = plugin;
         this.monsterSpawnService = monsterSpawnService;
         this.bossRepository = bossRepository;
+    }
+
+    /**
+     * Wired in from {@code GuiModule.onEnable} rather than the constructor, since
+     * {@code ActionBarService} doesn't exist until the gui module enables (Boss registers
+     * before Gui) - same reason {@code SkillActivationListener} is registered from GuiModule
+     * instead of SkillModule.
+     */
+    public void setActionBarService(ActionBarService actionBarService) {
+        this.actionBarService = actionBarService;
     }
 
     public void register(LivingEntity entity) {
@@ -95,8 +107,13 @@ public final class BossAbilityCastService {
 
     private void cast(LivingEntity boss, BossAbility ability, Collection<Player> nearby) {
         if (ability.getAnnounceMessage() != null && !ability.getAnnounceMessage().isBlank()) {
-            String message = ColorUtil.colorize(ability.getAnnounceMessage());
-            nearby.forEach(player -> player.sendMessage(message));
+            // Ability casts happen too often (once per cooldown, per boss) to keep spamming
+            // chat - routed through the action-bar HUD instead so it doesn't bury player chat
+            // mid-fight. No-ops if the gui module hasn't wired ActionBarService in yet.
+            if (actionBarService != null) {
+                String message = ability.getAnnounceMessage();
+                nearby.forEach(player -> actionBarService.showTransient(player, message, ANNOUNCE_ACTION_BAR_DURATION_MILLIS));
+            }
         }
         switch (ability.getType()) {
             case AOE_SLAM -> castAoeSlam(boss, ability, nearby);

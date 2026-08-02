@@ -1,5 +1,7 @@
 package rpg.boss.listener;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.title.Title;
 import org.bukkit.Particle;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.LivingEntity;
@@ -20,6 +22,7 @@ import rpg.monster.model.MonsterData;
 import rpg.monster.service.MonsterSpawnService;
 import rpg.util.ColorUtil;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -29,6 +32,8 @@ import java.util.List;
 public final class BossEncounterListener implements Listener {
 
     private static final double BROADCAST_RADIUS = 48.0;
+    private static final Title.Times ANNOUNCE_TITLE_TIMES =
+            Title.Times.times(Duration.ofMillis(200), Duration.ofMillis(2500), Duration.ofMillis(500));
 
     private final MonsterSpawnService monsterSpawnService;
     private final BossRepository bossRepository;
@@ -91,14 +96,20 @@ public final class BossEncounterListener implements Listener {
         return monsterSpawnService.idOf(entity).flatMap(bossRepository::findByMonsterId).orElse(null);
     }
 
+    /**
+     * Phase/enrage transitions are rare (a handful per boss fight) but important - shown as a
+     * title instead of a chat line so they don't get lost mid-fight in the chat scroll, and
+     * don't need to compete with {@link BossAbilityCastService}'s action-bar announcements.
+     */
     private void announce(LivingEntity entity, String message) {
         if (message == null || message.isBlank()) {
             return;
         }
-        String colored = ColorUtil.colorize(message);
+        Component component = ColorUtil.component(message);
+        Title title = Title.title(component, Component.empty(), ANNOUNCE_TITLE_TIMES);
         for (Player player : entity.getWorld().getPlayers()) {
             if (player.getLocation().distanceSquared(entity.getLocation()) <= BROADCAST_RADIUS * BROADCAST_RADIUS) {
-                player.sendMessage(colored);
+                player.showTitle(title);
             }
         }
     }
