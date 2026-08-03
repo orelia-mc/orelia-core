@@ -7,6 +7,7 @@ import rpg.core.command.AdminCommandRegistry;
 import rpg.core.command.OlRootCommand;
 import rpg.core.command.PlayerCommandRegistry;
 import rpg.core.config.ConfigManager;
+import rpg.core.config.LegacyDataFolderMigrator;
 import rpg.core.listener.PlayerConnectionListener;
 import rpg.core.message.MessageManager;
 import rpg.core.module.ModuleManager;
@@ -27,16 +28,45 @@ import rpg.gui.GuiModule;
 import rpg.region.RegionModule;
 import rpg.town.TownModule;
 import rpg.api.ApiModule;
+import rpg.world.dialogue.DialogueModule;
+import rpg.world.story.StoryModule;
+import rpg.world.event.EventModule;
+import rpg.world.cutscene.CutSceneModule;
+import rpg.quest.QuestModule;
+import rpg.dungeon.DungeonModule;
+import rpg.npc.NpcModule;
+import rpg.world.playerinfo.PlayerInfoModule;
+import rpg.world.api.WorldApiModule;
+import rpg.world.core.command.WorldAdminCommand;
+import rpg.extra.party.PartyModule;
+import rpg.extra.friend.FriendModule;
+import rpg.extra.guild.GuildModule;
+import rpg.extra.chat.ChatModule;
+import rpg.extra.trade.TradeModule;
+import rpg.extra.mail.MailModule;
+import rpg.extra.auction.AuctionModule;
+import rpg.extra.housing.HousingModule;
+import rpg.extra.pet.PetModule;
+import rpg.extra.mount.MountModule;
+import rpg.extra.ranking.RankingModule;
+import rpg.extra.achievement.AchievementModule;
+import rpg.extra.api.ExtraApiModule;
+import rpg.extra.core.command.ExtraAdminCommand;
 
 /**
  * Plugin entry point for the orelia-core repo/jar. Owns process-wide singletons (config,
  * player data, scheduler, module registry) and wires every top-level Module in dependency
  * order. No gameplay logic lives here; see the individual module packages.
  *
- * <p>orelia-world and orelia-extra are separate plugins/jars built from separate repos.
- * They depend on this plugin ({@code depend: [OreliaCore]} in their own plugin.yml) and
- * talk to it only through {@link rpg.api}, published via Bukkit's {@code ServicesManager} -
- * never by reaching into these module classes directly.
+ * <p>As of the orelia-core/orelia-world/orelia-extra merge, this single plugin owns the
+ * foundation (combat/player/status), content (quest/NPC/dialogue/story/dungeon/cutscene/
+ * event), and social/economy (party/guild/trade/mail/auction/housing/pet/mount/ranking/
+ * achievement) layers in one jar/classloader. The former inter-plugin {@code rpg.api}/
+ * {@code rpg.world.api}/{@code rpg.extra.api} facades are kept and still published via
+ * Bukkit's {@code ServicesManager} - genuinely external plugins (e.g. orelia-debug) still
+ * depend on that publication - but modules in this jar no longer need to guard against
+ * "is the other plugin installed/enabled yet" races, since everything enables in one
+ * deterministic order below.
  */
 public final class OreliaPlugin extends JavaPlugin {
 
@@ -50,6 +80,10 @@ public final class OreliaPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        // Runs before any config file is registered: pulls an operator's customized yml files
+        // out of the former plugins' data folders, since the merge moved every config here.
+        LegacyDataFolderMigrator.migrate(getLogger(), getDataFolder());
+
         this.configManager = new ConfigManager(this);
         this.configManager.register("config.yml");
         this.messageManager = new MessageManager(configManager.register("messages.yml"));
@@ -75,9 +109,19 @@ public final class OreliaPlugin extends JavaPlugin {
         getCommand("oladmin").setExecutor(adminCommand);
         getCommand("oladmin").setTabCompleter(adminCommand);
 
+        // worldreload/extrareload are aliases of reload, kept for one release cycle so
+        // admin muscle-memory/scripts from the pre-merge 3-plugin setup keep working.
+        adminCommandRegistry.register("worldreload", new WorldAdminCommand(this),
+                "reload の別名です（互換性のため一時的に維持）。", "worldreload");
+        adminCommandRegistry.register("extrareload", new ExtraAdminCommand(this),
+                "reload の別名です（互換性のため一時的に維持）。", "extrareload");
+
         // Registration order doubles as dependency order: later modules may look up
-        // earlier ones via ModuleManager#get, never the reverse. ApiModule is always last
-        // so every service it publishes is fully constructed first.
+        // earlier ones via ModuleManager#get, never the reverse. Api/WorldApi/ExtraApi are
+        // each registered right after the last module in their own former-plugin block so
+        // that block's services are fully constructed before it publishes anything, while
+        // the next block (which may depend on a *Api of an earlier block, e.g. Achievement
+        // needing QuestApi) still sees a deterministic, fully-built dependency.
         moduleManager.register(new DatabaseModule());
         // Registered early (no dependency of its own) since GatheringModule's fishing area
         // detection needs its RegionQueryService before TownModule ever exists.
@@ -99,6 +143,37 @@ public final class OreliaPlugin extends JavaPlugin {
         moduleManager.register(new BossModule());
         moduleManager.register(new GuiModule());
         moduleManager.register(new ApiModule());
+
+        // --- former orelia-world content layer ---
+        moduleManager.register(new DialogueModule());
+        moduleManager.register(new StoryModule());
+        moduleManager.register(new EventModule());
+        moduleManager.register(new CutSceneModule());
+        // Quest before Dungeon (not alphabetical): DungeonEncounterService calls
+        // QuestProgressService#onDungeonCleared, so QuestModule must already be enabled.
+        moduleManager.register(new QuestModule());
+        moduleManager.register(new DungeonModule());
+        moduleManager.register(new NpcModule());
+        moduleManager.register(new PlayerInfoModule());
+        moduleManager.register(new WorldApiModule());
+
+        // --- former orelia-extra social/economy layer ---
+        // Modules with no dependency on each other register in roughly alphabetical order;
+        // Ranking/Achievement register last since they read state produced by earlier
+        // modules rather than owning anything themselves.
+        moduleManager.register(new PartyModule());
+        moduleManager.register(new FriendModule());
+        moduleManager.register(new GuildModule());
+        moduleManager.register(new ChatModule());
+        moduleManager.register(new TradeModule());
+        moduleManager.register(new MailModule());
+        moduleManager.register(new AuctionModule());
+        moduleManager.register(new HousingModule());
+        moduleManager.register(new PetModule());
+        moduleManager.register(new MountModule());
+        moduleManager.register(new RankingModule());
+        moduleManager.register(new AchievementModule());
+        moduleManager.register(new ExtraApiModule());
 
         moduleManager.enableAll();
     }

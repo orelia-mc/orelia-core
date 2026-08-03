@@ -1,0 +1,63 @@
+# Achievement definitions for /achievement (SOW AchievementModule).
+# condition-type: REACH_LEVEL | COMPLETE_QUEST | MONEY_BALANCE
+# category: free-form grouping label shown by the achievement GUI (/ol achievement gui)
+# Reload with: /rpgextraadmin reload
+config-version: 3
+
+achievements:
+  reach_level_10:
+    name: "駆け出し冒険者"
+    description: "レベル10に到達する"
+    category: "レベル"
+    condition-type: REACH_LEVEL
+    condition-value: "10"
+    reward-skill-points: 1
+  reach_level_25:
+    name: "一人前の冒険者"
+    description: "レベル25に到達する"
+    category: "レベル"
+    condition-type: REACH_LEVEL
+    condition-value: "25"
+    reward-skill-points: 2
+  reach_level_50:
+    name: "熟練の冒険者"
+    description: "レベル50に到達する"
+    category: "レベル"
+    condition-type: REACH_LEVEL
+    condition-value: "50"
+    reward-skill-points: 3
+  reach_level_75:
+    name: "伝説の冒険者"
+    description: "レベル75に到達する"
+    category: "レベル"
+    condition-type: REACH_LEVEL
+    condition-value: "75"
+    reward-skill-points: 4
+  reach_level_100:
+    name: "頂点を極めし者"
+    description: "レベル100に到達する"
+    category: "レベル"
+    condition-type: REACH_LEVEL
+    condition-value: "100"
+    reward-skill-points: 5
+  rich_adventurer:
+    name: "資産家"
+    description: "10000G以上を所持する"
+    category: "所持金"
+    condition-type: MONEY_BALANCE
+    condition-value: "10000"
+    reward-skill-points: 2
+  wealthy_merchant:
+    name: "大富豪"
+    description: "50000G以上を所持する"
+    category: "所持金"
+    condition-type: MONEY_BALANCE
+    condition-value: "50000"
+    reward-skill-points: 3
+  goblin_slayer:
+    name: "ゴブリン退治人"
+    description: "「king_of_goblins」クエストを完了する（要orelia-world）"
+    category: "クエスト"
+    condition-type: COMPLETE_QUEST
+    condition-value: "king_of_goblins"
+    reward-skill-points: 3

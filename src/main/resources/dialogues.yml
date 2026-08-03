@@ -1,0 +1,33 @@
+# Dialogue trees (SOW DialogueModule). entry-points are evaluated in order; the first
+# whose required-flag the player already has (or which has none) wins. Nodes without
+# choices either fall through to next-node or end the conversation.
+config-version: 1
+
+dialogues:
+  quest_receptionist_intro:
+    entry-points:
+      returning:
+        required-flag: "met_receptionist"
+        start-node: welcome_back
+      first_time:
+        required-flag: ""
+        start-node: first_meeting
+    nodes:
+      first_meeting:
+        lines:
+          - "あら、見ない顔ね。この町は初めて？"
+        set-flag: "met_receptionist"
+        choices:
+          yes:
+            text: "はい、初めてです"
+            next-node: explain_quests
+          no:
+            text: "少し前に来ました"
+            next-node: explain_quests
+      explain_quests:
+        lines:
+          - "困っている人がいたら、私にクエストを頼めるわ。"
+          - "腕試しにいくつか受けてみるといいわ。"
+      welcome_back:
+        lines:
+          - "また来たのね。今日はどんな依頼にする？"

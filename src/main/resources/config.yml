@@ -191,3 +191,20 @@ stat-scaling:
     SP: 1.04
     ATK: 1.035
     DEF: 1.03
+
+quest:
+  # How often (in ticks) each online player's COLLECT_ITEM / DELIVER_ITEM / REACH_LOCATION
+  # objectives are re-checked. 40 ticks = 2 seconds.
+  objective-check-period-ticks: 40
+
+dungeon:
+  # Relics (rpg.api.RelicApi#generateRelic) granted to each member when a bossed dungeon is
+  # cleared - boss-less dungeons never drop relics regardless of these values.
+  relic-drop-min: 1
+  relic-drop-max: 3
+
+party:
+  max-size: 6
+
+friend:
+  max-friends: 50

@@ -1,0 +1,114 @@
+# Quest definitions (SOW section 11).
+# type: MAIN | SUB | DAILY | WEEKLY | EVENT
+# objective type: KILL_MONSTER | COLLECT_ITEM | DELIVER_ITEM | REACH_LOCATION | TALK_NPC | KILL_BOSS | CLEAR_DUNGEON
+# target-id is a monsters.yml/bosses.yml/npc.yml/dungeons.yml id, or an items.yml weapon id /
+# vanilla Material name for the item objectives. REACH_LOCATION ignores target-id and uses world/x/y/z/radius.
+# cooldown-hours: only meaningful when repeatable is true - how long after completion before
+# the quest can be re-accepted (default 0 = instantly re-acceptable).
+config-version: 1
+
+quests:
+  slime_cull:
+    name: "スライム討伐"
+    type: MAIN
+    required-level: 1
+    repeatable: false
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7森のスライムを5体討伐しよう。"
+    objectives:
+      obj_1:
+        type: KILL_MONSTER
+        target-id: forest_slime
+        amount: 5
+    reward:
+      exp: 50
+      money: 20
+      skill-points: 1
+
+  goblin_supplies:
+    name: "ゴブリンの補給物資"
+    type: SUB
+    required-level: 3
+    repeatable: false
+    party-only: false
+    prerequisite-quests:
+      - slime_cull
+    description:
+      - "&%7ゴブリンの略奪者を倒し、腐った肉を4つ集めて受付に届けよう。"
+    objectives:
+      obj_1:
+        type: KILL_MONSTER
+        target-id: goblin_raider
+        amount: 3
+      obj_2:
+        type: DELIVER_ITEM
+        target-id: ROTTEN_FLESH
+        amount: 4
+    reward:
+      exp: 120
+      money: 60
+      weapon-id: hunters_spear
+
+  daily_bounty:
+    name: "デイリー討伐依頼"
+    type: DAILY
+    required-level: 1
+    repeatable: true
+    cooldown-hours: 24
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7今日の討伐依頼をこなそう。"
+    objectives:
+      obj_1:
+        type: KILL_MONSTER
+        target-id: goblin_raider
+        amount: 5
+    reward:
+      exp: 40
+      money: 30
+
+  scout_the_camp:
+    name: "野営地の偵察"
+    type: SUB
+    required-level: 2
+    repeatable: false
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7指定された座標まで移動して周辺を偵察しよう。"
+    objectives:
+      obj_1:
+        type: REACH_LOCATION
+        world: world
+        x: 100
+        y: 64
+        z: 100
+        radius: 10
+    reward:
+      exp: 30
+      money: 10
+
+  king_of_goblins:
+    name: "ゴブリンキング討伐"
+    type: MAIN
+    required-level: 15
+    repeatable: false
+    party-only: true
+    prerequisite-quests:
+      - goblin_supplies
+    description:
+      - "&%7ゴブリンの洞窟に潜むゴブリンキングを討伐しよう。"
+    objectives:
+      obj_1:
+        type: KILL_BOSS
+        target-id: goblin_king_boss
+        amount: 1
+    reward:
+      exp: 500
+      money: 300
+      accessory-id: warriors_ring
+      skill-points: 2
+      title: "ゴブリン殺し"

@@ -1,0 +1,20 @@
+# Cutscene definitions (SOW CutSceneModule). step type: CAMERA | MESSAGE | EFFECT | TITLE
+# delay-ticks is relative to when playback starts (20 ticks = 1 second).
+config-version: 1
+
+cutscenes:
+  goblin_king_intro:
+    steps:
+      step_1:
+        type: TITLE
+        delay-ticks: 0
+        title: "&%4ゴブリンキング"
+        subtitle: "&%7洞窟の奥に潜む脅威"
+      step_2:
+        type: MESSAGE
+        delay-ticks: 20
+        message: "&%7地響きとともに、巨大な影が姿を現した..."
+      step_3:
+        type: EFFECT
+        delay-ticks: 40
+        effect-id: boss_phase_change

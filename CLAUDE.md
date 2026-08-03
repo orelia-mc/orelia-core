@@ -4,13 +4,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`orelia-core` is a Paper 1.21.x (Java 21) Minecraft plugin — the foundation of a 3-plugin RPG suite:
+`orelia-core` is a Paper 1.21.x (Java 21) Minecraft plugin — a single-jar RPG suite covering
+everything that used to be split across three separate plugins (orelia-core, orelia-world,
+orelia-extra). As of the 3-repo merge, all of it lives here:
 
-- **orelia-core** (this repo): Core, Item, Skill, Job, Status, Accessory, Monster, Boss, Effect, Economy, GUI, Gathering, Region, Town, Database, API, Util
-- `orelia-world` (separate repo): Quest, NPC, Dialogue, Story, Dungeon, Region, CutScene, Event
-- `orelia-extra` (separate repo, not yet implemented): Party, Guild, Trade, ...
+- **Foundation** (formerly orelia-core): Item, Skill, Job, Status, Accessory, Monster, Boss, Effect, Economy, GUI, Gathering, Region, Town, Database, Relic, Api, Util
+- **Content layer** (formerly orelia-world): Quest, NPC, Dialogue, Story, Dungeon, CutScene, Event, PlayerInfo, WorldApi
+- **Social/economy layer** (formerly orelia-extra): Party, Friend, Guild, Chat, Trade, Mail, Auction, Housing, Pet, Mount, Ranking, Achievement, ExtraApi
 
-The other two plugins depend on this one (`depend: [OreliaCore]`) and talk to it **only** through `rpg.api`, published via Bukkit's `ServicesManager` — never by reaching into this plugin's internal module classes.
+`rpg.api`/`rpg.world.api`/`rpg.extra.api` are kept as internal facade layers (module-boundary
+contracts) and still published via Bukkit's `ServicesManager`, because a genuinely separate
+plugin (`orelia-debug`, testplay/debug tooling) depends on this jar and consumes several of
+those `*Api` interfaces at runtime (`depend: [OreliaCore]`, `softdepend: [OreliaWorld,
+OreliaExtra]` in orelia-debug's own plugin.yml, from before the merge — orelia-debug still
+needs those two service names present for its soft-dependency checks to resolve, even though
+they're no longer separate plugins on this end). Modules *inside* this jar, however, no longer
+need to go through `ServicesManager`-lookup-with-null-guard for what used to be "is the other
+plugin loaded yet" races — the whole suite now enables in one deterministic order (see below),
+so a module can rely on `ModuleManager#get` for another in-jar module the same way core
+modules always could.
 
 ## Commands
 
@@ -18,7 +30,7 @@ The other two plugins depend on this one (`depend: [OreliaCore]`) and talk to it
 ./gradlew build
 ```
 
-Produces `build/libs/orelia-core-1.0.0.jar` (shadowJar, relocated sqlite/mysql/protobuf under `rpg.database.libs.*`). Requires network access to `repo.papermc.io` (Paper API) and `jitpack.io` (Vault API).
+Produces `build/libs/orelia-core-<version>.jar` (shadowJar, relocated sqlite/mysql/protobuf under `rpg.database.libs.*`). Requires network access to `repo.papermc.io` (Paper API) and `jitpack.io` (Vault API).
 
 ```
 ./gradlew test                              # all tests
@@ -27,32 +39,51 @@ Produces `build/libs/orelia-core-1.0.0.jar` (shadowJar, relocated sqlite/mysql/p
 ```
 
 In-game: `/oladmin reload` reloads every module's config file without a server restart.
+`/oladmin worldreload` and `/oladmin extrareload` are temporary aliases of the same command,
+kept for one release cycle for operator muscle-memory from the pre-merge 3-plugin setup —
+safe to remove in a later cleanup.
 
 ## Architecture
 
 ### Module system
 
-`OreliaPlugin` (`rpg/core/OreliaPlugin.java`) is the single entry point. It owns process-wide singletons — `ConfigManager`, `SchedulerService`, `PlayerDataManager`, `ModuleManager` — and registers every top-level feature as an `RpgModule` (`rpg/core/module/RpgModule.java`) in a fixed order in `onEnable()`.
+`OreliaPlugin` (`rpg/core/OreliaPlugin.java`) is the single entry point. It owns process-wide singletons — `ConfigManager`, `SchedulerService`, `PlayerDataManager`, `ModuleManager` — and registers every top-level feature as an `RpgModule` (`rpg/core/module/RpgModule.java`) in a fixed order in `onEnable()`. This one `RpgModule`/`ModuleManager` pair covers all 37 modules from every former plugin — the old parallel `WorldModule`/`WorldModuleManager` and `ExtraModule`/`ExtraModuleManager` types were removed in the merge, since they were structurally identical to `RpgModule`/`ModuleManager` (only the plugin-class type parameter differed).
 
-- **Registration order is dependency order.** A module may look up an earlier-registered module via `ModuleManager#get(Class)`, never a later one. Current order: Database → Region → Status → Job → Gathering → Item → Skill → Effect → Economy → Accessory → Town → Monster → Boss → Gui → **Api (always last)**. (Accessory sits after Economy, not alphabetically - relics' upgrade cost needs Vault's `Economy`, which `EconomyModule` only registers with Vault once it enables. Region sits right after Database since Gathering's fishing-area detection needs its `RegionQueryService` before it exists as a module dependency; Town sits right before Monster since monster spawn suppression needs `TownDetectionService` already built.)
+- **Registration order is dependency order.** A module may look up an earlier-registered module via `ModuleManager#get(Class)`, never a later one. Current order:
+
+  ```
+  Database → Region → Status → Job → Gathering → Item → Skill → Effect → Economy →
+  Accessory → Town → Monster → Boss → Gui → Api
+  → Dialogue → Story → Event → CutScene → Quest → Dungeon → Npc → PlayerInfo → WorldApi
+  → Party → Friend → Guild → Chat → Trade → Mail → Auction → Housing → Pet → Mount →
+  Ranking → Achievement → ExtraApi (always last)
+  ```
+  Within the foundation block: Accessory sits after Economy, not alphabetically - relics' upgrade cost needs Vault's `Economy`, which `EconomyModule` only registers with Vault once it enables. Region sits right after Database since Gathering's fishing-area detection needs its `RegionQueryService` before it exists as a module dependency; Town sits right before Monster since monster spawn suppression needs `TownDetectionService` already built. Within the content block: Quest registers before Dungeon (not alphabetically) since `DungeonEncounterService` calls `QuestProgressService#onDungeonCleared`. Within the social/economy block: modules with no dependency on each other register in roughly alphabetical order; Ranking/Achievement register last since they read state produced by earlier modules rather than owning anything themselves. Each former-plugin block's own `*Api` module (`Api`, `WorldApi`, `ExtraApi`) registers right after the last module in that block, so a later block can safely depend on an earlier block's published `*Api` (e.g. Achievement, in the social/economy block, sees a fully-populated `QuestApi` from `WorldApi`) — but a module cannot see a `*Api` published by a *later* block (e.g. `DungeonModule`, in the content block, still sees a null `PartyApi` at its own enable time, since `PartyModule`/`ExtraApiModule` register afterward; this is unchanged from the pre-merge behavior and already null-guarded).
 - Modules are enabled in registration order, **disabled in reverse order**.
 - Each module's `onEnable` typically: registers its config file with `ConfigManager`, loads a repository from that YAML, builds its services/managers, registers Bukkit listeners, and registers its player-facing subcommand into `PlayerCommandRegistry`.
 - `onReload()` is optional (default no-op); implement it to re-read config and rebuild repositories in place — see `ItemModule.reloadWeapons()` for the pattern.
-- Do not let one module reach into another module's internal classes (managers/services/repositories) directly — go through the other module's public getters on its `RpgModule`, or through `rpg.api` if the consumer is an external plugin.
+- Do not let one module reach into another module's internal classes (managers/services/repositories) directly — go through the other module's public getters on its `RpgModule`, or through `rpg.api`/`rpg.world.api`/`rpg.extra.api` if the consumer is a genuinely external plugin (e.g. orelia-debug).
 
 ### Per-module package shape
 
-Most feature packages (`item`, `skill`, `job`, `status`, `accessory`, `monster`, `boss`, `effect`, `economy`, `gui`, `gathering`) follow the same internal layering:
+Most feature packages (`item`, `skill`, `job`, `status`, `accessory`, `monster`, `boss`, `effect`, `economy`, `gui`, `gathering`, `quest`, `dungeon`, `npc`, `world/dialogue`, `world/story`, `world/event`, `world/cutscene`, `world/playerinfo`, `extra/party`, `extra/friend`, `extra/guild`, `extra/chat`, `extra/trade`, `extra/mail`, `extra/auction`, `extra/housing`, `extra/pet`, `extra/mount`, `extra/ranking`, `extra/achievement`) follow the same internal layering:
 
-- `repository/` — pure data access: either config-driven (parses a `*.yml` into in-memory templates) or DB-backed (implements `SchemaOwner` from `rpg/database/repository/SchemaOwner.java` and talks only to `DatabaseManager`). Never touches Bukkit events or game logic.
+- `repository/` — pure data access: either config-driven (parses a `*.yml` into in-memory templates) or DB-backed (implements `SchemaOwner` from `rpg/database/repository/SchemaOwner.java` and talks only to `DatabaseManager`). Never touches Bukkit events or game logic. Modules with no persistence (Party, in-memory only) keep state directly in a `manager/` instead.
 - `model/` — plain data holders (templates, per-player components).
 - `service/` or `manager/` — business logic sitting on top of the repository.
 - `listener/` — Bukkit event handlers wired in `onEnable`.
 - `command/` — `CommandExecutor`s registered into the shared `/ol` or `/oladmin` dispatcher (see below), not their own top-level Bukkit commands.
+- `gui/` — present where the module has a GUI screen (Quest, NPC, Dungeon, Relic, Auction, Mail, Ranking, Housing, Pet, Achievement, PlayerInfo, ...).
+
+Note: `rpg.dungeon`, `rpg.npc`, and `rpg.quest` sit directly under top-level `rpg.*` rather than under `rpg.world.*` like their siblings (`rpg.world.dialogue`, `rpg.world.story`, ...) - a pre-existing inconsistency from before the merge, intentionally left as-is (cosmetic, not worth the diff/risk to fix alongside everything else).
 
 ### Config
 
-Every module reads its own file under `src/main/resources/`: `config.yml`, `items.yml`, `skills.yml`, `jobs.yml`, `accessories.yml`, `monsters.yml`, `bosses.yml`, `effects.yml`, `gui.yml`, `messages.yml`. `ConfigManager.register(name)` copies the bundled default out of the jar on first use and returns a cached `ConfigFile`; `ConfigManager` never inspects module-specific keys. Reload all of them via `/oladmin reload`, which calls `ConfigManager.reloadAll()` then `ModuleManager.reloadAll()`.
+Every module reads its own file under `src/main/resources/`: `config.yml`, `messages.yml`, `items.yml`, `skills.yml`, `jobs.yml`, `accessories.yml`, `monsters.yml`, `bosses.yml`, `effects.yml`, `gui.yml`, `crafting.yml`, `fishing.yml`, `gathering.yml`, `relics.yml`, `quests.yml`, `npc.yml`, `dungeons.yml`, `dialogues.yml`, `story.yml`, `cutscenes.yml`, `events.yml`, `achievements.yml`, `housing.yml`, `mounts.yml`, `pets.yml`. `config.yml` and `messages.yml` are the two files that used to exist independently in all three former plugins - they were merged into one each during the repo merge (per-domain sections, e.g. `config.yml`'s `quest:`/`dungeon:`/`party:`/`friend:` blocks), not split into separate per-domain files. `ConfigManager.register(name)` copies the bundled default out of the jar on first use and returns a cached `ConfigFile`; `ConfigManager` never inspects module-specific keys. Reload all of them via `/oladmin reload`, which calls `ConfigManager.reloadAll()` then `ModuleManager.reloadAll()`.
+
+Two PDC keys carry a **legacy-namespace fallback** for the same merge: a `NamespacedKey`'s namespace comes from the owning plugin's name, so `npc_id` (`rpg/npc/service/NpcKeys.java`) and `player_info_item` (`rpg/world/playerinfo/service/PlayerInfoItemKeys.java`) moved from `oreliaworld:` to `oreliacore:` when orelia-world stopped being its own plugin. Anything stamped before the merge - every NPC entity already standing in a world, every Nether Star already in a player's inventory - still carries the old namespace, and would otherwise stop being recognized entirely (NPCs going inert and getting duplicated by `/oladmin npc spawnall`; stars losing their menu/drop/move handling and being pushed out of the hotbar on the next join). `NpcSpawnService#idOf` reads the legacy key as a fallback and **re-stamps the entity** under the current namespace, so each NPC heals once on sight; `PlayerInfoItemService#isPlayerInfoItem` only reads both (an `ItemStack`'s container is reached through a copied `ItemMeta`, so healing would need every caller to write the meta back, and reading both costs nothing). Both are removable once no pre-merge world/item is in use. Core's own keys (`WeaponKeys`, `MonsterKeys`, `RelicKeys`, `AccessoryKeys`, `ProjectileKeys`) were always `oreliacore:` and needed no such handling.
+
+`LegacyDataFolderMigrator` (`rpg/core/config/`, called first thing in `OreliaPlugin#onEnable`) is the merge's one-shot migration aid: it copies any `*.yml` still sitting in `plugins/OreliaWorld/` or `plugins/OreliaExtra/` into `plugins/OreliaCore/`, since every config now resolves under this plugin's folder. It never overwrites a file already present in the target (idempotent, safe on every startup) and deliberately **skips `config.yml`/`messages.yml`** - those two were content-merged rather than moved, so copying a former plugin's version over this one's would drop every core setting; their new sections reach an existing file through `ConfigMigrator`'s missing-key splice instead. Temporary, same as the `worldreload`/`extrareload` aliases - deletable once every server has booted once on a merged jar.
 
 ### Player data
 
@@ -64,11 +95,11 @@ Every module reads its own file under `src/main/resources/`: `config.yml`, `item
 
 ### Commands
 
-There are exactly two top-level Bukkit commands, both dispatchers: `/ol` (player-facing, `OlRootCommand` + `PlayerCommandRegistry`) and `/oladmin` (admin-gated, `AdminCommand` + `AdminCommandRegistry`). Both registries (`OlCommandRegistry` subclasses) are published via `ServicesManager` so `orelia-world`/`orelia-extra` can register their own subcommands into the same two entry points instead of claiming new top-level commands. When adding a player command to a module, register it into `plugin.getPlayerCommandRegistry()` inside that module's `onEnable`, not as a new `plugin.yml` command.
+There are exactly two top-level Bukkit commands, both dispatchers: `/ol` (player-facing, `OlRootCommand` + `PlayerCommandRegistry`) and `/oladmin` (admin-gated, `AdminCommand` + `AdminCommandRegistry`). Both registries (`OlCommandRegistry` subclasses) are published via `ServicesManager` (kept for `orelia-debug` and any other genuinely external plugin) and are also just plain fields any module in this jar registers into directly. When adding a player command to a module, register it into `plugin.getPlayerCommandRegistry()` inside that module's `onEnable`, not as a new `plugin.yml` command. Every former top-level command from the pre-merge plugins (`/rpgworldadmin`, `/rpgquest`, `/dialoguechoice`, `/extrareload`) was already funneled through this same `/ol`/`/oladmin` convention before the merge - the only leftover duplication was `reload`/`worldreload`/`extrareload` all doing the same full-plugin reload under different names (`worldreload`/`extrareload` are now kept as temporary aliases, see Commands above).
 
-### Public API (`rpg.api`)
+### Public API (`rpg.api` / `rpg.world.api` / `rpg.extra.api`)
 
-`ApiModule` is always the last module enabled. It wraps each module's service in a narrow `*Api`/`*ApiImpl` pair (`OreliaApi`, `StatusApi`, `JobApi`, `ItemApi`, `AccessoryApi`, `SkillApi`, `GuiApi`, `EffectApi`, `CombatApi`, `TownApi`) and publishes them — plus the generic `PlayerDataManager` and `DatabaseManager` — through Bukkit's `ServicesManager`. This is the **only** integration surface for other plugins; when adding a new cross-plugin capability, add/extend an `*Api` interface here rather than exposing an internal manager class.
+`ApiModule`, `WorldApiModule`, and `ExtraApiModule` are each the last module enabled in their former-plugin's block. They wrap each module's service in a narrow `*Api`/`*ApiImpl` pair — `rpg.api`: `OreliaApi`, `StatusApi`, `JobApi`, `ItemApi`, `AccessoryApi`, `SkillApi`, `GuiApi`, `EffectApi`, `CombatApi`, `TownApi`, `EconomyApi`, `RelicApi`, `DebugApi`; `rpg.world.api`: `QuestApi`, `WorldDebugApi`; `rpg.extra.api`: `GuildApi`, `PartyApi`, `AchievementApi`, `ExtraDebugApi` — and publish them, plus the generic `PlayerDataManager` and `DatabaseManager`, through Bukkit's `ServicesManager`. This publication is kept specifically because `orelia-debug` (a separate, still-independent plugin/repo) depends on it at runtime. Modules inside this jar may still use these facades for a clean, documented module-boundary contract, but are not required to route through `ServicesManager` to reach another in-jar module - `ModuleManager#get` is available and doesn't have the "is it loaded yet" uncertainty a genuinely separate plugin would. When adding a new cross-plugin capability, add/extend an `*Api` interface here rather than exposing an internal manager class.
 
 ### WorldGuard region lookup (`rpg.region.service.RegionQueryService`) and town detection (`rpg.town`)
 
@@ -242,8 +273,22 @@ directly.
 
 - `ItemModule` depends on `JobModule` + `StatusModule` (weapon requirement checks).
 - `GatheringModule` depends on `JobModule` (looks up the player's current job display name for level-up messages).
-- `ApiModule` depends on nearly everything (it's last).
+- `ApiModule` depends on nearly everything in the foundation block (it's last in that block).
 - When a module needs another module's service, fetch it once in `onEnable` via `plugin.getModuleManager().get(OtherModule.class).orElseThrow(...)` — fail fast with a clear `IllegalStateException` if the dependency isn't registered yet, rather than deferring the lookup.
+
+### Content layer (formerly orelia-world): Quest, NPC, Dialogue, Story, Dungeon, CutScene, Event, PlayerInfo
+
+Reward-granting modules (`QuestModule`, `DungeonModule`, `NpcModule`) reach the foundation layer through `rpg.api` (`StatusApi`/`ItemApi`/`AccessoryApi`/`SkillApi`/`CombatApi`/`RelicApi`/`GuiApi`) rather than foundation module internals directly, same convention as every other module - money (quest rewards, NPC shop) goes straight through Vault's `Economy`, not a custom EconomyApi wrapper. `Dialogue`, `Story`, and `Event` are self-contained and need no foundation-layer API at all.
+
+`QuestModule`/`DungeonModule`/`NpcModule` follow the same `repository/model/service/listener/command/gui` layering as foundation modules. Player-state repositories (`PlayerQuestRepository`, ...) implement `SchemaOwner` and own their own SQL tables via the shared `DatabaseManager`, same as foundation. `PlayerDataComponent`-owning modules (Quest) register their loader with `plugin.getPlayerDataManager().registerLoader(...)` in `onEnable`, exactly like foundation modules - there is no separate join/quit lifecycle for former-orelia-world modules anymore.
+
+`DungeonModule` optionally resolves a challenger's real party via `rpg.extra.api.PartyApi` (soft - null-guarded, since `PartyModule` registers later in the merged order, see Module system above). `PlayerInfoModule`'s GUI optionally shows an achievement icon via `rpg.extra.api.AchievementApi` (same soft/null-guarded pattern, for the same ordering reason).
+
+### Social/economy layer (formerly orelia-extra): Party, Friend, Guild, Chat, Trade, Mail, Auction, Housing, Pet, Mount, Ranking, Achievement
+
+Modules with no persistence (Party, in-memory only) keep state directly in a `manager/`; DB-backed (`Guild`, `Trade` sessions, `Mail`, `Auction`, `Housing` ownership, `Pet`/`Mount` ownership, `Achievement` progress) and config-driven (`Achievement`, `Mount`, `Pet` templates) modules layer a `service/` on top of a `repository/`, same `SchemaOwner`-on-shared-`DatabaseManager` convention as every other layer.
+
+`AchievementModule` is the widest-reaching module in this layer: it requires `rpg.api.StatusApi`/`SkillApi` (hard - `IllegalStateException` if missing, which can no longer actually happen since the foundation layer always enables first) plus Vault's `Economy` and `rpg.world.api.QuestApi` (soft - `QuestApi` happens to always be non-null in the merged registration order since `WorldApiModule` registers well before `AchievementModule`, but the code still null-guards it rather than assuming that ordering is permanent). `RankingModule` reads `rpg.api.StatusApi` directly for level data. Auction settlement and other money-moving code goes straight through Vault's `Economy`, same convention as the content layer - no custom EconomyApi.
 
 ## Committing changes
 

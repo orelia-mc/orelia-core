@@ -1,0 +1,29 @@
+# House plot definitions for /house (SOW HousingModule).
+# Reload with: /rpgextraadmin reload
+config-version: 1
+
+plots:
+  starter_1:
+    name: "初心者向けの家 1番区画"
+    price: 1000
+    world: world
+    x: 100
+    y: 64
+    z: 100
+    yaw: 0
+  starter_2:
+    name: "初心者向けの家 2番区画"
+    price: 1000
+    world: world
+    x: 120
+    y: 64
+    z: 100
+    yaw: 0
+  premium_1:
+    name: "高級住宅街 1番区画"
+    price: 10000
+    world: world
+    x: 200
+    y: 64
+    z: 200
+    yaw: 180
