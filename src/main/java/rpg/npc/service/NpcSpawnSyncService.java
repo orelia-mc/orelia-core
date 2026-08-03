@@ -4,7 +4,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.persistence.PersistentDataType;
 import rpg.npc.model.NpcData;
 import rpg.npc.model.NpcType;
 import rpg.npc.repository.NpcRepository;
@@ -30,12 +29,10 @@ public final class NpcSpawnSyncService {
 
     private static final double MATCH_RADIUS = 3.0;
 
-    private final NpcKeys keys;
     private final NpcRepository repository;
     private final NpcSpawnService spawnService;
 
-    public NpcSpawnSyncService(NpcKeys keys, NpcRepository repository, NpcSpawnService spawnService) {
-        this.keys = keys;
+    public NpcSpawnSyncService(NpcRepository repository, NpcSpawnService spawnService) {
         this.repository = repository;
         this.spawnService = spawnService;
     }
@@ -59,7 +56,12 @@ public final class NpcSpawnSyncService {
         }
     }
 
+    /**
+     * Routed through {@link NpcSpawnService#idOf} rather than reading the tag directly, so an NPC
+     * spawned before the 3-plugin merge (still carrying the {@code oreliaworld:} namespace) is
+     * recognized here too - otherwise this dedup check would miss it and spawn a duplicate on top.
+     */
     private boolean isTaggedAs(Entity entity, String npcId) {
-        return npcId.equals(entity.getPersistentDataContainer().get(keys.npcId(), PersistentDataType.STRING));
+        return spawnService.idOf(entity).map(npcId::equals).orElse(false);
     }
 }

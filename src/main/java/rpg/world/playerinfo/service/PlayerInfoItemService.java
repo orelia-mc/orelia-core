@@ -3,6 +3,7 @@ package rpg.world.playerinfo.service;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import rpg.util.ItemBuilder;
 
@@ -31,11 +32,18 @@ public final class PlayerInfoItemService {
                 .build();
     }
 
+    /**
+     * Also accepts a star issued before the 3-plugin merge, which carries the {@code oreliaworld:}
+     * namespace (see {@link PlayerInfoItemKeys#legacyPlayerInfoItem()}) - otherwise every player's
+     * existing star would silently stop working and be pushed out of the hotbar on their next join.
+     */
     public boolean isPlayerInfoItem(ItemStack stack) {
         if (stack == null || !stack.hasItemMeta()) {
             return false;
         }
-        return stack.getItemMeta().getPersistentDataContainer().has(keys.playerInfoItem(), PersistentDataType.BYTE);
+        PersistentDataContainer container = stack.getItemMeta().getPersistentDataContainer();
+        return container.has(keys.playerInfoItem(), PersistentDataType.BYTE)
+                || container.has(keys.legacyPlayerInfoItem(), PersistentDataType.BYTE);
     }
 
     /** Places a fresh copy in the player's rightmost hotbar slot if it isn't already there. */

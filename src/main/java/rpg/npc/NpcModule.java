@@ -55,7 +55,7 @@ public final class NpcModule implements RpgModule {
 
         NpcKeys keys = new NpcKeys(plugin);
         this.spawnService = new NpcSpawnService(keys, repository);
-        NpcSpawnSyncService syncService = new NpcSpawnSyncService(keys, repository, spawnService);
+        NpcSpawnSyncService syncService = new NpcSpawnSyncService(repository, spawnService);
 
         plugin.getServer().getPluginManager().registerEvents(new NpcInteractListener(
                 spawnService, guiApi, new GuiManager(), questModule.getQuestGuiScreen(), questModule.getProgressService(),

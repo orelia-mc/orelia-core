@@ -6,6 +6,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import rpg.npc.model.NpcData;
 import rpg.npc.repository.NpcRepository;
@@ -51,8 +52,25 @@ public final class NpcSpawnService {
         return Optional.of(entity);
     }
 
+    /**
+     * The NPC id tagged onto {@code entity}, if it is one of ours. Falls back to the pre-merge
+     * {@code oreliaworld:} key (see {@link NpcKeys#legacyNpcId()}) and re-stamps the entity under
+     * the current namespace, so an NPC spawned before the 3-plugin merge keeps working and only
+     * has to be migrated once.
+     */
     public Optional<String> idOf(Entity entity) {
-        return Optional.ofNullable(entity.getPersistentDataContainer().get(keys.npcId(), PersistentDataType.STRING));
+        PersistentDataContainer container = entity.getPersistentDataContainer();
+        String id = container.get(keys.npcId(), PersistentDataType.STRING);
+        if (id != null) {
+            return Optional.of(id);
+        }
+        String legacyId = container.get(keys.legacyNpcId(), PersistentDataType.STRING);
+        if (legacyId == null) {
+            return Optional.empty();
+        }
+        container.set(keys.npcId(), PersistentDataType.STRING, legacyId);
+        container.remove(keys.legacyNpcId());
+        return Optional.of(legacyId);
     }
 
     public Optional<NpcData> dataOf(Entity entity) {
