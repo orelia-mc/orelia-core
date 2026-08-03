@@ -4,7 +4,7 @@
 # NPC dialogue lines / quest descriptions / story text stay in their own content yml files
 # (npc.yml, quests.yml, story.yml, ...) since those are per-entry authored content, not
 # fixed UI copy.
-config-version: 7
+config-version: 9
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -57,6 +57,12 @@ item:
   weapon-level-capped: "&%cこれ以上武器のレベルを上げるには、プレイヤーレベルが足りません。"
   armor-banned: "&%cこのサーバーでは防具の装備を禁止しています。防御力はステータスのDEFで決まります。"
 
+status:
+  level-up-title: "&%eレベルアップ！"
+  level-up-subtitle: "&%aLv.{level}"
+  level-up-chat: "&%aレベルが{level}に上がりました！"
+  level-up-stat-line: "&%7  {stat} &%f+{value}"
+
 job:
   not-chosen: "&%e職業がまだ選択されていません。ギルドで職業を選びましょう。"
   changed: "&%a{job}に転職しました。"
@@ -90,6 +96,8 @@ economy:
   insufficient-funds: "&%c所持金が足りません。"
   item-unavailable: "&%c商品を取得できませんでした。"
   purchase-success: "&%a{item}を{price}Gで購入しました。"
+  confirm-purchase-title: "&%8購入確認"
+  confirm-purchase-line: "&%f{item} を &%6{price} &%fで購入しますか？"
 
 boss:
   enraged: "&%c{boss} が狂暴化した！"
@@ -120,6 +128,7 @@ gathering:
   usage: "&%e使い方: /{label} resetregen confirm"
   resetregen-confirm: "&%e全ワールドの再生成待ちタスクを取り消します（プレイヤーの建築には影響しません）。実行するには /{label} resetregen confirm"
   resetregen-done: "&%a再生成待ちタスクを{regen}件取り消しました。"
+  level-up: "&%a{job}のレベルが{level}に上がりました"
 
 relic:
   usage: "&%e使い方: /ol relic upgrade"

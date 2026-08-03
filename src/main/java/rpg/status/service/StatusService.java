@@ -36,14 +36,17 @@ public final class StatusService {
     private final LevelGrowthService levelGrowthService;
     private final LevelingConfig levelingConfig;
     private final StatusRepository repository;
+    private final LevelUpFeedbackService levelUpFeedbackService;
 
     public StatusService(PlayerDataManager playerDataManager, StatusCalculatorService calculatorService,
-                          LevelGrowthService levelGrowthService, LevelingConfig levelingConfig, StatusRepository repository) {
+                          LevelGrowthService levelGrowthService, LevelingConfig levelingConfig, StatusRepository repository,
+                          LevelUpFeedbackService levelUpFeedbackService) {
         this.playerDataManager = playerDataManager;
         this.calculatorService = calculatorService;
         this.levelGrowthService = levelGrowthService;
         this.levelingConfig = levelingConfig;
         this.repository = repository;
+        this.levelUpFeedbackService = levelUpFeedbackService;
     }
 
     /** Top players by level, straight from storage (SOW RankingModule) - includes offline players. */
@@ -53,6 +56,15 @@ public final class StatusService {
 
     public Optional<PlayerStatusComponent> component(UUID uuid) {
         return statusComponent(uuid);
+    }
+
+    /** Total experience required to advance from {@code level} to {@code level + 1}. */
+    public long requiredExperience(int level) {
+        return levelingConfig.requiredExperience(level);
+    }
+
+    public int getMaxLevel() {
+        return levelingConfig.getMaxLevel();
     }
 
     public Optional<StatSheet> getFinalStats(UUID uuid) {
@@ -208,6 +220,7 @@ public final class StatusService {
                 component.setCurrentHp(oldHpFraction * finalStats.get(StatType.HP));
                 component.setCurrentSp(oldSpFraction * finalStats.get(StatType.SP));
                 syncVanillaHealth(uuid, component.getCurrentHp(), finalStats.get(StatType.HP));
+                levelUpFeedbackService.announceCharacterLevelUp(uuid, component.getLevel(), oldStats, finalStats);
             }
         });
     }

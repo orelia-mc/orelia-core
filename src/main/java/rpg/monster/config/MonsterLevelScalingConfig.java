@@ -3,12 +3,14 @@ package rpg.monster.config;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 /**
- * Loads {@code config.yml: monster-level-scaling.*} - how much a spawn point's optional
+ * Loads {@code config.yml: stat-scaling.growth-rate.*} - how much a spawn point's optional
  * target level scales a spawned monster's {@code monsters.yml} hp/attack-power/defense from
  * their template values (see {@link rpg.monster.service.MonsterSpawnService}). Exponential
- * per-level growth, not linear: {@code scaled = base * growth^(targetLevel - 1)}, where
- * {@code hp-factor}/{@code attack-factor}/{@code defense-factor} are the growth multiplier
- * itself (e.g. {@code 1.1} = +10% per level, compounding), not an additive "extra percent".
+ * per-level growth, not linear: {@code scaled = base * growth^(targetLevel - 1)}, where the
+ * HP/ATK/DEF growth rates are the growth multiplier itself (e.g. {@code 1.045} = +4.5% per
+ * level, compounding), not an additive "extra percent". This {@code stat-scaling.growth-rate}
+ * section is shared with player character growth ({@link rpg.status.service.LevelGrowthService}),
+ * so a monster and a player at the same level grow at the same rate.
  */
 public final class MonsterLevelScalingConfig {
 
@@ -17,7 +19,7 @@ public final class MonsterLevelScalingConfig {
     private double defenseFactor;
 
     public MonsterLevelScalingConfig() {
-        this(1.12, 1.10, 1.08);
+        this(1.045, 1.035, 1.03);
     }
 
     MonsterLevelScalingConfig(double hpFactor, double attackFactor, double defenseFactor) {
@@ -27,9 +29,9 @@ public final class MonsterLevelScalingConfig {
     }
 
     public void load(YamlConfiguration config) {
-        hpFactor = config.getDouble("monster-level-scaling.hp-factor", 1.12);
-        attackFactor = config.getDouble("monster-level-scaling.attack-factor", 1.10);
-        defenseFactor = config.getDouble("monster-level-scaling.defense-factor", 1.08);
+        hpFactor = config.getDouble("stat-scaling.growth-rate.HP", 1.045);
+        attackFactor = config.getDouble("stat-scaling.growth-rate.ATK", 1.035);
+        defenseFactor = config.getDouble("stat-scaling.growth-rate.DEF", 1.03);
     }
 
     /** {@code targetLevel == null} means "no scaling" - returns {@code baseHp} unchanged. */

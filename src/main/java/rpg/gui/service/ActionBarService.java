@@ -10,6 +10,7 @@ import rpg.status.model.StatSheet;
 import rpg.status.model.StatType;
 import rpg.status.service.StatusService;
 import rpg.util.ColorUtil;
+import rpg.util.MathUtil;
 
 import java.util.Map;
 import java.util.UUID;
@@ -71,7 +72,9 @@ public final class ActionBarService {
                 .replace("{max_hp}", format(maxHp))
                 .replace("{sp}", format(component.getCurrentSp()))
                 .replace("{max_sp}", format(maxSp))
-                .replace("{atk}", format(currentAttackPower(player, stats)));
+                .replace("{atk}", format(currentAttackPower(player, stats)))
+                .replace("{level}", String.valueOf(component.getLevel()))
+                .replace("{exp_bar}", expBar(component.getLevel(), component.getExperience()));
         String skillStatus = currentTransientText(player.getUniqueId());
         if (!skillStatus.isEmpty()) {
             message = message + " &%7| " + skillStatus;
@@ -106,5 +109,18 @@ public final class ActionBarService {
 
     private String format(double value) {
         return String.valueOf(Math.round(value));
+    }
+
+    private static final int EXP_BAR_LENGTH = 10;
+
+    /** {@code "[██████░░░░] 1234/3000"}, or {@code "MAX"} once the player is at the level cap. */
+    private String expBar(int level, long experience) {
+        if (level >= statusService.getMaxLevel()) {
+            return "MAX";
+        }
+        long required = statusService.requiredExperience(level);
+        double ratio = required > 0 ? MathUtil.clamp((double) experience / required, 0, 1) : 0;
+        int filled = (int) Math.round(ratio * EXP_BAR_LENGTH);
+        return "[" + "█".repeat(filled) + "░".repeat(EXP_BAR_LENGTH - filled) + "] " + experience + "/" + required;
     }
 }

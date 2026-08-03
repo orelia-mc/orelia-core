@@ -7,6 +7,7 @@ import rpg.core.command.AdminCommandRegistry;
 import rpg.core.command.OlRootCommand;
 import rpg.core.command.PlayerCommandRegistry;
 import rpg.core.config.ConfigManager;
+import rpg.core.config.LegacyDataFolderMigrator;
 import rpg.core.listener.PlayerConnectionListener;
 import rpg.core.message.MessageManager;
 import rpg.core.module.ModuleManager;
@@ -79,6 +80,10 @@ public final class OreliaPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        // Runs before any config file is registered: pulls an operator's customized yml files
+        // out of the former plugins' data folders, since the merge moved every config here.
+        LegacyDataFolderMigrator.migrate(getLogger(), getDataFolder());
+
         this.configManager = new ConfigManager(this);
         this.configManager.register("config.yml");
         this.messageManager = new MessageManager(configManager.register("messages.yml"));

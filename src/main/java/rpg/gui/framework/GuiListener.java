@@ -16,6 +16,9 @@ import org.bukkit.event.inventory.InventoryDragEvent;
  */
 public final class GuiListener implements Listener {
 
+    private static final float CLICK_SOUND_VOLUME = 0.6f;
+    private static final float CLICK_SOUND_PITCH = 1.0f;
+
     @EventHandler
     public void onClick(InventoryClickEvent event) {
         if (!(event.getInventory().getHolder() instanceof GuiHolder holder)) {
@@ -43,6 +46,9 @@ public final class GuiListener implements Listener {
         GuiButton button = gui.getButton(event.getSlot());
         if (button != null) {
             button.getAction().onClick(player, event.getClick().name());
+            if (button.getSound() != null) {
+                player.playSound(player.getLocation(), button.getSound(), CLICK_SOUND_VOLUME, CLICK_SOUND_PITCH);
+            }
         }
     }
 

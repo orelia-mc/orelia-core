@@ -205,7 +205,8 @@ public final class StatusGuiScreen {
     }
 
     private ItemStack headIcon(Player player) {
-        int level = statusService.component(player.getUniqueId()).map(PlayerStatusComponent::getLevel).orElse(1);
+        PlayerStatusComponent component = statusService.component(player.getUniqueId()).orElse(null);
+        int level = component != null ? component.getLevel() : 1;
         // Built directly rather than through ItemBuilder - setOwningPlayer is SkullMeta-specific
         // and ItemBuilder's generic ItemMeta wrapping has no hook for it. Without this, a plain
         // PLAYER_HEAD ItemStack always renders the default Steve skin instead of the viewer's own.
@@ -213,9 +214,18 @@ public final class StatusGuiScreen {
         SkullMeta meta = (SkullMeta) head.getItemMeta();
         meta.setOwningPlayer(player);
         meta.displayName(ColorUtil.component("&%e" + player.getName()));
-        meta.lore(List.of(ColorUtil.component("&%7Lv. " + level)));
+        meta.lore(List.of(
+                ColorUtil.component("&%7Lv. " + level),
+                ColorUtil.component("&%7EXP: &%f" + expLine(level, component != null ? component.getExperience() : 0))));
         head.setItemMeta(meta);
         return head;
+    }
+
+    private String expLine(int level, long experience) {
+        if (level >= statusService.getMaxLevel()) {
+            return "MAX";
+        }
+        return experience + " / " + statusService.requiredExperience(level);
     }
 
     private ItemStack categoryIcon(Player player, Material icon, String title, List<StatType> types) {
