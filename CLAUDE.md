@@ -6,7 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `orelia-core` is a Paper 1.21.x (Java 21) Minecraft plugin — a single-jar RPG suite covering
 everything that used to be split across three separate plugins (orelia-core, orelia-world,
-orelia-extra). As of the 3-repo merge, all of it lives here:
+orelia-extra). As of the 3-repo merge, all of it lives here - the former `orelia-world` and
+`orelia-extra` repos are archived (read-only), and all further development happens in this repo:
 
 - **Foundation** (formerly orelia-core): Item, Skill, Job, Status, Accessory, Monster, Boss, Effect, Economy, GUI, Gathering, Region, Town, Database, Relic, Api, Util
 - **Content layer** (formerly orelia-world): Quest, NPC, Dialogue, Story, Dungeon, CutScene, Event, PlayerInfo, WorldApi
@@ -260,7 +261,7 @@ from the plain `WeaponData` template:
   upgrade, +10% base attack power per level.
 - **Weapon level** (`weaponLevel`/`levelUp()`) - starts at the weapon type's `items.yml`
   `level:` (`WeaponData.getWeaponLevel()`) and can be raised further via `ItemApi#levelUpWeapon`
-  (`/ol item levelup` for now - no NPC/GUI trigger exists yet, that's an orelia-world follow-up),
+  (`/ol item levelup`, or an `npc.yml` `type: WEAPON_LEVELUP` NPC - no GUI trigger yet),
   gated by the wielder's own character level via `WeaponLevelConfig#weaponLevelCap`
   (`config.yml: weapon-level.*`). Adds `attack-power-factor` (default 5%) per weapon level.
 

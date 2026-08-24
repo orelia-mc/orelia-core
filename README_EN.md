@@ -4,7 +4,7 @@
 
 ## About
 
-`orelia-core` is the main plugin (Paper 1.21.x / Java 21) of the Minecraft RPG plugin suite **Orelia**. The former 3-repo split — orelia-core (combat/player/status foundation), orelia-world (content layer: quest, ...), and orelia-extra (social/economy layer: party, ...) — has been merged into this single plugin; this one repo now provides every feature.
+`orelia-core` is the main plugin (Paper 1.21.x / Java 21) of the Minecraft RPG plugin suite **Orelia**. The former 3-repo split — orelia-core (combat/player/status foundation), orelia-world (content layer: quest, ...), and orelia-extra (social/economy layer: party, ...) — has been merged into this single plugin; this one repo now provides every feature. [orelia-world](https://github.com/orelia-mc/orelia-world) and [orelia-extra](https://github.com/orelia-mc/orelia-extra) have been archived as part of this merge - all further development happens here.
 
 Orelia is split into the following plugins:
 

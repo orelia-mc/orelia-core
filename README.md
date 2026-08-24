@@ -4,7 +4,7 @@
 
 ## About
 
-`orelia-core` は Minecraft RPG プラグイン群 **Orelia** のメインプラグイン(Paper 1.21.x / Java 21)です。旧 orelia-core(戦闘・プレイヤー・ステータス基盤)・orelia-world(クエスト等のコンテンツ層)・orelia-extra(パーティ等のソーシャル/経済層)の3リポジトリは単一プラグインへ統合され、現在は本リポジトリ1つですべての機能を提供します。
+`orelia-core` は Minecraft RPG プラグイン群 **Orelia** のメインプラグイン(Paper 1.21.x / Java 21)です。旧 orelia-core(戦闘・プレイヤー・ステータス基盤)・orelia-world(クエスト等のコンテンツ層)・orelia-extra(パーティ等のソーシャル/経済層)の3リポジトリは単一プラグインへ統合され、現在は本リポジトリ1つですべての機能を提供します。[orelia-world](https://github.com/orelia-mc/orelia-world)・[orelia-extra](https://github.com/orelia-mc/orelia-extra)の2リポジトリはこの統合に伴いアーカイブ済みで、以後の開発はすべて本リポジトリで行われます。
 
 Orelia は以下のプラグイン群で構成されています。
 
