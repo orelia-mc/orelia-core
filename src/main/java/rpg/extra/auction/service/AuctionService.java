@@ -5,6 +5,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import rpg.core.message.MessageManager;
+import rpg.extra.auction.config.AuctionConfig;
 import rpg.extra.auction.model.AuctionListing;
 import rpg.extra.auction.repository.AuctionRepository;
 import rpg.extra.mail.service.MailService;
@@ -24,7 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class AuctionService {
 
     public enum ActionResult {
-        OK, NOT_FOUND, ALREADY_RESOLVED, NOT_OWNER, CANNOT_BUY_OWN, INSUFFICIENT_FUNDS, INVALID_PRICE, EMPTY_HAND, INVENTORY_FULL;
+        OK, NOT_FOUND, ALREADY_RESOLVED, NOT_OWNER, CANNOT_BUY_OWN, INSUFFICIENT_FUNDS, INVALID_PRICE, EMPTY_HAND,
+        INVENTORY_FULL, MAX_LISTINGS_REACHED;
 
         /** {@code messages.yml} key for this result's human-readable reason (see {@code auction.reason.*}) - never show the raw enum name to a player. */
         public String reasonMessageKey() {
@@ -36,13 +38,16 @@ public final class AuctionService {
     private final Economy economy;
     private final MailService mailService;
     private final MessageManager messages;
+    private final AuctionConfig config;
     private final Map<UUID, AuctionListing> listingsById = new ConcurrentHashMap<>();
 
-    public AuctionService(AuctionRepository repository, Economy economy, MailService mailService, MessageManager messages) {
+    public AuctionService(AuctionRepository repository, Economy economy, MailService mailService,
+                           MessageManager messages, AuctionConfig config) {
         this.repository = repository;
         this.economy = economy;
         this.mailService = mailService;
         this.messages = messages;
+        this.config = config;
     }
 
     public void loadAll() {
@@ -74,9 +79,17 @@ public final class AuctionService {
         return collectable;
     }
 
+    /** Uses {@link AuctionConfig#getDefaultDurationMillis()} rather than a caller-supplied duration. */
+    public ActionResult list(Player seller, double price) {
+        return list(seller, price, config.getDefaultDurationMillis());
+    }
+
     public ActionResult list(Player seller, double price, long durationMillis) {
         if (price <= 0) {
             return ActionResult.INVALID_PRICE;
+        }
+        if (countActiveOrPendingBySeller(seller.getUniqueId()) >= config.getMaxListingsPerSeller()) {
+            return ActionResult.MAX_LISTINGS_REACHED;
         }
         ItemStack held = seller.getInventory().getItemInMainHand();
         if (held.getType().isAir() || held.getAmount() <= 0) {
@@ -107,12 +120,17 @@ public final class AuctionService {
         if (!economy.has(buyer, listing.getPrice())) {
             return ActionResult.INSUFFICIENT_FUNDS;
         }
+        double fee = listing.getPrice() * config.getFeeRate();
+        double net = listing.getPrice() - fee;
         economy.withdrawPlayer(buyer, listing.getPrice());
-        economy.depositPlayer(Bukkit.getOfflinePlayer(listing.getSellerId()), listing.getPrice());
+        // The fee is sunk (not deposited anywhere) - a deliberate money sink rather than
+        // routing it to an "operator account" that doesn't exist in this economy model.
+        economy.depositPlayer(Bukkit.getOfflinePlayer(listing.getSellerId()), net);
 
         String itemName = listing.getDisplayName();
         String subject = messages.format("auction.sold-mail-subject", "item", itemName);
-        String body = messages.format("auction.sold-mail-body", "item", itemName, "price", listing.getPrice(), "buyer", buyer.getName());
+        String body = messages.format("auction.sold-mail-body", "item", itemName, "price", listing.getPrice(),
+                "buyer", buyer.getName(), "fee", fee, "net", net);
         mailService.send(listing.getSellerId(), null, subject, body);
 
         if (!buyer.getInventory().addItem(listing.getItem().clone()).isEmpty()) {
@@ -160,13 +178,31 @@ public final class AuctionService {
         return ActionResult.OK;
     }
 
-    /** Marks any listing past its expiry as EXPIRED so the seller can collect it back. Call periodically. */
+    /**
+     * Marks any listing past its expiry as EXPIRED so the seller can collect it back, and
+     * mails them a heads-up - previously only a successful sale sent mail, so an unsold
+     * listing just silently sat there until the seller happened to check the auction GUI.
+     * Call periodically.
+     */
     public void expireOverdueListings() {
         for (AuctionListing listing : listingsById.values()) {
             if (listing.getStatus() == AuctionListing.Status.ACTIVE && listing.isExpiredByTime()) {
                 listing.setStatus(AuctionListing.Status.EXPIRED);
                 repository.save(listing);
+                String itemName = listing.getDisplayName();
+                String subject = messages.format("auction.expired-mail-subject", "item", itemName);
+                String body = messages.format("auction.expired-mail-body", "item", itemName);
+                mailService.send(listing.getSellerId(), null, subject, body);
             }
         }
+    }
+
+    /** Listings still occupying one of the seller's {@link AuctionConfig#getMaxListingsPerSeller()} slots - ACTIVE (unsold) or EXPIRED-but-not-yet-collected. */
+    private long countActiveOrPendingBySeller(UUID sellerId) {
+        return listingsById.values().stream()
+                .filter(listing -> listing.getSellerId().equals(sellerId))
+                .filter(listing -> listing.getStatus() == AuctionListing.Status.ACTIVE
+                        || listing.getStatus() == AuctionListing.Status.EXPIRED)
+                .count();
     }
 }

@@ -1,5 +1,8 @@
 package rpg.quest.service;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.HoverEvent;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import rpg.core.message.MessageManager;
@@ -11,6 +14,8 @@ import rpg.quest.model.QuestData;
 import rpg.quest.model.QuestObjective;
 import rpg.quest.model.QuestState;
 import rpg.quest.repository.QuestRepository;
+import rpg.util.ColorUtil;
+import rpg.world.dialogue.service.DialogueSessionService;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,16 +35,31 @@ public final class QuestProgressService {
     private final QuestRewardService rewardService;
     private final QuestItemInventoryService inventoryService;
     private final MessageManager messages;
+    private final QuestObjectiveFeedbackService feedbackService;
+    /** Nullable - DialogueModule registers before QuestModule so it's always available in practice, but callers still treat it as optional NPC flavor, not a hard dependency. */
+    private final DialogueSessionService dialogueSessionService;
 
     public QuestProgressService(PlayerDataManager playerDataManager, QuestRepository questRepository,
                                  QuestEligibilityService eligibilityService, QuestRewardService rewardService,
-                                 QuestItemInventoryService inventoryService, MessageManager messages) {
+                                 QuestItemInventoryService inventoryService, MessageManager messages,
+                                 QuestObjectiveFeedbackService feedbackService, DialogueSessionService dialogueSessionService) {
         this.playerDataManager = playerDataManager;
         this.questRepository = questRepository;
         this.eligibilityService = eligibilityService;
         this.rewardService = rewardService;
         this.inventoryService = inventoryService;
         this.messages = messages;
+        this.feedbackService = feedbackService;
+        this.dialogueSessionService = dialogueSessionService;
+    }
+
+    /**
+     * Drops an in-progress quest without rewards. Shared by {@link rpg.quest.command.QuestCommand}
+     * and {@link rpg.quest.gui.QuestGuiScreen} so both expose the same behavior instead of the
+     * GUI reimplementing the removal itself.
+     */
+    public boolean abandon(UUID playerId, String questId) {
+        return component(playerId).map(c -> c.getActiveQuests().remove(questId) != null).orElse(false);
     }
 
     public Optional<QuestEligibilityService.Ineligibility> accept(Player player, String questId) {
@@ -52,7 +72,15 @@ public final class QuestProgressService {
             return ineligible;
         }
         component(player.getUniqueId()).ifPresent(c -> c.startQuest(questId));
+        playDialogue(player, quest.getStartDialogueId());
         return Optional.empty();
+    }
+
+    /** No-op if {@code dialogueSessionService} is unavailable, {@code treeId} is null/blank, or the tree id doesn't resolve. */
+    private void playDialogue(Player player, String treeId) {
+        if (dialogueSessionService != null && treeId != null && !treeId.isBlank()) {
+            dialogueSessionService.start(player, treeId);
+        }
     }
 
     /**
@@ -77,6 +105,7 @@ public final class QuestProgressService {
         }
         component.completeQuest(questId);
         rewardService.grant(player, quest.getReward());
+        playDialogue(player, quest.getCompleteDialogueId());
         notifyNewlyUnlockedQuests(player, questId);
         return true;
     }
@@ -86,9 +115,29 @@ public final class QuestProgressService {
         for (QuestData candidate : questRepository.getAll().values()) {
             if (candidate.getPrerequisiteQuestIds().contains(completedQuestId)
                     && eligibilityService.checkEligibility(player, candidate).isEmpty()) {
-                messages.send(player, "quest.newly-unlocked", "quest", candidate.getName());
+                player.sendMessage(newlyUnlockedComponent(candidate));
             }
         }
+    }
+
+    /**
+     * Builds {@code quest.newly-unlocked} as a Component with the quest name itself clickable
+     * (runs {@code /ol quest gui}, same "one manually-spliced rich slot" pattern orelia-extra's
+     * {@code PlayerNameHover}/{@code TradeCommand#offerEntryComponent} use) instead of going
+     * through the string-only {@link MessageManager#send} - {@link MessageManager} itself is
+     * untouched, same as those.
+     */
+    private Component newlyUnlockedComponent(QuestData quest) {
+        String template = messages.getPrefix() + messages.format("quest.newly-unlocked", "quest", quest.getName());
+        int start = template.indexOf(quest.getName());
+        if (start < 0) {
+            return ColorUtil.component(template);
+        }
+        String before = template.substring(0, start);
+        String after = template.substring(start + quest.getName().length());
+        Component questName = ColorUtil.componentWithCommand("&%a&n" + quest.getName(), "/ol quest gui")
+                .hoverEvent(HoverEvent.showText(ColorUtil.component("&%7クリックしてクエストログを開く")));
+        return ColorUtil.component(before).append(questName).append(ColorUtil.component(after));
     }
 
     /**
@@ -161,18 +210,19 @@ public final class QuestProgressService {
      */
     private void forEachInProgressQuest(UUID playerId, BiConsumer<QuestData, PlayerQuestProgress> action) {
         component(playerId).ifPresent(component -> {
+            Player player = Bukkit.getPlayer(playerId);
             for (var entry : component.getActiveQuests().entrySet()) {
                 QuestData quest = questRepository.findById(entry.getKey()).orElse(null);
                 if (quest == null || entry.getValue().getState() != QuestState.IN_PROGRESS) {
                     continue;
                 }
                 action.accept(quest, entry.getValue());
-                evaluateCompletion(quest, entry.getValue());
+                evaluateCompletion(player, quest, entry.getValue());
             }
         });
     }
 
-    private void evaluateCompletion(QuestData quest, PlayerQuestProgress progress) {
+    private void evaluateCompletion(Player player, QuestData quest, PlayerQuestProgress progress) {
         List<QuestObjective> objectives = quest.getObjectives();
         for (int i = 0; i < objectives.size(); i++) {
             if (progress.getProgress(i) < objectives.get(i).getRequiredAmount()) {
@@ -180,6 +230,9 @@ public final class QuestProgressService {
             }
         }
         progress.setState(QuestState.AWAITING_REPORT);
+        if (player != null) {
+            feedbackService.notifyObjectivesComplete(player, quest);
+        }
     }
 
     /**
@@ -201,7 +254,7 @@ public final class QuestProgressService {
         for (int i = 0; i < objectives.size(); i++) {
             progress.setProgress(i, objectives.get(i).getRequiredAmount());
         }
-        evaluateCompletion(quest, progress);
+        evaluateCompletion(Bukkit.getPlayer(playerId), quest, progress);
         return true;
     }
 

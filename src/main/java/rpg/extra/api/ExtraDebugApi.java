@@ -25,6 +25,17 @@ public interface ExtraDebugApi {
 
     List<String> describeConfigKeys(String fileName);
 
+    /**
+     * One node per key in {@code fileName}, in on-disk order, depth-first - for a human-readable
+     * indented "config view" listing rather than a flat dot-path dump. Same shape as
+     * orelia-core's {@code rpg.api.DebugApi.ConfigTreeEntry} / orelia-world's
+     * {@code rpg.world.api.WorldDebugApi.ConfigTreeEntry}, duplicated here for the same reason.
+     */
+    List<ConfigTreeEntry> listConfigTree(String fileName);
+
+    /** See {@link #listConfigTree}. {@code value} is {@code null} for a non-leaf (section) node. */
+    record ConfigTreeEntry(String path, int depth, String label, String value, boolean isLeaf) {}
+
     void openAuction(Player player);
 
     void openMail(Player player);
@@ -34,6 +45,11 @@ public interface ExtraDebugApi {
     void openPet(Player player);
 
     void openHouse(Player player);
+
+    void openAchievement(Player player);
+
+    /** Force-opens the guild list screen (same as the new {@code GuildGuiScreen}) for {@code player}. */
+    void openGuild(Player player);
 
     Set<String> listPetIds();
 

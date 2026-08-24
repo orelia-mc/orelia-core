@@ -1,6 +1,8 @@
 package rpg.extra.guild.command;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -9,17 +11,25 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import rpg.core.command.Pagination;
 import rpg.core.command.TabCompletions;
+import rpg.core.config.ConfigManager;
 import rpg.core.message.MessageManager;
 import rpg.util.ColorUtil;
 import rpg.extra.chat.ChatBroadcast;
+import rpg.extra.chat.NotificationSoundPlayer;
+import rpg.extra.chat.PlayerNameHover;
+import rpg.extra.chat.model.ChatBadge;
+import rpg.extra.chat.service.ChatMuteService;
+import rpg.extra.guild.gui.GuildGuiScreen;
 import rpg.extra.guild.model.Guild;
 import rpg.extra.guild.model.GuildRole;
 import rpg.extra.guild.service.GuildService;
+import rpg.gui.framework.GuiManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 /**
  * {@code /ol guild create|invite|accept|leave|kick|promote|demote|disband|transfer|list|info|chat}
@@ -29,15 +39,26 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
 
     private static final int LIST_PAGE_SIZE = 15;
     private static final List<String> SUBCOMMANDS = List.of(
-            "create", "invite", "accept", "leave", "kick", "promote", "demote", "disband", "transfer", "list", "info", "chat");
+            "create", "invite", "accept", "leave", "kick", "promote", "demote", "disband", "transfer", "list", "info", "gui", "chat");
     private static final List<String> MEMBER_TARGET_ACTIONS = List.of("kick", "promote", "demote", "transfer");
 
     private final GuildService guildService;
     private final MessageManager messages;
+    private final ChatMuteService muteService;
+    private final GuildGuiScreen guiScreen;
+    private final GuiManager guiManager;
+    private final ConfigManager configManager;
+    private final Logger logger;
 
-    public GuildCommand(GuildService guildService, MessageManager messages) {
+    public GuildCommand(GuildService guildService, MessageManager messages, ChatMuteService muteService,
+                         GuildGuiScreen guiScreen, GuiManager guiManager, ConfigManager configManager, Logger logger) {
         this.guildService = guildService;
         this.messages = messages;
+        this.muteService = muteService;
+        this.guiScreen = guiScreen;
+        this.guiManager = guiManager;
+        this.configManager = configManager;
+        this.logger = logger;
     }
 
     @Override
@@ -66,6 +87,13 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
                     target.sendMessage(ColorUtil.componentWithCommand(
                             messages.getPrefix() + messages.format("guild.invite-received", "player", player.getName()),
                             "/guild accept"));
+                    if (!muteService.isMuted(target.getUniqueId(), ChatBadge.GUILD)) {
+                        var config = configManager.get("config.yml").get();
+                        NotificationSoundPlayer.play(target, config.getBoolean("guild.notify-sound.enabled", true),
+                                config.getString("guild.notify-sound.name", "ENTITY_EXPERIENCE_ORB_PICKUP"),
+                                config.getDouble("guild.notify-sound.volume", 1.0),
+                                config.getDouble("guild.notify-sound.pitch", 1.0), logger);
+                    }
                 }
             });
             case "accept" -> {
@@ -109,6 +137,11 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
                     report(sender, guildService.transferLeadership(player, target.getUniqueId()), "guild.leadership-transferred"));
             case "list" -> showList(sender, args);
             case "info" -> showInfo(sender, player);
+            case "gui" -> openGui(player);
+            // Internal - not in SUBCOMMANDS/usage, invoked only via the ClickEvent showList attaches
+            // to each entry (same "hidden runCommand target" convention as orelia-world's
+            // /dialoguechoice).
+            case "guidetail" -> openGuiDetail(player, args);
             case "chat" -> guildChat(sender, player, args);
             default -> messages.send(sender, "usage.guild");
         }
@@ -177,6 +210,29 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    /** Opens the viewer's own guild's detail screen if they're in one, otherwise the full guild list. */
+    private void openGui(Player player) {
+        Guild guild = guildService.getGuild(player.getUniqueId()).orElse(null);
+        if (guild != null) {
+            guiManager.open(player, guiScreen.buildDetail(player, guild.getId()));
+        } else {
+            guiManager.open(player, guiScreen.build(player));
+        }
+    }
+
+    private void openGuiDetail(Player player, String[] args) {
+        if (args.length < 2) {
+            return;
+        }
+        try {
+            UUID guildId = UUID.fromString(args[1]);
+            guiManager.open(player, guiScreen.buildDetail(player, guildId));
+        } catch (IllegalArgumentException ignored) {
+            // Malformed/stale click target (guild since disbanded) - silently no-op rather
+            // than error, same as a stale ClickEvent anywhere else in the plugin.
+        }
+    }
+
     private void guildChat(CommandSender sender, Player player, String[] args) {
         if (args.length < 2) {
             messages.send(sender, "chat.usage-guild-chat");
@@ -188,16 +244,19 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
             return;
         }
         String message = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
-        ChatBroadcast.toGuild(guild, ColorUtil.component(
-                messages.format("chat.guild-format", "sender", player.getName(), "message", message)));
+        ChatBroadcast.toGuild(guild, PlayerNameHover.formatLine(messages, "chat.guild-format", player, message),
+                ChatBadge.GUILD, muteService);
     }
 
     private void showList(CommandSender sender, String[] args) {
         int page = args.length >= 2 ? parsePageOrDefault(args[1]) : 1;
         List<Component> lines = new ArrayList<>();
         for (Guild guild : guildService.getAllGuilds()) {
-            lines.add(ColorUtil.component(messages.format("guild.list-entry",
-                    "tag", guild.getTag(), "name", guild.getName(), "members", guild.getMembers().size())));
+            Component entry = ColorUtil.component(messages.format("guild.list-entry",
+                            "tag", guild.getTag(), "name", guild.getName(), "members", guild.getMembers().size()))
+                    .clickEvent(ClickEvent.runCommand("/guild guidetail " + guild.getId()))
+                    .hoverEvent(HoverEvent.showText(ColorUtil.component("&%7クリックしてGUIで詳細を表示")));
+            lines.add(entry);
         }
         Pagination.send(sender, "&%6&lギルド一覧&%7 ({page}/{total}ページ)", lines, LIST_PAGE_SIZE, page,
                 "/guild list", "&%7登録されているギルドはありません。");

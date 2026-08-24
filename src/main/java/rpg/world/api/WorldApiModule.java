@@ -32,8 +32,9 @@ public final class WorldApiModule implements RpgModule {
                 QuestApi.class, new QuestApiImpl(plugin.getPlayerDataManager()), plugin, ServicePriority.Normal);
         plugin.getServer().getServicesManager().register(
                 WorldDebugApi.class,
-                new WorldDebugApiImpl(plugin.getConfigManager(), questModule.getProgressService(), npcModule.getRepository(),
-                        dungeonModule.getRepository(), dungeonModule.getEncounterService(), plugin.getPlayerDataManager()),
+                new WorldDebugApiImpl(plugin.getConfigManager(), questModule.getProgressService(), questModule.getQuestGuiScreen(),
+                        questModule.getQuestRepository(), npcModule.getRepository(), dungeonModule.getRepository(),
+                        dungeonModule.getEncounterService(), dungeonModule.getGuiScreen(), plugin.getPlayerDataManager()),
                 plugin, ServicePriority.Normal);
     }
 

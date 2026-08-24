@@ -1,7 +1,7 @@
 package rpg.extra.party;
 
-import rpg.core.OreliaPlugin;
 import rpg.core.command.CommandAliasUtil;
+import rpg.core.OreliaPlugin;
 import rpg.core.module.RpgModule;
 import rpg.extra.party.command.PartyCommand;
 import rpg.extra.party.listener.PartyQuitListener;
@@ -29,7 +29,8 @@ public final class PartyModule implements RpgModule {
 
         plugin.getServer().getPluginManager().registerEvents(
                 new PartyQuitListener(manager, partyService, plugin.getMessageManager()), plugin);
-        PartyCommand partyCommand = new PartyCommand(partyService, plugin.getMessageManager());
+        PartyCommand partyCommand = new PartyCommand(partyService, plugin.getMessageManager(), plugin.getChatMuteService(),
+                plugin.getConfigManager(), plugin.getLogger());
         String description = "パーティーを管理します。";
         String usage = "party <create|invite|accept|decline|leave|kick|disband|transfer|list|chat <message>>";
         plugin.getPlayerCommandRegistry().register("party", partyCommand, description, usage);

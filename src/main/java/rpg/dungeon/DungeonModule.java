@@ -42,6 +42,7 @@ public final class DungeonModule implements RpgModule {
     private DungeonBlockRepository blockRepository;
     private DungeonService dungeonService;
     private DungeonEncounterService encounterService;
+    private DungeonGuiScreen guiScreen;
     private OreliaPlugin plugin;
 
     @Override
@@ -95,7 +96,7 @@ public final class DungeonModule implements RpgModule {
                 plugin.getPlayerDataManager(), partyApi, questProgressService, plugin.getMessageManager());
 
         GuiManager guiManager = new GuiManager();
-        DungeonGuiScreen guiScreen = new DungeonGuiScreen(repository, encounterService, plugin.getPlayerDataManager(),
+        this.guiScreen = new DungeonGuiScreen(repository, encounterService, plugin.getPlayerDataManager(),
                 statusApi, guiManager, plugin.getMessageManager());
 
         plugin.getServer().getPluginManager().registerEvents(new DungeonQuitListener(instanceManager), plugin);
@@ -143,5 +144,9 @@ public final class DungeonModule implements RpgModule {
 
     public DungeonInstanceManager getInstanceManager() {
         return instanceManager;
+    }
+
+    public DungeonGuiScreen getGuiScreen() {
+        return guiScreen;
     }
 }

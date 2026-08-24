@@ -4,7 +4,7 @@
 # NPC dialogue lines / quest descriptions / story text stay in their own content yml files
 # (npc.yml, quests.yml, story.yml, ...) since those are per-entry authored content, not
 # fixed UI copy.
-config-version: 9
+config-version: 10
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -39,6 +39,9 @@ usage:
   mount: "&%e使い方: /ol mount [list&%7|&%ebuy &%7<&%eid&%7>&%e&%7|&%esummon [id]&%7|&%edismiss]"
   mount-buy: "&%e使い方: /ol mount buy &%7<&%eid&%7>&%e"
   mount-summon: "&%e使い方: /ol mount summon &%7<&%eid&%7>&%e"
+  mail-send: "&%e使い方: /mail send &%7<&%eplayer&%7>&%e &%7<&%esubject...&%7>&%e"
+  mail-delete: "&%e使い方: /mail delete &%7<&%eindex&%7>&%e"
+  trade-money: "&%e使い方: /trade money &%7<&%eamount&%7>&%e"
 
 monster:
   # Overrides the vanilla "X was slain by <killer's live nametag>" message when a player is
@@ -153,6 +156,19 @@ quest:
   completed: "&%aクエストを完了しました！"
   report-failed: "&%c報告に失敗しました。"
   in-progress: "&%eこのクエストは進行中です。"
+  objective-complete-title: "&%e目標達成！"
+  objective-complete-subtitle: "&%a{quest}"
+  objective-complete-actionbar: "&%aクエスト「{quest}」の目標を達成しました。NPCに報告しましょう。"
+  # QuestGuiScreen's locked-quest-button lore (rpg.quest.service.QuestEligibilityService.Ineligibility
+  # per reason) - shown when a quest is visible but not currently acceptable, rather than hiding it.
+  locked-reason:
+    already-active: "&%7既に受注中です"
+    already-completed: "&%7達成済みです(繰り返し不可)"
+    level-too-low: "&%cレベルが不足しています"
+    prerequisite-missing: "&%c前提クエストが未達成です"
+    not-available-now: "&%c現在の時間帯では受注できません"
+    not-in-party: "&%cパーティーに参加している必要があります"
+    on-cooldown-timed: "&%cクールダウン中です(残り {hours}時間{minutes}分)"
 
 title:
   usage: "&%e使い方: /title &%7<&%elist&%7|&%eequip &%7<&%etitle&%7>&%e&%7|&%eunequip&%7>&%e"
@@ -326,7 +342,11 @@ guild:
 
 trade:
   started: "&%a取引を開始しました。/trade add でアイテムを追加できます。"
+  request-sent: "&%a{player}に取引を申し込みました。"
   request-received: "&%a{player}から取引の申し込みが届きました。/trade accept で応じられます。"
+  item-added: "&%aアイテムを提示しました。"
+  item-removed: "&%aアイテムを取り戻しました。"
+  cancelled: "&%e取引をキャンセルしました。"
   confirmed-executed: "&%a取引が成立しました！"
   confirmed-waiting: "&%e確定しました。相手の確定を待っています。"
   invalid-number: "&%c数値を指定してください。"
@@ -341,12 +361,24 @@ trade:
   empty-hand: "&%c手にアイテムを持っていません。"
   invalid-slot: "&%c指定した番号のアイテムはありません。"
   cancelled-by-quit: "&%c{player}が切断したため取引はキャンセルされました。"
+  request-timed-out: "&%c取引の申し込みが時間切れになりました。"
+  session-timed-out: "&%c取引がタイムアウトしたためキャンセルされました。"
+  insufficient-funds: "&%c所持金が足りないため取引を成立できませんでした。"
+  money-unsupported: "&%cVault Economyが導入されていないため金額は提示できません。"
+  invalid-amount: "&%c金額は0以上で指定してください。"
+  too-many-items: "&%c提示できるアイテム数の上限に達しています。"
+  money-set: "&%a提示金額を{money}に設定しました。"
+  offer-money: "&%7提示金額: &%6{money}"
 
 mail:
-  unread-count: "&%e未読メール: {count}件"
+  unread-count: "&%e未読メール: {count}件 (クリックで開く)"
   no-mail: "&%7受信メールがありません。"
   claimed: "&%a添付物を受け取りました。"
   claim-failed: "&%c受け取りに失敗しました。"
+  sent: "&%a{player}にメールを送信しました。"
+  send-failed-inbox-full: "&%c{player}の受信箱が上限に達しているため送信できません。"
+  deleted: "&%aメールを削除しました。"
+  delete-failed: "&%c削除に失敗しました。"
 
 auction:
   listed: "&%a手に持っているアイテムを出品しました。"
@@ -360,7 +392,9 @@ auction:
   collected: "&%a{count}件の未売却アイテムを回収しました。"
   no-listings: "&%7出品がありません。"
   sold-mail-subject: "{item}が売れました"
-  sold-mail-body: "&%f{item} &%7が &%e{price}G &%7で売れました（購入者: {buyer}）。代金は既にあなたの所持金へ振り込まれています。"
+  sold-mail-body: "&%f{item} &%7が &%e{price}G &%7で売れました（購入者: {buyer}）。手数料 &%c{fee}G &%7を差し引いた &%a{net}G &%7が所持金へ振り込まれています。"
+  expired-mail-subject: "{item}の出品期限が切れました"
+  expired-mail-body: "&%f{item} &%7の出品期間が終了しました。&%eオークション画面から回収してください。"
   reason:
     not-found: "出品が見つかりません"
     already-resolved: "既に処理済みです"
@@ -370,11 +404,14 @@ auction:
     invalid-price: "価格が不正です"
     empty-hand: "手に何も持っていません"
     inventory-full: "インベントリに空きがありません"
+    max-listings-reached: "出品数の上限に達しています"
 
 housing:
   no-plots-available: "&%e購入可能な土地はありません。"
   available-header: "&%a購入可能な土地:"
   plot-entry: "&%7- {id} ({name}) {price}G"
+  purchased: "&%a土地「{id}」を購入しました。"
+  teleported: "&%a自宅へテレポートしました。"
   plot-not-found: "&%c指定した土地は存在しません。"
   plot-taken: "&%cその土地は既に購入されています。"
   already-own-house: "&%c既に自宅を所有しています。"
@@ -388,6 +425,9 @@ pet:
   list-entry: "&%7- {id} ({name}) {status}"
   owned-tag: "&%a所持済み"
   price-tag: "&%6{price}G"
+  unlocked: "&%aペットを購入しました。"
+  summoned: "&%aペットを呼び出しました。"
+  dismissed: "&%eペットを休憩させました。"
   not-found: "&%c指定したペットは存在しません。"
   already-unlocked: "&%c既に所持しています。"
   not-unlocked: "&%cそのペットはまだ購入していません。"
@@ -400,6 +440,9 @@ mount:
   list-entry: "&%7- {id} ({name}) {status}"
   owned-tag: "&%a所持済み"
   price-tag: "&%6{price}G"
+  unlocked: "&%a乗り物を購入しました。"
+  summoned: "&%a乗り物を呼び出しました。"
+  dismissed: "&%e乗り物を送り返しました。"
   not-found: "&%c指定した乗り物は存在しません。"
   already-unlocked: "&%c既に所持しています。"
   not-unlocked: "&%cその乗り物はまだ購入していません。"
@@ -429,9 +472,20 @@ chat:
   not-in-guild: "&%cギルドに所属していません。"
   reverted-party: "&%cパーティーに所属していないため、パブリックチャットに戻しました。"
   reverted-guild: "&%cギルドに所属していないため、パブリックチャットに戻しました。"
-  party-format: "&%9[パーティー] &%f{sender}&%7: &%f{message}"
-  guild-format: "&%a[ギルド] &%f{sender}&%7: &%f{message}"
+  # ChatBadge's icon (see rpg.extra.chat.model.ChatBadge) now carries the category marker for
+  # party/guild lines, replacing the old "[パーティー]"/"[ギルド]" text prefix - don't re-add a
+  # bracket label here or the category would show twice.
+  party-format: "&%f{sender}&%7: &%f{message}"
+  guild-format: "&%f{sender}&%7: &%f{message}"
   admin-format: "&%c[管理者] &%f{sender}&%7: &%f{message}"
   msg-usage: "&%e使い方: /msg &%7<&%eplayer&%7>&%e &%7<&%emessage&%7>&%e"
   msg-sent: "&%d[あなた -> {player}]&%7: &%f{message}"
+  mute-usage: "&%e使い方: /chat mute &%7<&%ecombat&%7|&%esystem&%7|&%eparty&%7|&%eguild&%7>&%e"
+  mute-invalid-category: "&%c不明なカテゴリです: {category}"
+  mute-on: "&%c{category}のチャット通知をミュートしました。"
+  mute-off: "&%a{category}のチャット通知のミュートを解除しました。"
+  mute-status-header: "&%7現在ミュート中のカテゴリ:"
+  mute-status-empty: "&%7ミュート中のカテゴリはありません。"
+  mute-status-entry: "&%7- &%f{category}"
   msg-received: "&%d[{player} -> あなた]&%7: &%f{message}"
+

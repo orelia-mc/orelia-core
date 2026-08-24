@@ -1,5 +1,7 @@
 package rpg.extra.trade.model;
 
+import org.bukkit.scheduler.BukkitTask;
+
 import java.util.UUID;
 
 /**
@@ -14,6 +16,7 @@ public final class TradeSession {
     private final UUID playerB;
     private final TradeOffer offerA = new TradeOffer();
     private final TradeOffer offerB = new TradeOffer();
+    private BukkitTask timeoutTask;
 
     public TradeSession(UUID playerA, UUID playerB) {
         this.playerA = playerA;
@@ -42,5 +45,14 @@ public final class TradeSession {
 
     public boolean bothConfirmed() {
         return offerA.isConfirmed() && offerB.isConfirmed();
+    }
+
+    /** The session-idle-timeout task scheduled when this session started, if any - cancelled once the trade executes/is cancelled. */
+    public BukkitTask getTimeoutTask() {
+        return timeoutTask;
+    }
+
+    public void setTimeoutTask(BukkitTask timeoutTask) {
+        this.timeoutTask = timeoutTask;
     }
 }

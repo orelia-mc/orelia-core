@@ -48,7 +48,7 @@ public final class MountCommand implements CommandExecutor, TabCompleter {
                     messages.send(sender, "usage.mount-buy");
                     return true;
                 }
-                report(sender, mountService.unlock(player, args[1]));
+                report(sender, mountService.unlock(player, args[1]), "mount.unlocked");
             }
             case "summon" -> {
                 String mountId = args.length >= 2 ? args[1] : mountService.getSelectedMountId(player.getUniqueId());
@@ -56,9 +56,9 @@ public final class MountCommand implements CommandExecutor, TabCompleter {
                     messages.send(sender, "usage.mount-summon");
                     return true;
                 }
-                report(sender, mountService.summon(player, mountId));
+                report(sender, mountService.summon(player, mountId), "mount.summoned");
             }
-            case "dismiss" -> report(sender, mountService.dismiss(player));
+            case "dismiss" -> report(sender, mountService.dismiss(player), "mount.dismissed");
             default -> messages.send(sender, "usage.mount");
         }
         return true;
@@ -90,9 +90,9 @@ public final class MountCommand implements CommandExecutor, TabCompleter {
         });
     }
 
-    private void report(CommandSender sender, MountService.ActionResult result) {
+    private void report(CommandSender sender, MountService.ActionResult result, String successKey) {
         if (result == MountService.ActionResult.OK) {
-            messages.send(sender, "command.ok");
+            messages.send(sender, successKey);
             return;
         }
         String key = switch (result) {

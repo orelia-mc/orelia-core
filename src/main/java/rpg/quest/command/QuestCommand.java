@@ -7,12 +7,15 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import rpg.core.message.MessageManager;
 import rpg.core.player.PlayerDataManager;
+import rpg.gui.framework.GuiManager;
+import rpg.quest.gui.QuestGuiScreen;
 import rpg.quest.gui.QuestObjectiveBarRenderer;
 import rpg.quest.model.PlayerQuestComponent;
 import rpg.quest.model.PlayerQuestProgress;
 import rpg.quest.model.QuestData;
 import rpg.quest.model.QuestObjective;
 import rpg.quest.repository.QuestRepository;
+import rpg.quest.service.QuestProgressService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,13 +31,21 @@ public final class QuestCommand implements CommandExecutor, TabCompleter {
 
     private final PlayerDataManager playerDataManager;
     private final QuestRepository questRepository;
+    private final QuestProgressService progressService;
     private final MessageManager messages;
+    private final QuestGuiScreen guiScreen;
+    private final GuiManager guiManager;
     private final QuestObjectiveBarRenderer barRenderer = new QuestObjectiveBarRenderer();
 
-    public QuestCommand(PlayerDataManager playerDataManager, QuestRepository questRepository, MessageManager messages) {
+    public QuestCommand(PlayerDataManager playerDataManager, QuestRepository questRepository,
+                         QuestProgressService progressService, MessageManager messages,
+                         QuestGuiScreen guiScreen, GuiManager guiManager) {
         this.playerDataManager = playerDataManager;
         this.questRepository = questRepository;
+        this.progressService = progressService;
         this.messages = messages;
+        this.guiScreen = guiScreen;
+        this.guiManager = guiManager;
     }
 
     @Override
@@ -43,6 +54,11 @@ public final class QuestCommand implements CommandExecutor, TabCompleter {
             messages.send(sender, "command.player-only");
             return true;
         }
+        if (args.length >= 1 && args[0].equalsIgnoreCase("gui")) {
+            guiManager.open(player, guiScreen.build(player));
+            return true;
+        }
+
         PlayerQuestComponent component = playerDataManager.get(player.getUniqueId())
                 .flatMap(d -> d.component(PlayerQuestComponent.class))
                 .orElse(null);
@@ -53,7 +69,7 @@ public final class QuestCommand implements CommandExecutor, TabCompleter {
 
         if (args.length >= 2 && args[0].equalsIgnoreCase("abandon")) {
             String questId = args[1];
-            if (component.getActiveQuests().remove(questId) != null) {
+            if (progressService.abandon(player.getUniqueId(), questId)) {
                 messages.send(sender, "quest.abandoned", "quest", questId);
             } else {
                 messages.send(sender, "quest.not-active");
@@ -89,7 +105,7 @@ public final class QuestCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length <= 1) {
-            return matching(List.of("list", "abandon"), args.length == 0 ? "" : args[0]);
+            return matching(List.of("list", "gui", "abandon"), args.length == 0 ? "" : args[0]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("abandon") && sender instanceof Player player) {
             PlayerQuestComponent component = playerDataManager.get(player.getUniqueId())

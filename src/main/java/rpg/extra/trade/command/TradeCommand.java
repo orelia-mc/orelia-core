@@ -1,5 +1,6 @@
 package rpg.extra.trade.command;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -9,25 +10,41 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import rpg.core.command.TabCompletions;
 import rpg.core.message.MessageManager;
+import rpg.extra.chat.NotificationSoundPlayer;
+import rpg.extra.chat.model.ChatBadge;
+import rpg.extra.chat.service.ChatMuteService;
+import rpg.extra.trade.config.TradeConfig;
 import rpg.extra.trade.model.TradeSession;
 import rpg.extra.trade.service.TradeService;
+import rpg.extra.util.ItemDisplayNames;
+import rpg.util.ColorUtil;
+import rpg.util.MoneyFormat;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
- * {@code /ol trade <player>|accept|add|remove <index>|confirm|cancel|view} (SOW TradeModule).
+ * {@code /ol trade <player>|accept|add|remove <index>|money <amount>|confirm|cancel|view} (SOW TradeModule).
  */
 public final class TradeCommand implements CommandExecutor, TabCompleter {
 
-    private static final List<String> SUBCOMMANDS = List.of("accept", "add", "remove", "confirm", "cancel", "view");
+    private static final List<String> SUBCOMMANDS =
+            List.of("accept", "add", "remove", "money", "confirm", "cancel", "view");
 
     private final TradeService tradeService;
     private final MessageManager messages;
+    private final TradeConfig tradeConfig;
+    private final Logger logger;
+    private final ChatMuteService muteService;
 
-    public TradeCommand(TradeService tradeService, MessageManager messages) {
+    public TradeCommand(TradeService tradeService, MessageManager messages, TradeConfig tradeConfig, Logger logger,
+                         ChatMuteService muteService) {
         this.tradeService = tradeService;
         this.messages = messages;
+        this.tradeConfig = tradeConfig;
+        this.logger = logger;
+        this.muteService = muteService;
     }
 
     @Override
@@ -50,23 +67,65 @@ public final class TradeCommand implements CommandExecutor, TabCompleter {
                     report(sender, result);
                 }
             }
-            case "add" -> report(sender, tradeService.addHeldItem(player));
+            case "add" -> {
+                TradeService.ActionResult result = tradeService.addHeldItem(player);
+                if (result == TradeService.ActionResult.OK) {
+                    messages.send(player, "trade.item-added");
+                } else {
+                    report(sender, result);
+                }
+            }
             case "remove" -> {
                 if (args.length < 2) {
                     messages.send(sender, "usage.trade-remove");
                     return true;
                 }
                 try {
-                    report(sender, tradeService.removeOfferedItem(player, Integer.parseInt(args[1])));
+                    TradeService.ActionResult result = tradeService.removeOfferedItem(player, Integer.parseInt(args[1]));
+                    if (result == TradeService.ActionResult.OK) {
+                        messages.send(player, "trade.item-removed");
+                    } else {
+                        report(sender, result);
+                    }
+                } catch (NumberFormatException e) {
+                    messages.send(sender, "trade.invalid-number");
+                }
+            }
+            case "money" -> {
+                if (args.length < 2) {
+                    messages.send(sender, "usage.trade-money");
+                    return true;
+                }
+                try {
+                    double amount = Double.parseDouble(args[1]);
+                    TradeService.ActionResult result = tradeService.setOfferedMoney(player, amount);
+                    if (result == TradeService.ActionResult.OK) {
+                        messages.send(player, "trade.money-set", "money", MoneyFormat.format(amount));
+                    } else {
+                        report(sender, result);
+                    }
                 } catch (NumberFormatException e) {
                     messages.send(sender, "trade.invalid-number");
                 }
             }
             case "confirm" -> {
-                boolean executed = tradeService.confirm(player);
-                messages.send(player, executed ? "trade.confirmed-executed" : "trade.confirmed-waiting");
+                TradeService.ActionResult result = tradeService.confirm(player);
+                if (result == TradeService.ActionResult.OK) {
+                    messages.send(player, "trade.confirmed-executed");
+                } else if (result == TradeService.ActionResult.WAITING_FOR_OTHER) {
+                    messages.send(player, "trade.confirmed-waiting");
+                } else {
+                    report(sender, result);
+                }
             }
-            case "cancel" -> report(sender, tradeService.cancel(player));
+            case "cancel" -> {
+                TradeService.ActionResult result = tradeService.cancel(player);
+                if (result == TradeService.ActionResult.OK) {
+                    messages.send(player, "trade.cancelled");
+                } else {
+                    report(sender, result);
+                }
+            }
             case "view" -> showOffers(sender, player);
             default -> {
                 Player target = Bukkit.getPlayerExact(args[0]);
@@ -75,9 +134,16 @@ public final class TradeCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 TradeService.ActionResult result = tradeService.request(player, target);
-                report(sender, result);
                 if (result == TradeService.ActionResult.OK) {
+                    messages.send(player, "trade.request-sent", "player", target.getName());
                     messages.send(target, "trade.request-received", "player", player.getName());
+                    if (!muteService.isMuted(target.getUniqueId(), ChatBadge.SYSTEM)) {
+                        NotificationSoundPlayer.play(target, tradeConfig.isNotifySoundEnabled(),
+                                tradeConfig.getNotifySoundName(), tradeConfig.getNotifySoundVolume(),
+                                tradeConfig.getNotifySoundPitch(), logger);
+                    }
+                } else {
+                    report(sender, result);
                 }
             }
         }
@@ -103,20 +169,42 @@ public final class TradeCommand implements CommandExecutor, TabCompleter {
             return;
         }
         messages.send(sender, "trade.your-offer-header");
-        printOffer(sender, session.offerOf(player.getUniqueId()).getItems());
+        printOffer(sender, session.offerOf(player.getUniqueId()));
         messages.send(sender, "trade.their-offer-header");
-        printOffer(sender, session.offerOf(session.getOtherPlayer(player.getUniqueId())).getItems());
+        printOffer(sender, session.offerOf(session.getOtherPlayer(player.getUniqueId())));
     }
 
-    private void printOffer(CommandSender sender, java.util.List<ItemStack> items) {
+    private void printOffer(CommandSender sender, rpg.extra.trade.model.TradeOffer offer) {
+        List<ItemStack> items = offer.getItems();
         if (items.isEmpty()) {
             messages.send(sender, "trade.offer-empty");
-            return;
         }
         for (int i = 0; i < items.size(); i++) {
-            ItemStack item = items.get(i);
-            messages.sendRaw(sender, "trade.offer-entry", "index", i, "type", item.getType(), "amount", item.getAmount());
+            sender.sendMessage(offerEntryComponent(i, items.get(i)));
         }
+        if (offer.getMoney() > 0) {
+            messages.send(sender, "trade.offer-money", "money", MoneyFormat.format(offer.getMoney()));
+        }
+    }
+
+    /**
+     * Builds {@code trade.offer-entry} as a Component instead of going through
+     * {@link MessageManager#sendRaw} - the item-name portion needs a {@code HoverEvent.showItem}
+     * (vanilla's own {@code [Item]} tooltip) attached, which the string-only formatter can't do.
+     */
+    private Component offerEntryComponent(int index, ItemStack item) {
+        String template = messages.raw("trade.offer-entry")
+                .replace("{index}", String.valueOf(index))
+                .replace("{amount}", String.valueOf(item.getAmount()));
+        int typeStart = template.indexOf("{type}");
+        if (typeStart < 0) {
+            return ColorUtil.component(template);
+        }
+        String before = template.substring(0, typeStart);
+        String after = template.substring(typeStart + "{type}".length());
+        return ColorUtil.component(before)
+                .append(ColorUtil.componentWithItemHover(ItemDisplayNames.of(item), item))
+                .append(ColorUtil.component(after));
     }
 
     private void report(CommandSender sender, TradeService.ActionResult result) {
@@ -131,6 +219,11 @@ public final class TradeCommand implements CommandExecutor, TabCompleter {
             case CANNOT_TARGET_SELF -> "trade.cannot-target-self";
             case EMPTY_HAND -> "trade.empty-hand";
             case INVALID_SLOT -> "trade.invalid-slot";
+            case WAITING_FOR_OTHER -> "trade.confirmed-waiting";
+            case INSUFFICIENT_FUNDS -> "trade.insufficient-funds";
+            case MONEY_UNSUPPORTED -> "trade.money-unsupported";
+            case INVALID_AMOUNT -> "trade.invalid-amount";
+            case TOO_MANY_ITEMS -> "trade.too-many-items";
             case OK -> "command.ok";
         };
         messages.send(sender, key);

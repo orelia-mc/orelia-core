@@ -1,9 +1,12 @@
 package rpg.extra.api;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import rpg.core.config.ConfigFile;
 import rpg.core.config.ConfigManager;
+import rpg.extra.achievement.AchievementModule;
 import rpg.extra.auction.AuctionModule;
+import rpg.extra.guild.GuildModule;
 import rpg.extra.housing.HousingModule;
 import rpg.extra.housing.service.HousingService;
 import rpg.extra.mail.MailModule;
@@ -16,6 +19,7 @@ import rpg.extra.trade.TradeModule;
 import rpg.extra.trade.model.TradeSession;
 import rpg.gui.framework.GuiManager;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -31,11 +35,14 @@ final class ExtraDebugApiImpl implements ExtraDebugApi {
     private final MountModule mountModule;
     private final HousingModule housingModule;
     private final TradeModule tradeModule;
+    private final AchievementModule achievementModule;
+    private final GuildModule guildModule;
     private final GuiManager guiManager = new GuiManager();
 
     ExtraDebugApiImpl(ConfigManager configManager, AuctionModule auctionModule, MailModule mailModule,
                        RankingModule rankingModule, PetModule petModule, MountModule mountModule,
-                       HousingModule housingModule, TradeModule tradeModule) {
+                       HousingModule housingModule, TradeModule tradeModule, AchievementModule achievementModule,
+                       GuildModule guildModule) {
         this.configManager = configManager;
         this.auctionModule = auctionModule;
         this.mailModule = mailModule;
@@ -44,6 +51,8 @@ final class ExtraDebugApiImpl implements ExtraDebugApi {
         this.mountModule = mountModule;
         this.housingModule = housingModule;
         this.tradeModule = tradeModule;
+        this.achievementModule = achievementModule;
+        this.guildModule = guildModule;
     }
 
     @Override
@@ -89,6 +98,29 @@ final class ExtraDebugApiImpl implements ExtraDebugApi {
     }
 
     @Override
+    public List<ConfigTreeEntry> listConfigTree(String fileName) {
+        ConfigFile file = tryGet(fileName);
+        if (file == null) {
+            return List.of();
+        }
+        List<ConfigTreeEntry> entries = new ArrayList<>();
+        collectTree(file.get(), "", 0, entries);
+        return entries;
+    }
+
+    private void collectTree(ConfigurationSection section, String pathPrefix, int depth, List<ConfigTreeEntry> out) {
+        for (String key : section.getKeys(false)) {
+            String path = pathPrefix.isEmpty() ? key : pathPrefix + "." + key;
+            if (section.isConfigurationSection(key)) {
+                out.add(new ConfigTreeEntry(path, depth, key, null, false));
+                collectTree(section.getConfigurationSection(key), path, depth + 1, out);
+            } else {
+                out.add(new ConfigTreeEntry(path, depth, key, String.valueOf(section.get(key)), true));
+            }
+        }
+    }
+
+    @Override
     public void openAuction(Player player) {
         guiManager.open(player, auctionModule.getGuiScreen().build(player));
     }
@@ -111,6 +143,16 @@ final class ExtraDebugApiImpl implements ExtraDebugApi {
     @Override
     public void openHouse(Player player) {
         guiManager.open(player, housingModule.getGuiScreen().build(player));
+    }
+
+    @Override
+    public void openAchievement(Player player) {
+        achievementModule.openGui(player);
+    }
+
+    @Override
+    public void openGuild(Player player) {
+        guildModule.getGuiManager().open(player, guildModule.getGuildGuiScreen().build(player));
     }
 
     @Override

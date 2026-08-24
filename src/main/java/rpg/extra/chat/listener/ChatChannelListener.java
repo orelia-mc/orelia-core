@@ -9,13 +9,15 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import rpg.core.message.MessageManager;
 import rpg.extra.chat.ChatBroadcast;
+import rpg.extra.chat.PlayerNameHover;
+import rpg.extra.chat.model.ChatBadge;
 import rpg.extra.chat.model.ChatChannel;
 import rpg.extra.chat.service.ChatChannelService;
+import rpg.extra.chat.service.ChatMuteService;
 import rpg.extra.guild.model.Guild;
 import rpg.extra.guild.service.GuildService;
 import rpg.extra.party.model.Party;
 import rpg.extra.party.service.PartyService;
-import rpg.util.ColorUtil;
 
 /**
  * Routes a player's typed chat message to their currently-selected channel (see
@@ -32,13 +34,15 @@ public final class ChatChannelListener implements Listener {
     private final PartyService partyService;
     private final GuildService guildService;
     private final MessageManager messages;
+    private final ChatMuteService muteService;
 
     public ChatChannelListener(ChatChannelService channelService, PartyService partyService,
-                                GuildService guildService, MessageManager messages) {
+                                GuildService guildService, MessageManager messages, ChatMuteService muteService) {
         this.channelService = channelService;
         this.partyService = partyService;
         this.guildService = guildService;
         this.messages = messages;
+        this.muteService = muteService;
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -76,7 +80,7 @@ public final class ChatChannelListener implements Listener {
             return false;
         }
         Component line = formatLine("chat.party-format", sender, message);
-        ChatBroadcast.toParty(party, line);
+        ChatBroadcast.toParty(party, line, ChatBadge.PARTY, muteService);
         return true;
     }
 
@@ -86,7 +90,7 @@ public final class ChatChannelListener implements Listener {
             return false;
         }
         Component line = formatLine("chat.guild-format", sender, message);
-        ChatBroadcast.toGuild(guild, line);
+        ChatBroadcast.toGuild(guild, line, ChatBadge.GUILD, muteService);
         return true;
     }
 
@@ -95,6 +99,6 @@ public final class ChatChannelListener implements Listener {
     }
 
     private Component formatLine(String key, Player sender, String message) {
-        return ColorUtil.component(messages.format(key, "sender", sender.getName(), "message", message));
+        return PlayerNameHover.formatLine(messages, key, sender, message);
     }
 }

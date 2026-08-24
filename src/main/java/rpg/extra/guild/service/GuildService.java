@@ -142,6 +142,11 @@ public final class GuildService {
         return manager.getByPlayer(playerId);
     }
 
+    /** Looks up a guild by its own id rather than a member's - for the GUI browser, which drills from a list into one guild's detail. */
+    public Optional<Guild> getGuildById(UUID guildId) {
+        return manager.getById(guildId);
+    }
+
     public Collection<Guild> getAllGuilds() {
         return manager.getAll();
     }

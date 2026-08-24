@@ -136,6 +136,37 @@ public final class MailRepository implements SchemaOwner {
         }
     }
 
+    public int countByRecipient(UUID recipientId) {
+        String sql = "SELECT COUNT(*) FROM mail_message WHERE recipient_uuid = ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, recipientId.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? resultSet.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to count mail for " + recipientId, e);
+        }
+    }
+
+    /** Every message sent before {@code cutoffMillis}, across all recipients - feeds {@link rpg.extra.mail.service.MailService#purgeExpired}. */
+    public List<MailMessage> findOlderThan(long cutoffMillis) {
+        List<MailMessage> messages = new ArrayList<>();
+        String sql = "SELECT * FROM mail_message WHERE sent_at < ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, cutoffMillis);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    messages.add(fromRow(resultSet));
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to load mail older than " + cutoffMillis, e);
+        }
+        return messages;
+    }
+
     private String serialize(ItemStack[] items) throws IOException {
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
         try (BukkitObjectOutputStream dataStream = new BukkitObjectOutputStream(byteStream)) {

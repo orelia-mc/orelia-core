@@ -39,7 +39,12 @@ public final class HousingGuiScreen {
                     .lore(List.of("&%7クリックして移動"))
                     .build(), (clicker, clickType) -> {
                 clicker.closeInventory();
-                report(clicker, housingService.teleportHome(clicker));
+                HousingService.ActionResult result = housingService.teleportHome(clicker);
+                if (result == HousingService.ActionResult.OK) {
+                    messages.send(clicker, "housing.teleported");
+                } else {
+                    report(clicker, result);
+                }
             }));
         }
 
@@ -51,7 +56,14 @@ public final class HousingGuiScreen {
             gui.set(slot++, new GuiButton(new ItemBuilder(Material.OAK_DOOR)
                     .name("&%e" + plot.getName())
                     .lore(List.of("&%7価格: &%f" + MoneyFormat.format(plot.getPrice()), "&%7クリックして購入"))
-                    .build(), (clicker, clickType) -> report(clicker, housingService.purchase(clicker, plot.getId()))));
+                    .build(), (clicker, clickType) -> {
+                HousingService.ActionResult result = housingService.purchase(clicker, plot.getId());
+                if (result == HousingService.ActionResult.OK) {
+                    messages.send(clicker, "housing.purchased", "id", plot.getId());
+                } else {
+                    report(clicker, result);
+                }
+            }));
         }
         return gui;
     }

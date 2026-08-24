@@ -6,10 +6,10 @@ import org.bukkit.command.CommandSender;
 import rpg.core.OreliaPlugin;
 
 /**
- * {@code /oladmin extrareload} - alias of {@code /oladmin reload} kept for one release cycle
- * so admin muscle-memory/scripts from the pre-merge 3-plugin setup keep working. Reloads
- * every module's config, not just the former orelia-extra ones - since the merge there is
- * only one {@link OreliaPlugin#reload()}.
+ * {@code /oladmin extrareload} - re-reads every orelia-extra config file and asks each
+ * module to rebuild its in-memory state. Registered as "extrareload" (not "reload") into
+ * orelia-core's shared {@code AdminCommandRegistry} so it doesn't collide with orelia-core's
+ * own {@code reload} or orelia-world's {@code worldreload}.
  */
 public final class ExtraAdminCommand implements CommandExecutor {
 

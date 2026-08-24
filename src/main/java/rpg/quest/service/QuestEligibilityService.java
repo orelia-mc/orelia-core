@@ -3,6 +3,7 @@ package rpg.quest.service;
 import org.bukkit.entity.Player;
 import rpg.api.StatusApi;
 import rpg.core.player.PlayerDataManager;
+import rpg.extra.api.PartyApi;
 import rpg.quest.model.PlayerQuestComponent;
 import rpg.quest.model.QuestData;
 
@@ -19,15 +20,24 @@ import java.util.Optional;
 public final class QuestEligibilityService {
 
     public enum Ineligibility {
-        ALREADY_ACTIVE, ALREADY_COMPLETED, LEVEL_TOO_LOW, PREREQUISITE_MISSING, NOT_AVAILABLE_NOW, ON_COOLDOWN
+        ALREADY_ACTIVE, ALREADY_COMPLETED, LEVEL_TOO_LOW, PREREQUISITE_MISSING, NOT_AVAILABLE_NOW, ON_COOLDOWN, NOT_IN_PARTY
     }
 
     private final PlayerDataManager playerDataManager;
     private final StatusApi statusApi;
+    private final PartyApi partyApi;
 
-    public QuestEligibilityService(PlayerDataManager playerDataManager, StatusApi statusApi) {
+    /**
+     * {@code partyApi} is a soft dependency (orelia-extra may not be installed, see
+     * {@code build.gradle.kts}'s {@code compileOnly}) - when {@code null}, a
+     * {@code party-only} quest fails closed (always ineligible) rather than silently
+     * allowing solo acceptance, since the whole point of the flag is that a party is
+     * required and there's no party concept to check against without it.
+     */
+    public QuestEligibilityService(PlayerDataManager playerDataManager, StatusApi statusApi, PartyApi partyApi) {
         this.playerDataManager = playerDataManager;
         this.statusApi = statusApi;
+        this.partyApi = partyApi;
     }
 
     public Optional<Ineligibility> checkEligibility(Player player, QuestData quest) {
@@ -49,6 +59,9 @@ public final class QuestEligibilityService {
         int level = statusApi.getLevel(player.getUniqueId()).orElse(1);
         if (level < quest.getRequiredLevel()) {
             return Optional.of(Ineligibility.LEVEL_TOO_LOW);
+        }
+        if (quest.isPartyOnly() && !(partyApi != null && partyApi.isInParty(player.getUniqueId()))) {
+            return Optional.of(Ineligibility.NOT_IN_PARTY);
         }
         for (String prerequisite : quest.getPrerequisiteQuestIds()) {
             if (!component.hasCompleted(prerequisite)) {

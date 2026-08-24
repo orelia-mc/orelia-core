@@ -48,6 +48,10 @@ public final class GuildManager {
         return Optional.ofNullable(playerToGuild.get(playerId)).map(guildsById::get);
     }
 
+    public Optional<Guild> getById(UUID guildId) {
+        return Optional.ofNullable(guildsById.get(guildId));
+    }
+
     public Collection<Guild> getAll() {
         return List.copyOf(guildsById.values());
     }

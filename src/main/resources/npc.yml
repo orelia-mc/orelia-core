@@ -114,6 +114,24 @@ npcs:
       - daily_bounty
       - scout_the_camp
       - king_of_goblins
+      - trial_of_the_swordsman_quest
+      - flame_lords_showdown
+      - ancient_grove_trial
+      - abyssal_descent
+      - venoms_nest
+      - call_of_the_dragon
+      - skeletal_watch
+      - frost_ambush
+      - troll_hunt
+      - supply_run
+      - herb_gathering
+      - grove_bark_collection
+      - daily_slime_purge
+      - daily_veteran_bounty
+      - weekly_goblin_king_bounty
+      - weekly_cave_delve
+      - event_moonlit_hunt
+      - event_lost_treasure
 
   job_master:
     name: "職業指南役ヴィクター"

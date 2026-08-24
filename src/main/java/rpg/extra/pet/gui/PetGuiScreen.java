@@ -61,13 +61,21 @@ public final class PetGuiScreen {
             player.closeInventory();
             boolean active = petId.equals(petService.getSelectedPetId(player.getUniqueId()))
                     && petManager.hasActivePet(player.getUniqueId());
-            report(player, active ? petService.dismiss(player) : petService.summon(player, petId));
+            if (active) {
+                report(player, petService.dismiss(player), "pet.dismissed");
+            } else {
+                report(player, petService.summon(player, petId), "pet.summoned");
+            }
         } else {
-            report(player, petService.unlock(player, petId));
+            report(player, petService.unlock(player, petId), "pet.unlocked");
         }
     }
 
-    private void report(Player player, PetService.ActionResult result) {
+    private void report(Player player, PetService.ActionResult result, String successKey) {
+        if (result == PetService.ActionResult.OK) {
+            messages.send(player, successKey);
+            return;
+        }
         String key = switch (result) {
             case OK -> "command.ok";
             case PET_NOT_FOUND -> "pet.not-found";

@@ -23,10 +23,14 @@ public final class QuestData {
     private final int availableHourEnd;
     /** Only meaningful when {@link #repeatable} is true; 0 (the default) means no cooldown - instantly re-acceptable. */
     private final double cooldownHours;
+    /** Dialogue tree id (see {@code rpg.world.dialogue}) played on accept/report, or {@code null} for none - optional NPC flavor, not required. */
+    private final String startDialogueId;
+    private final String completeDialogueId;
 
     public QuestData(String id, String name, QuestType type, List<String> description, List<QuestObjective> objectives,
                       QuestReward reward, boolean repeatable, boolean partyOnly, int requiredLevel,
-                      List<String> prerequisiteQuestIds, int availableHourStart, int availableHourEnd, double cooldownHours) {
+                      List<String> prerequisiteQuestIds, int availableHourStart, int availableHourEnd, double cooldownHours,
+                      String startDialogueId, String completeDialogueId) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -40,6 +44,8 @@ public final class QuestData {
         this.availableHourStart = availableHourStart;
         this.availableHourEnd = availableHourEnd;
         this.cooldownHours = cooldownHours;
+        this.startDialogueId = startDialogueId;
+        this.completeDialogueId = completeDialogueId;
     }
 
     public String getId() {
@@ -84,6 +90,16 @@ public final class QuestData {
 
     public double getCooldownHours() {
         return cooldownHours;
+    }
+
+    /** Dialogue tree to play when the quest is accepted, or {@code null} if this quest has no start flavor. */
+    public String getStartDialogueId() {
+        return startDialogueId;
+    }
+
+    /** Dialogue tree to play when the quest is reported/completed, or {@code null} if this quest has no completion flavor. */
+    public String getCompleteDialogueId() {
+        return completeDialogueId;
     }
 
     public boolean isAvailableAtHour(int hour) {

@@ -47,7 +47,7 @@ safe to remove in a later cleanup.
 
 ### Module system
 
-`OreliaPlugin` (`rpg/core/OreliaPlugin.java`) is the single entry point. It owns process-wide singletons — `ConfigManager`, `SchedulerService`, `PlayerDataManager`, `ModuleManager` — and registers every top-level feature as an `RpgModule` (`rpg/core/module/RpgModule.java`) in a fixed order in `onEnable()`. This one `RpgModule`/`ModuleManager` pair covers all 37 modules from every former plugin — the old parallel `WorldModule`/`WorldModuleManager` and `ExtraModule`/`ExtraModuleManager` types were removed in the merge, since they were structurally identical to `RpgModule`/`ModuleManager` (only the plugin-class type parameter differed).
+`OreliaPlugin` (`rpg/core/OreliaPlugin.java`) is the single entry point. It owns process-wide singletons — `ConfigManager`, `SchedulerService`, `PlayerDataManager`, `ModuleManager`, `ChatMuteService` (per-category chat-notification muting, read by Party/Guild/Chat/Trade/Mail - built here rather than inside `ChatModule` since modules registered before `ChatModule`, like Party/Guild, need it too, and it has no dependency of its own) — and registers every top-level feature as an `RpgModule` (`rpg/core/module/RpgModule.java`) in a fixed order in `onEnable()`. This one `RpgModule`/`ModuleManager` pair covers all 37 modules from every former plugin — the old parallel `WorldModule`/`WorldModuleManager` and `ExtraModule`/`ExtraModuleManager` types were removed in the merge, since they were structurally identical to `RpgModule`/`ModuleManager` (only the plugin-class type parameter differed).
 
 - **Registration order is dependency order.** A module may look up an earlier-registered module via `ModuleManager#get(Class)`, never a later one. Current order:
 

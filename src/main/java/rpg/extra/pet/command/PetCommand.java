@@ -58,7 +58,7 @@ public final class PetCommand implements CommandExecutor, TabCompleter {
                     messages.send(sender, "usage.pet-buy");
                     return true;
                 }
-                report(sender, petService.unlock(player, args[1]));
+                report(sender, petService.unlock(player, args[1]), "pet.unlocked");
             }
             case "summon" -> {
                 String petId = args.length >= 2 ? args[1] : petService.getSelectedPetId(player.getUniqueId());
@@ -66,9 +66,9 @@ public final class PetCommand implements CommandExecutor, TabCompleter {
                     messages.send(sender, "usage.pet-summon");
                     return true;
                 }
-                report(sender, petService.summon(player, petId));
+                report(sender, petService.summon(player, petId), "pet.summoned");
             }
-            case "dismiss" -> report(sender, petService.dismiss(player));
+            case "dismiss" -> report(sender, petService.dismiss(player), "pet.dismissed");
             default -> messages.send(sender, "usage.pet");
         }
         return true;
@@ -100,9 +100,9 @@ public final class PetCommand implements CommandExecutor, TabCompleter {
         });
     }
 
-    private void report(CommandSender sender, PetService.ActionResult result) {
+    private void report(CommandSender sender, PetService.ActionResult result, String successKey) {
         if (result == PetService.ActionResult.OK) {
-            messages.send(sender, "command.ok");
+            messages.send(sender, successKey);
             return;
         }
         String key = switch (result) {

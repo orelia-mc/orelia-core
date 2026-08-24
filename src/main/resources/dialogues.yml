@@ -1,9 +1,46 @@
 # Dialogue trees (SOW DialogueModule). entry-points are evaluated in order; the first
 # whose required-flag the player already has (or which has none) wins. Nodes without
 # choices either fall through to next-node or end the conversation.
-config-version: 1
+config-version: 2
 
 dialogues:
+  # Quest start/complete flavor (rpg.quest.model.QuestData's start-dialogue-id/complete-dialogue-id,
+  # triggered by rpg.quest.service.QuestProgressService#accept/report). Single-node, no choices -
+  # just NPC flavor text, not a branching conversation, so entry-points is a single unconditional
+  # entry (required-flag: "" like quest_receptionist_intro's own first_time entry above).
+  king_of_goblins_briefing:
+    entry-points:
+      always:
+        required-flag: ""
+        start-node: warn
+    nodes:
+      warn:
+        lines:
+          - "ゴブリンキングは只者じゃないわ。油断しないでね。"
+          - "準備が整ったら、洞窟の奥で待ち構えているはずよ。"
+
+  king_of_goblins_victory:
+    entry-points:
+      always:
+        required-flag: ""
+        start-node: congrats
+    nodes:
+      congrats:
+        lines:
+          - "やったのね…！本当にゴブリンキングを倒すなんて。"
+          - "この報酬はあなたにふさわしいわ。受け取って。"
+
+  dragon_lair_finale:
+    entry-points:
+      always:
+        required-flag: ""
+        start-node: finale
+    nodes:
+      finale:
+        lines:
+          - "竜の巣窟を制覇するなんて、伝説級の偉業だわ。"
+          - "この町の誰もが、あなたの名を語り継ぐでしょう。"
+
   quest_receptionist_intro:
     entry-points:
       returning:

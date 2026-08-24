@@ -5,7 +5,7 @@
 # added - on next startup, ConfigManager appends the new section (with its comments) to any
 # existing config.yml that's missing it, without touching anything you've already customized.
 # Never bump this for a value-only change (e.g. tweaking a default), only for new/removed keys.
-config-version: 8
+config-version: 9
 
 skill:
   # Ticks after a skill-fired bow arrow (パワーショット/マルチショット) lands before it's
@@ -196,6 +196,10 @@ quest:
   # How often (in ticks) each online player's COLLECT_ITEM / DELIVER_ITEM / REACH_LOCATION
   # objectives are re-checked. 40 ticks = 2 seconds.
   objective-check-period-ticks: 40
+  completion-feedback:
+    # Title + action-bar shown when a quest's objectives are all met. Disable if it doesn't
+    # suit your server's pacing - the quest still transitions to AWAITING_REPORT either way.
+    enabled: true
 
 dungeon:
   # Relics (rpg.api.RelicApi#generateRelic) granted to each member when a bossed dungeon is
@@ -205,6 +209,63 @@ dungeon:
 
 party:
   max-size: 6
+  # Plays a sound for the invitee alongside "party.invite-received", same fail-open
+  # Sound.valueOf pattern as mail's notify-sound below.
+  notify-sound:
+    enabled: true
+    name: ENTITY_EXPERIENCE_ORB_PICKUP
+    volume: 1.0
+    pitch: 1.0
 
 friend:
   max-friends: 50
+
+guild:
+  # Plays a sound for the invitee alongside "guild.invite-received".
+  notify-sound:
+    enabled: true
+    name: ENTITY_EXPERIENCE_ORB_PICKUP
+    volume: 1.0
+    pitch: 1.0
+
+mail:
+  # A player's send-from-player mail is rejected once their inbox holds this many messages
+  # (system mail like auction sale notices bypasses this limit).
+  max-retained-per-player: 100
+  # Read mail with no unclaimed attachments older than this many days is auto-deleted.
+  retention-days: 30
+  # How often (in ticks) the auto-delete sweep runs. 72000 ticks = 1 hour.
+  purge-check-period-ticks: 72000
+  # Plays a sound for the player alongside the join-time unread notice, so it's noticed even
+  # if they're not looking at chat. Invalid sound names just skip the sound (logged as a
+  # warning), same fail-open behavior as other Sound.valueOf-driven config in this suite.
+  notify-sound:
+    enabled: true
+    name: ENTITY_EXPERIENCE_ORB_PICKUP
+    volume: 1.0
+    pitch: 1.0
+
+auction:
+  # Fraction of the sale price deducted as a fee on a successful purchase (0.05 = 5%),
+  # deposited to nobody - a straightforward money sink.
+  fee-rate: 0.05
+  # A seller can't have more than this many ACTIVE or not-yet-collected EXPIRED listings
+  # occupying a slot at once.
+  max-listings-per-seller: 10
+  # Default listing duration for /ol auction sell.
+  default-duration-hours: 72
+
+trade:
+  # A trade request auto-expires (both sides notified) if not accepted within this many seconds.
+  request-timeout-seconds: 30
+  # An open trade session auto-cancels (items returned) if neither side confirms within this many seconds.
+  session-timeout-seconds: 300
+  # Max items either side can have in their offer at once.
+  max-items-per-offer: 9
+  # Plays a sound for the target alongside "trade.request-received".
+  notify-sound:
+    enabled: true
+    name: ENTITY_EXPERIENCE_ORB_PICKUP
+    volume: 1.0
+    pitch: 1.0
+

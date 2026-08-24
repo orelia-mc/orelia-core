@@ -3,7 +3,6 @@ package rpg.world.playerinfo;
 import org.bukkit.plugin.ServicesManager;
 import rpg.api.GuiApi;
 import rpg.api.JobApi;
-import rpg.api.SkillApi;
 import rpg.extra.api.AchievementApi;
 import rpg.gui.framework.GuiManager;
 import rpg.quest.QuestModule;
@@ -16,7 +15,8 @@ import rpg.world.playerinfo.service.PlayerInfoItemService;
 
 /**
  * The nether-star "プレイヤー情報" menu: quests come from orelia-world's own quest module,
- * job/skill come from orelia-core through {@link JobApi}/{@link SkillApi}.
+ * job comes from orelia-core through {@link JobApi}, and status/skill open orelia-core's own
+ * screens directly through {@link GuiApi}.
  */
 public final class PlayerInfoModule implements RpgModule {
 
@@ -29,10 +29,9 @@ public final class PlayerInfoModule implements RpgModule {
     public void onEnable(OreliaPlugin plugin) {
         ServicesManager services = plugin.getServer().getServicesManager();
         JobApi jobApi = services.load(JobApi.class);
-        SkillApi skillApi = services.load(SkillApi.class);
         GuiApi guiApi = services.load(GuiApi.class);
-        if (jobApi == null || skillApi == null || guiApi == null) {
-            throw new IllegalStateException("playerinfo module requires OreliaCore's JobApi, SkillApi and GuiApi");
+        if (jobApi == null || guiApi == null) {
+            throw new IllegalStateException("playerinfo module requires OreliaCore's JobApi and GuiApi");
         }
         // Soft dependency - null when OreliaExtra isn't installed, guarded in PlayerInfoGuiScreen.
         AchievementApi achievementApi = services.load(AchievementApi.class);
@@ -43,7 +42,7 @@ public final class PlayerInfoModule implements RpgModule {
         GuiManager guiManager = new GuiManager();
         PlayerInfoItemService itemService = new PlayerInfoItemService(new PlayerInfoItemKeys(plugin));
         PlayerInfoGuiScreen guiScreen = new PlayerInfoGuiScreen(
-                questModule.getQuestRepository(), plugin.getPlayerDataManager(), jobApi, skillApi, guiApi,
+                questModule.getQuestRepository(), plugin.getPlayerDataManager(), jobApi, guiApi,
                 achievementApi, guiManager);
 
         plugin.getServer().getPluginManager().registerEvents(

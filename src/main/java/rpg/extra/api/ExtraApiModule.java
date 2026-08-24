@@ -1,10 +1,10 @@
 package rpg.extra.api;
 
 import org.bukkit.plugin.ServicePriority;
-import rpg.core.OreliaPlugin;
-import rpg.core.module.RpgModule;
 import rpg.extra.achievement.AchievementModule;
 import rpg.extra.auction.AuctionModule;
+import rpg.core.OreliaPlugin;
+import rpg.core.module.RpgModule;
 import rpg.extra.guild.GuildModule;
 import rpg.extra.housing.HousingModule;
 import rpg.extra.mail.MailModule;
@@ -42,7 +42,7 @@ public final class ExtraApiModule implements RpgModule {
         plugin.getServer().getServicesManager().register(
                 ExtraDebugApi.class,
                 new ExtraDebugApiImpl(plugin.getConfigManager(), auctionModule, mailModule, rankingModule,
-                        petModule, mountModule, housingModule, tradeModule),
+                        petModule, mountModule, housingModule, tradeModule, achievementModule, guildModule),
                 plugin, ServicePriority.Normal);
         plugin.getServer().getServicesManager().register(
                 GuildApi.class, new GuildApiImpl(guildModule.getGuildService()), plugin, ServicePriority.Normal);

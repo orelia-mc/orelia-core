@@ -9,6 +9,7 @@ import java.util.List;
 public final class TradeOffer {
 
     private final List<ItemStack> items = new ArrayList<>();
+    private double money;
     private boolean confirmed;
 
     public List<ItemStack> getItems() {
@@ -26,6 +27,16 @@ public final class TradeOffer {
         }
         confirmed = false;
         return items.remove(index);
+    }
+
+    public double getMoney() {
+        return money;
+    }
+
+    /** Changing the offered amount un-confirms this side, same as adding/removing an item. */
+    public void setMoney(double money) {
+        this.money = money;
+        confirmed = false;
     }
 
     public boolean isConfirmed() {

@@ -7,24 +7,33 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import rpg.core.command.TabCompletions;
 import rpg.core.message.MessageManager;
+import rpg.extra.chat.model.ChatBadge;
 import rpg.extra.chat.model.ChatChannel;
 import rpg.extra.chat.service.ChatChannelService;
+import rpg.extra.chat.service.ChatMuteService;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * {@code /ol chat [public|party|guild|admin]} - switches the sender's default chat channel;
- * with no argument, reports the currently-selected one instead.
+ * with no argument, reports the currently-selected one instead. Also handles the sibling
+ * {@code /ol chat mute [category]} subcommand (toggle a {@link ChatBadge} category's mute state,
+ * or list currently-muted categories with no argument) - folded into this command rather than
+ * registered separately since it's the same {@code /ol chat ...} entry point.
  */
 public final class ChatChannelCommand implements CommandExecutor, TabCompleter {
 
-    private static final List<String> CHANNEL_NAMES = List.of("public", "party", "guild", "admin");
+    private static final List<String> FIRST_ARG_OPTIONS = List.of("public", "party", "guild", "admin", "mute");
+    private static final List<String> CATEGORY_NAMES = List.of("combat", "system", "party", "guild");
 
     private final ChatChannelService channelService;
+    private final ChatMuteService muteService;
     private final MessageManager messages;
 
-    public ChatChannelCommand(ChatChannelService channelService, MessageManager messages) {
+    public ChatChannelCommand(ChatChannelService channelService, ChatMuteService muteService, MessageManager messages) {
         this.channelService = channelService;
+        this.muteService = muteService;
         this.messages = messages;
     }
 
@@ -32,6 +41,10 @@ public final class ChatChannelCommand implements CommandExecutor, TabCompleter {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
             messages.send(sender, "command.player-only");
+            return true;
+        }
+        if (args.length >= 1 && args[0].equalsIgnoreCase("mute")) {
+            handleMute(player, args);
             return true;
         }
         if (args.length < 1) {
@@ -55,10 +68,37 @@ public final class ChatChannelCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private void handleMute(Player player, String[] args) {
+        if (args.length < 2) {
+            Set<ChatBadge> muted = muteService.getMuted(player.getUniqueId());
+            if (muted.isEmpty()) {
+                messages.send(player, "chat.mute-status-empty");
+                return;
+            }
+            messages.send(player, "chat.mute-status-header");
+            for (ChatBadge category : muted) {
+                messages.send(player, "chat.mute-status-entry", "category", category.getDisplayName());
+            }
+            return;
+        }
+        ChatBadge category;
+        try {
+            category = ChatBadge.valueOf(args[1].toUpperCase());
+        } catch (IllegalArgumentException e) {
+            messages.send(player, "chat.mute-invalid-category", "category", args[1]);
+            return;
+        }
+        boolean nowMuted = muteService.toggle(player.getUniqueId(), category);
+        messages.send(player, nowMuted ? "chat.mute-on" : "chat.mute-off", "category", category.getDisplayName());
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length <= 1) {
-            return TabCompletions.matching(CHANNEL_NAMES, args.length == 0 ? "" : args[0]);
+            return TabCompletions.matching(FIRST_ARG_OPTIONS, args.length == 0 ? "" : args[0]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("mute")) {
+            return TabCompletions.matching(CATEGORY_NAMES, args[1]);
         }
         return List.of();
     }

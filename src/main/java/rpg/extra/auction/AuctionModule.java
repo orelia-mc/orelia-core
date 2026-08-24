@@ -1,13 +1,15 @@
 package rpg.extra.auction;
 
 import net.milkbowl.vault.economy.Economy;
-import rpg.core.OreliaPlugin;
-import rpg.core.module.RpgModule;
+import org.bukkit.configuration.file.YamlConfiguration;
 import rpg.database.manager.DatabaseManager;
 import rpg.extra.auction.command.AuctionCommand;
+import rpg.extra.auction.config.AuctionConfig;
 import rpg.extra.auction.gui.AuctionGuiScreen;
 import rpg.extra.auction.repository.AuctionRepository;
 import rpg.extra.auction.service.AuctionService;
+import rpg.core.OreliaPlugin;
+import rpg.core.module.RpgModule;
 import rpg.extra.mail.MailModule;
 import rpg.gui.framework.GuiManager;
 
@@ -21,8 +23,10 @@ public final class AuctionModule implements RpgModule {
 
     private static final long EXPIRY_CHECK_PERIOD_TICKS = 20L * 60;
 
+    private final AuctionConfig auctionConfig = new AuctionConfig();
     private AuctionService auctionService;
     private AuctionGuiScreen guiScreen;
+    private OreliaPlugin plugin;
 
     @Override
     public String getName() {
@@ -31,6 +35,7 @@ public final class AuctionModule implements RpgModule {
 
     @Override
     public void onEnable(OreliaPlugin plugin) {
+        this.plugin = plugin;
         DatabaseManager databaseManager = plugin.getServer().getServicesManager().load(DatabaseManager.class);
         if (databaseManager == null) {
             throw new IllegalStateException("auction module requires OreliaCore's DatabaseManager");
@@ -49,7 +54,9 @@ public final class AuctionModule implements RpgModule {
             plugin.getLogger().log(Level.SEVERE, "Failed to initialize auction schema", e);
         }
 
-        this.auctionService = new AuctionService(repository, economy, mailModule.getMailService(), plugin.getMessageManager());
+        reloadAuctionConfig();
+        this.auctionService = new AuctionService(repository, economy, mailModule.getMailService(),
+                plugin.getMessageManager(), auctionConfig);
         auctionService.loadAll();
 
         GuiManager guiManager = new GuiManager();
@@ -64,6 +71,16 @@ public final class AuctionModule implements RpgModule {
 
     @Override
     public void onDisable() {
+    }
+
+    @Override
+    public void onReload() {
+        reloadAuctionConfig();
+    }
+
+    private void reloadAuctionConfig() {
+        YamlConfiguration config = plugin.getConfigManager().get("config.yml").get();
+        auctionConfig.load(config);
     }
 
     public AuctionService getAuctionService() {

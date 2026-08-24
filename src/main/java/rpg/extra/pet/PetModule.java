@@ -2,9 +2,9 @@ package rpg.extra.pet;
 
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.configuration.file.YamlConfiguration;
+import rpg.database.manager.DatabaseManager;
 import rpg.core.OreliaPlugin;
 import rpg.core.module.RpgModule;
-import rpg.database.manager.DatabaseManager;
 import rpg.extra.pet.command.PetCommand;
 import rpg.extra.pet.gui.PetGuiScreen;
 import rpg.extra.pet.listener.PetQuitListener;

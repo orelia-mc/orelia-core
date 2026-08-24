@@ -2,9 +2,9 @@ package rpg.extra.housing;
 
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.configuration.file.YamlConfiguration;
+import rpg.database.manager.DatabaseManager;
 import rpg.core.OreliaPlugin;
 import rpg.core.module.RpgModule;
-import rpg.database.manager.DatabaseManager;
 import rpg.extra.housing.command.HousingCommand;
 import rpg.extra.housing.gui.HousingGuiScreen;
 import rpg.extra.housing.repository.HouseOwnershipRepository;

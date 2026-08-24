@@ -5,9 +5,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import rpg.api.SkillApi;
 import rpg.api.StatusApi;
-import rpg.core.OreliaPlugin;
 import rpg.core.command.CommandAliasUtil;
-import rpg.core.module.RpgModule;
 import rpg.database.manager.DatabaseManager;
 import rpg.extra.achievement.command.AchievementCommand;
 import rpg.extra.achievement.gui.AchievementGuiScreen;
@@ -15,6 +13,8 @@ import rpg.extra.achievement.listener.AchievementJoinListener;
 import rpg.extra.achievement.repository.AchievementConfigRepository;
 import rpg.extra.achievement.repository.AchievementProgressRepository;
 import rpg.extra.achievement.service.AchievementService;
+import rpg.core.OreliaPlugin;
+import rpg.core.module.RpgModule;
 import rpg.gui.framework.GuiManager;
 import rpg.world.api.QuestApi;
 

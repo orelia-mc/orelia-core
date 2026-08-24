@@ -52,6 +52,7 @@ import rpg.extra.ranking.RankingModule;
 import rpg.extra.achievement.AchievementModule;
 import rpg.extra.api.ExtraApiModule;
 import rpg.extra.core.command.ExtraAdminCommand;
+import rpg.extra.chat.service.ChatMuteService;
 
 /**
  * Plugin entry point for the orelia-core repo/jar. Owns process-wide singletons (config,
@@ -77,6 +78,7 @@ public final class OreliaPlugin extends JavaPlugin {
     private ModuleManager moduleManager;
     private PlayerCommandRegistry playerCommandRegistry;
     private AdminCommandRegistry adminCommandRegistry;
+    private ChatMuteService chatMuteService;
 
     @Override
     public void onEnable() {
@@ -91,6 +93,11 @@ public final class OreliaPlugin extends JavaPlugin {
         this.schedulerService = new SchedulerService(this);
         this.playerDataManager = new PlayerDataManager(getLogger(), schedulerService);
         this.moduleManager = new ModuleManager(this);
+        // Built here (not inside ChatModule) so PartyModule/GuildModule - registered before
+        // ChatModule since ChatModule needs their services already built - can reach it too;
+        // ChatMuteService itself has no dependency on any module, so there's no ordering issue
+        // giving every module the same shared instance from the start.
+        this.chatMuteService = new ChatMuteService();
 
         getServer().getPluginManager().registerEvents(new PlayerConnectionListener(playerDataManager), this);
 
@@ -219,5 +226,9 @@ public final class OreliaPlugin extends JavaPlugin {
 
     public AdminCommandRegistry getAdminCommandRegistry() {
         return adminCommandRegistry;
+    }
+
+    public ChatMuteService getChatMuteService() {
+        return chatMuteService;
     }
 }

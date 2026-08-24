@@ -1,15 +1,17 @@
 package rpg.extra.guild;
 
-import rpg.core.OreliaPlugin;
 import rpg.core.command.CommandAliasUtil;
-import rpg.core.module.RpgModule;
 import rpg.database.manager.DatabaseManager;
+import rpg.core.OreliaPlugin;
+import rpg.core.module.RpgModule;
 import rpg.extra.guild.command.GuildCommand;
+import rpg.extra.guild.gui.GuildGuiScreen;
 import rpg.extra.guild.listener.GuildQuitListener;
 import rpg.extra.guild.listener.NpcGuildInteractListener;
 import rpg.extra.guild.manager.GuildManager;
 import rpg.extra.guild.repository.GuildRepository;
 import rpg.extra.guild.service.GuildService;
+import rpg.gui.framework.GuiManager;
 
 import java.util.logging.Level;
 
@@ -20,6 +22,8 @@ import java.util.logging.Level;
 public final class GuildModule implements RpgModule {
 
     private GuildService guildService;
+    private GuildGuiScreen guildGuiScreen;
+    private GuiManager guiManager;
 
     @Override
     public String getName() {
@@ -44,19 +48,30 @@ public final class GuildModule implements RpgModule {
         manager.loadAll();
 
         this.guildService = new GuildService(manager);
+        this.guiManager = new GuiManager();
+        this.guildGuiScreen = new GuildGuiScreen(guildService, guiManager);
 
         plugin.getServer().getPluginManager().registerEvents(new GuildQuitListener(manager), plugin);
         plugin.getServer().getPluginManager().registerEvents(new NpcGuildInteractListener(guildService, plugin.getMessageManager()), plugin);
-        GuildCommand guildCommand = new GuildCommand(guildService, plugin.getMessageManager());
+        GuildCommand guildCommand = new GuildCommand(guildService, plugin.getMessageManager(), plugin.getChatMuteService(),
+                guildGuiScreen, guiManager, plugin.getConfigManager(), plugin.getLogger());
         String description = "ギルドを管理します。";
-        String usage = "guild <create|invite|accept|leave|kick|promote|demote|disband|transfer|list|info|chat <message>>";
+        String usage = "guild <create|invite|accept|leave|kick|promote|demote|disband|transfer|list|info|gui|chat <message>>";
         plugin.getPlayerCommandRegistry().register("guild", guildCommand, description, usage);
         CommandAliasUtil.registerAlias(plugin, "guild", guildCommand, description,
-                "<create|invite|accept|leave|kick|promote|demote|disband|transfer|list|info|chat <message>>");
+                "<create|invite|accept|leave|kick|promote|demote|disband|transfer|list|info|gui|chat <message>>");
     }
 
     @Override
     public void onDisable() {
+    }
+
+    public GuildGuiScreen getGuildGuiScreen() {
+        return guildGuiScreen;
+    }
+
+    public GuiManager getGuiManager() {
+        return guiManager;
     }
 
     public GuildService getGuildService() {

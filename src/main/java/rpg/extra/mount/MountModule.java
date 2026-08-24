@@ -2,9 +2,9 @@ package rpg.extra.mount;
 
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.configuration.file.YamlConfiguration;
+import rpg.database.manager.DatabaseManager;
 import rpg.core.OreliaPlugin;
 import rpg.core.module.RpgModule;
-import rpg.database.manager.DatabaseManager;
 import rpg.extra.mount.command.MountCommand;
 import rpg.extra.mount.listener.MountLifecycleListener;
 import rpg.extra.mount.manager.MountManager;

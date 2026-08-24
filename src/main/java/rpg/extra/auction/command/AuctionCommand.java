@@ -18,8 +18,6 @@ import java.util.List;
  */
 public final class AuctionCommand implements CommandExecutor {
 
-    private static final long DEFAULT_DURATION_MILLIS = 1000L * 60 * 60 * 24 * 3;
-
     private final AuctionService auctionService;
     private final AuctionGuiScreen guiScreen;
     private final GuiManager guiManager;
@@ -52,7 +50,7 @@ public final class AuctionCommand implements CommandExecutor {
                 }
                 try {
                     double price = Double.parseDouble(args[1]);
-                    AuctionService.ActionResult result = auctionService.list(player, price, DEFAULT_DURATION_MILLIS);
+                    AuctionService.ActionResult result = auctionService.list(player, price);
                     if (result == AuctionService.ActionResult.OK) {
                         messages.send(sender, "auction.listed");
                     } else {

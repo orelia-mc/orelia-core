@@ -61,9 +61,21 @@ public final class HousingCommand implements CommandExecutor {
                     messages.send(sender, "usage.house-buy");
                     return true;
                 }
-                report(sender, housingService.purchase(player, args[1]));
+                HousingService.ActionResult result = housingService.purchase(player, args[1]);
+                if (result == HousingService.ActionResult.OK) {
+                    messages.send(player, "housing.purchased", "id", args[1]);
+                } else {
+                    report(sender, result);
+                }
             }
-            case "home" -> report(sender, housingService.teleportHome(player));
+            case "home" -> {
+                HousingService.ActionResult result = housingService.teleportHome(player);
+                if (result == HousingService.ActionResult.OK) {
+                    messages.send(player, "housing.teleported");
+                } else {
+                    report(sender, result);
+                }
+            }
             default -> messages.send(sender, "usage.house");
         }
         return true;

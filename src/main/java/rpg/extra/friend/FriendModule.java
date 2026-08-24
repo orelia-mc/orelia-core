@@ -1,9 +1,9 @@
 package rpg.extra.friend;
 
-import rpg.core.OreliaPlugin;
 import rpg.core.command.CommandAliasUtil;
-import rpg.core.module.RpgModule;
 import rpg.database.manager.DatabaseManager;
+import rpg.core.OreliaPlugin;
+import rpg.core.module.RpgModule;
 import rpg.extra.friend.command.FriendCommand;
 import rpg.extra.friend.listener.FriendQuitListener;
 import rpg.extra.friend.manager.FriendRequestManager;

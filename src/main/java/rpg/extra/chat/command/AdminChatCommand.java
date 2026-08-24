@@ -5,7 +5,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import rpg.core.message.MessageManager;
 import rpg.extra.chat.ChatBroadcast;
-import rpg.util.ColorUtil;
+import rpg.extra.chat.PlayerNameHover;
 
 /**
  * {@code /oladmin chat <message>} - one-off admin-chat broadcast; does not change the
@@ -26,8 +26,7 @@ public final class AdminChatCommand implements CommandExecutor {
             return true;
         }
         String message = String.join(" ", args);
-        ChatBroadcast.toAdmins(ColorUtil.component(
-                messages.format("chat.admin-format", "sender", sender.getName(), "message", message)));
+        ChatBroadcast.toAdmins(PlayerNameHover.formatLine(messages, "chat.admin-format", sender, message));
         return true;
     }
 }

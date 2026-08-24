@@ -1,13 +1,13 @@
 package rpg.extra.chat;
 
-import rpg.core.OreliaPlugin;
 import rpg.core.command.CommandAliasUtil;
-import rpg.core.module.RpgModule;
 import rpg.extra.chat.command.AdminChatCommand;
 import rpg.extra.chat.command.ChatChannelCommand;
 import rpg.extra.chat.command.MsgCommand;
 import rpg.extra.chat.listener.ChatChannelListener;
 import rpg.extra.chat.service.ChatChannelService;
+import rpg.core.OreliaPlugin;
+import rpg.core.module.RpgModule;
 import rpg.extra.guild.GuildModule;
 import rpg.extra.party.PartyModule;
 
@@ -37,10 +37,12 @@ public final class ChatModule implements RpgModule {
         this.channelService = new ChatChannelService(partyModule.getPartyService(), guildModule.getGuildService());
 
         plugin.getServer().getPluginManager().registerEvents(
-                new ChatChannelListener(channelService, partyModule.getPartyService(), guildModule.getGuildService(), plugin.getMessageManager()),
+                new ChatChannelListener(channelService, partyModule.getPartyService(), guildModule.getGuildService(),
+                        plugin.getMessageManager(), plugin.getChatMuteService()),
                 plugin);
 
-        ChatChannelCommand chatChannelCommand = new ChatChannelCommand(channelService, plugin.getMessageManager());
+        ChatChannelCommand chatChannelCommand =
+                new ChatChannelCommand(channelService, plugin.getChatMuteService(), plugin.getMessageManager());
         String description = "チャットチャンネルを切り替えます。";
         String usage = "chat <public|party|guild|admin>";
         plugin.getPlayerCommandRegistry().register("chat", chatChannelCommand, description, usage);
