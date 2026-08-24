@@ -31,7 +31,7 @@ public final class PartyModule implements RpgModule {
         int maxPartySize = plugin.getConfigManager().get("config.yml").get().getInt("party.max-size", 6);
         this.partyService = new PartyService(manager, maxPartySize);
         this.guiManager = new GuiManager();
-        this.partyGuiScreen = new PartyGuiScreen(partyService, guiManager);
+        this.partyGuiScreen = new PartyGuiScreen(partyService, guiManager, plugin.getChatInputService(), plugin.getMessageManager());
 
         plugin.getServer().getPluginManager().registerEvents(
                 new PartyQuitListener(manager, partyService, plugin.getMessageManager()), plugin);

@@ -162,6 +162,11 @@ public final class PartyService {
         return ActionResult.OK;
     }
 
+    /** The party {@code playerId} has a pending invite to, if any - for the GUI's accept/decline prompt. */
+    public Optional<Party> peekPendingInvite(UUID playerId) {
+        return manager.peekInvite(playerId);
+    }
+
     public Optional<Party> getParty(UUID playerId) {
         return manager.getByPlayer(playerId);
     }

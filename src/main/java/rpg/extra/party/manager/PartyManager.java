@@ -33,6 +33,11 @@ public final class PartyManager {
         getByPlayer(inviterId).ifPresent(party -> pendingInvites.put(inviteeId, party.getId()));
     }
 
+    /** Looks at the pending invite without consuming it - lets the GUI show an accept/decline prompt before the player types anything. */
+    public Optional<Party> peekInvite(UUID inviteeId) {
+        return Optional.ofNullable(pendingInvites.get(inviteeId)).map(partiesById::get);
+    }
+
     public Optional<Party> consumeInvite(UUID inviteeId) {
         UUID partyId = pendingInvites.remove(inviteeId);
         return partyId == null ? Optional.empty() : Optional.ofNullable(partiesById.get(partyId));

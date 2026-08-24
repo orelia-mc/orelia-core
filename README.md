@@ -58,9 +58,13 @@ Orelia は以下のプラグイン群で構成されています。
 - プレイヤーのデフォルト会心率/会心ダメージを`config.yml: status.growth.CRT/CRT_DMG.base`でそれぞれ10/50に変更(旧デフォルトは5/5)。CRT/CRT_DMGは前述の通りレベルでは変わらず固定のため、この値がそのままキャラクターの基礎会心率10%・会心ダメージ+50%になります。
 - 経験値バーの色抜けバグを修正 — `ActionBarService#expBar`が`&r`(全リセット)で終わっていたため、続く`] 1234/3000`の部分だけ他のHUD要素と揃わない白色表示になっていました。専用の色定数を`]`以降にも明示的に適用するよう修正しています。
 - クエストログGUI(`/ol quest gui`) — NPCと会話せずともクエストログGUI(`QuestGuiScreen`、`GuiPaginator`採用)を直接開けます。クエスト種別(MAIN/SUB/DAILY/WEEKLY/EVENT)ごとにカテゴリ分けされ、現在受注できないクエストもロック理由(レベル不足・前提未達成等)付きで一覧に表示されます。デフォルトで23個のクエスト(Lv1〜40)を同梱し、前提クエスト解放通知のクエスト名や`quest.newly-unlocked`はクリックでこのGUIを開けます。主要MAINクエストは受注/報告時に`dialogues.yml`のダイアログツリーを再生します(`start-dialogue-id`/`complete-dialogue-id`)。
-- ギルドGUI(`/guild gui`) — `GuildGuiScreen`(`GuiPaginator`採用)でギルド一覧・メンバー詳細を確認できます。`guild.created`等のギルド名もクリックでこのGUIを開けます。未所属時は一覧画面に「ギルドを作成」ボタンが表示され、クリックすると`/guild create `が自動でチャット欄に入力されます(名前・タグの2つの自由入力はGUIのクリックだけでは完結しないため)。
-- パーティーGUI(`/party gui`)・フレンドGUI(`/friend gui`) — ギルドGUIと同じ`GuiPaginator`ベースで、パーティーは未所属時「パーティーを作成」ボタン・所属時はメンバー一覧(リーダーはShift+クリックで追放)+「招待」(`/party invite `を自動入力)+「脱退/解散」ボタン、フレンドは一覧+「フレンド追加」(`/friend add `を自動入力)ボタン、各エントリはクリックでテレポート申請・Shift+クリックでフレンド解除ができます。いずれもGUIのボタンは`PartyService`/`FriendService`を直接叩かず対応する`/party`・`/friend`コマンドを実行する形にしており、通知サウンド等の既存の副作用がチャットから実行した場合と同じように動作します。
+- ギルド/パーティー/フレンドGUI(`/guild gui`・`/party gui`・`/friend gui`) — 各コマンドで実行できる操作を一通りGUIから実行できます(作成・招待・承認/拒否・脱退・解散・昇格/降格・リーダー譲渡・追放・チャット送信)。ギルド/パーティーはメンバーの頭をクリックすると管理用のサブ画面(操作対象者に応じて表示ボタンが変わります)が開きます。ギルド名・タグ・招待するプレイヤー名・チャットメッセージのような自由入力は、GUIを閉じてチャットに直接入力させる方式です(`rpg.core.chat.ChatInputService`、コマンド自動入力ではなく)。招待が届いている間は一覧画面に承認/拒否ボタンが表示されます。いずれもGUIのボタンは`GuildService`/`PartyService`/`FriendService`を直接叩かず対応するコマンドを実行する形にしており、通知サウンド等の既存の副作用がチャットから実行した場合と同じように動作します。
 - チャットミュート — `/chat mute <public|party|guild>`で、自分が実際にタイプしたチャット(全体・パーティー・ギルド)だけをチャンネル単位でミュートできます(`ChatMuteService`)。パーティー招待・ギルド招待・取引申込・メール未読通知などのシステム側からの通知(メッセージ本体+サウンド、`config.yml`の各`notify-sound`)はこのミュートの対象外で常に届きます。`config.yml`の`chat.mute.enabled`をfalseにすると`/chat mute`自体を無効化できます(既存のミュート設定も無視されます)。
 - config閲覧コマンド(`/oladmin config <core|world|extra> view <file> [path]`) — `monsters.yml`/`quests.yml`等の設定ファイルをYAML木構造のまま人間可読な形式で表示し、末端値はクリックで編集コマンドをチャット欄に自動入力できます(`DebugApi`/`WorldDebugApi`/`ExtraDebugApi`の`listConfigTree`)。
+- `/oladmin reload`(と`worldreload`/`extrareload`)は、その回のリロードで実際に変更・追加・削除されたconfigの末端キーを一覧表示するようになりました。
+- `/ol help`/`/oladmin help`の表示を改善 — コマンド行と説明の間、各エントリの間にそれぞれ改行を追加し、`<a|b|c>`のような選択肢表記は`< a / b / c >`のように整形して区切り文字と選択肢を色分けします。
+- `/oladmin item levelup [amount]` — デバッグモード中はプレイヤーレベルによる上限を無視して武器レベルを上げられ、`[amount]`で複数レベル分を一度に適用できます。
+- スライムの分裂を無効化しました(タグ付きOreliaモンスターのみ対象。分裂した子スライムはOreliaの管理外で報酬やステータススケーリングの対象にならず、実質的な不具合として扱われていたため)。
+- ダンジョン入場前のカウントダウンはチャットの連投ではなくTitleで表示されるようになりました。
 - 戦闘ダメージ計算式の詳細は [DAMAGE_FORMULA.md](DAMAGE_FORMULA.md) を参照してください。
 - orelia-core/world/extra 3リポジトリを横断した未実装機能一覧は [UNIMPLEMENTED_FEATURES.md](UNIMPLEMENTED_FEATURES.md) を参照してください。

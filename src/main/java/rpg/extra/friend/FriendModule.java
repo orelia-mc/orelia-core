@@ -53,7 +53,7 @@ public final class FriendModule implements RpgModule {
         this.friendService = new FriendService(repository, requestManager, maxFriends);
         this.teleportService = new FriendTeleportService(teleportRequestManager, friendService);
         this.guiManager = new GuiManager();
-        this.friendGuiScreen = new FriendGuiScreen(friendService, guiManager);
+        this.friendGuiScreen = new FriendGuiScreen(friendService, guiManager, plugin.getChatInputService(), plugin.getMessageManager());
 
         plugin.getServer().getPluginManager().registerEvents(
                 new FriendQuitListener(requestManager, teleportRequestManager, plugin.getMessageManager()), plugin);

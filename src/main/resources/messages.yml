@@ -4,7 +4,7 @@
 # NPC dialogue lines / quest descriptions / story text stay in their own content yml files
 # (npc.yml, quests.yml, story.yml, ...) since those are per-entry authored content, not
 # fixed UI copy.
-config-version: 11
+config-version: 12
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -13,6 +13,10 @@ command:
   unknown-subcommand: "&%c不明なサブコマンドです: {name}。/{label} help を試してください。"
   player-not-found: "&%c対象のプレイヤーが見つかりません: {player}"
   ok: "&%aOK"
+
+# GUI画面から呼び出される、次の1行のチャット入力を捕捉する汎用フロー(rpg.core.chat.ChatInputService)。
+chat-input:
+  timed-out: "&%e入力の受付時間が切れました。"
 
 usage:
   party: "&%e使い方: /party &%7<&%ecreate&%7|&%einvite&%7|&%eaccept&%7|&%edecline&%7|&%eleave&%7|&%ekick&%7|&%edisband&%7|&%etransfer&%7|&%elist&%7|&%echat&%7>&%e"
@@ -242,6 +246,8 @@ dungeon:
 
 party:
   created: "&%aパーティーを作成しました。"
+  invite-prompt-player: "&%b招待するプレイヤー名をチャットに入力してください。"
+  chat-prompt-message: "&%bパーティーチャットに送るメッセージをチャットに入力してください。"
   invited: "&%a招待を送りました。"
   invite-received: "&%a{player}からパーティー招待が届きました。"
   invite-accept-button: "&%a[承認]"
@@ -273,6 +279,7 @@ party:
   leadership-transferred-quit: "&%6{player}が新しいリーダーになりました。"
 
 friend:
+  add-prompt-player: "&%a追加するプレイヤー名をチャットに入力してください。"
   request-sent: "&%aフレンド申請を送りました。"
   request-received: "&%a{player}からフレンド申請が届きました。"
   request-accept-button: "&%a[承認]"
@@ -315,6 +322,10 @@ friend:
 
 guild:
   created: "&%aギルドを作成しました。"
+  create-prompt-name: "&%aギルド名をチャットに入力してください。"
+  create-prompt-tag: "&%aギルドタグをチャットに入力してください。"
+  invite-prompt-player: "&%b招待するプレイヤー名をチャットに入力してください。"
+  chat-prompt-message: "&%bギルドチャットに送るメッセージをチャットに入力してください。"
   invited: "&%a招待を送りました。"
   invite-received: "&%a{player}からギルド招待が届きました。/guild accept で参加できます。"
   accepted: "&%aギルドに参加しました。"

@@ -6,6 +6,8 @@ import rpg.core.command.AdminCommand;
 import rpg.core.command.AdminCommandRegistry;
 import rpg.core.command.OlRootCommand;
 import rpg.core.command.PlayerCommandRegistry;
+import rpg.core.chat.ChatInputListener;
+import rpg.core.chat.ChatInputService;
 import rpg.core.config.ConfigFile;
 import rpg.core.config.ConfigManager;
 import rpg.core.config.LegacyDataFolderMigrator;
@@ -82,6 +84,7 @@ public final class OreliaPlugin extends JavaPlugin {
     private PlayerCommandRegistry playerCommandRegistry;
     private AdminCommandRegistry adminCommandRegistry;
     private ChatMuteService chatMuteService;
+    private ChatInputService chatInputService;
 
     @Override
     public void onEnable() {
@@ -103,6 +106,10 @@ public final class OreliaPlugin extends JavaPlugin {
         // kill switch (default true) - flip it off in config.yml to disable /chat mute entirely
         // without removing the feature.
         this.chatMuteService = new ChatMuteService(config.get().getBoolean("chat.mute.enabled", true));
+        // Shared the same way as chatMuteService above - any module's GUI screen may want to
+        // prompt for free-text chat input (guild/party name, a player name, ...).
+        this.chatInputService = new ChatInputService(schedulerService, messageManager);
+        getServer().getPluginManager().registerEvents(new ChatInputListener(chatInputService), this);
 
         getServer().getPluginManager().registerEvents(new PlayerConnectionListener(playerDataManager), this);
 
@@ -237,5 +244,9 @@ public final class OreliaPlugin extends JavaPlugin {
 
     public ChatMuteService getChatMuteService() {
         return chatMuteService;
+    }
+
+    public ChatInputService getChatInputService() {
+        return chatInputService;
     }
 }

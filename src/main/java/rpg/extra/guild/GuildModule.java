@@ -49,7 +49,7 @@ public final class GuildModule implements RpgModule {
 
         this.guildService = new GuildService(manager);
         this.guiManager = new GuiManager();
-        this.guildGuiScreen = new GuildGuiScreen(guildService, guiManager);
+        this.guildGuiScreen = new GuildGuiScreen(guildService, guiManager, plugin.getChatInputService(), plugin.getMessageManager());
 
         plugin.getServer().getPluginManager().registerEvents(new GuildQuitListener(manager), plugin);
         plugin.getServer().getPluginManager().registerEvents(new NpcGuildInteractListener(guildService, plugin.getMessageManager()), plugin);

@@ -158,6 +158,11 @@ public final class GuildService {
         return manager.getByPlayer(playerId);
     }
 
+    /** The guild {@code playerId} has a pending invite to, if any - for the GUI's accept/decline prompt. */
+    public Optional<Guild> peekPendingInvite(UUID playerId) {
+        return manager.peekInvite(playerId);
+    }
+
     /** Looks up a guild by its own id rather than a member's - for the GUI browser, which drills from a list into one guild's detail. */
     public Optional<Guild> getGuildById(UUID guildId) {
         return manager.getById(guildId);

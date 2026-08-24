@@ -60,6 +60,11 @@ public final class GuildManager {
         pendingInvites.put(inviteeId, guildId);
     }
 
+    /** Looks at the pending invite without consuming it - lets the GUI show an accept/decline prompt before the player types anything. */
+    public Optional<Guild> peekInvite(UUID inviteeId) {
+        return Optional.ofNullable(pendingInvites.get(inviteeId)).map(guildsById::get);
+    }
+
     public Optional<Guild> consumeInvite(UUID inviteeId) {
         UUID guildId = pendingInvites.remove(inviteeId);
         return guildId == null ? Optional.empty() : Optional.ofNullable(guildsById.get(guildId));
