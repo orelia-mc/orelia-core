@@ -20,7 +20,6 @@ import rpg.dungeon.repository.DungeonRepository;
 import rpg.dungeon.repository.PlayerDungeonRepository;
 import rpg.dungeon.service.DungeonEncounterService;
 import rpg.dungeon.service.DungeonService;
-import rpg.extra.api.PartyApi;
 import rpg.gui.framework.GuiManager;
 import rpg.quest.QuestModule;
 import rpg.quest.service.QuestProgressService;
@@ -70,9 +69,6 @@ public final class DungeonModule implements RpgModule {
             throw new IllegalStateException("dungeon module requires OreliaCore's DatabaseManager");
         }
         Economy economy = plugin.getServer().getServicesManager().load(Economy.class);
-        // Soft dependency - only used to resolve a dungeon challenger's real party; null when
-        // OreliaExtra isn't installed, in which case every challenge falls back to solo.
-        PartyApi partyApi = plugin.getServer().getServicesManager().load(PartyApi.class);
         QuestProgressService questProgressService = plugin.getModuleManager().get(QuestModule.class)
                 .orElseThrow(() -> new IllegalStateException("dungeon module requires quest module"))
                 .getProgressService();
@@ -91,9 +87,11 @@ public final class DungeonModule implements RpgModule {
         plugin.getPlayerDataManager().registerLoader(new DungeonPlayerManager(playerDungeonRepository));
 
         this.dungeonService = new DungeonService(repository, instanceManager, statusApi, economy);
+        // PartyApi (soft dependency, orelia-extra may not be installed) is looked up lazily
+        // inside DungeonEncounterService rather than resolved here - see its own doc comment.
         this.encounterService = new DungeonEncounterService(dungeonService, instanceManager, combatApi, relicApi, statusApi,
                 plugin.getSchedulerService(), plugin.getConfigManager(), playerDungeonRepository,
-                plugin.getPlayerDataManager(), partyApi, questProgressService, plugin.getMessageManager());
+                plugin.getPlayerDataManager(), plugin.getServer().getServicesManager(), questProgressService, plugin.getMessageManager());
 
         GuiManager guiManager = new GuiManager();
         this.guiScreen = new DungeonGuiScreen(repository, encounterService, plugin.getPlayerDataManager(),

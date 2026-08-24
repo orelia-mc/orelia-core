@@ -10,7 +10,6 @@ import rpg.api.SkillApi;
 import rpg.api.StatusApi;
 import rpg.core.command.CommandAliasUtil;
 import rpg.database.manager.DatabaseManager;
-import rpg.extra.api.PartyApi;
 import rpg.quest.command.QuestCommand;
 import rpg.quest.command.TitleCommand;
 import rpg.quest.config.QuestFeedbackConfig;
@@ -63,9 +62,6 @@ public final class QuestModule implements RpgModule {
         SkillApi skillApi = require(services, SkillApi.class);
         CombatApi combatApi = require(services, CombatApi.class);
         Economy economy = services.load(Economy.class);
-        // Soft dependency - orelia-extra (and therefore PartyApi) may not be installed.
-        // party-only quests fail closed when null (see QuestEligibilityService).
-        PartyApi partyApi = services.load(PartyApi.class);
 
         reloadQuests();
         reloadFeedbackConfig();
@@ -79,7 +75,9 @@ public final class QuestModule implements RpgModule {
         QuestManager questManager = new QuestManager(repository);
         plugin.getPlayerDataManager().registerLoader(questManager);
 
-        QuestEligibilityService eligibilityService = new QuestEligibilityService(plugin.getPlayerDataManager(), statusApi, partyApi);
+        // PartyApi (soft dependency, orelia-extra may not be installed) is looked up lazily
+        // inside QuestEligibilityService rather than resolved here - see its own doc comment.
+        QuestEligibilityService eligibilityService = new QuestEligibilityService(plugin.getPlayerDataManager(), statusApi, services);
         QuestItemInventoryService inventoryService = new QuestItemInventoryService(itemApi);
         QuestRewardService rewardService = new QuestRewardService(
                 plugin.getPlayerDataManager(), statusApi, economy, itemApi, accessoryApi, skillApi);

@@ -2,6 +2,7 @@ package rpg.world.playerinfo.gui;
 
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.ServicesManager;
 import rpg.api.GuiApi;
 import rpg.api.JobApi;
 import rpg.core.player.PlayerDataManager;
@@ -23,6 +24,11 @@ import rpg.util.ItemBuilder;
  * (soft dependency - see {@code plugin.yml}) instead of relaying through the {@code /ol
  * achievement gui} command. The icon is omitted entirely when {@code achievementApi} is
  * {@code null} (OreliaExtra not installed), rather than showing a button that can't do anything.
+ * Looked up fresh in {@link #build} rather than once at construction time - {@code
+ * PlayerInfoModule} enables well before {@code ExtraApiModule} (which publishes it) in this
+ * jar's single fixed module order, so a cached lookup from the constructor would always see
+ * {@code null} even with achievements fully available; by the time a player actually opens
+ * this menu, the whole plugin has long since finished enabling.
  */
 public final class PlayerInfoGuiScreen {
 
@@ -30,16 +36,16 @@ public final class PlayerInfoGuiScreen {
 
     private final GuiManager guiManager;
     private final GuiApi guiApi;
-    private final AchievementApi achievementApi;
+    private final ServicesManager services;
     private final PlayerInfoQuestGuiScreen questScreen;
     private final PlayerInfoJobGuiScreen jobScreen;
 
     public PlayerInfoGuiScreen(QuestRepository questRepository, PlayerDataManager playerDataManager,
-                                JobApi jobApi, GuiApi guiApi, AchievementApi achievementApi,
+                                JobApi jobApi, GuiApi guiApi, ServicesManager services,
                                 GuiManager guiManager) {
         this.guiManager = guiManager;
         this.guiApi = guiApi;
-        this.achievementApi = achievementApi;
+        this.services = services;
         this.questScreen = new PlayerInfoQuestGuiScreen(questRepository, playerDataManager);
         this.jobScreen = new PlayerInfoJobGuiScreen(jobApi);
     }
@@ -54,6 +60,7 @@ public final class PlayerInfoGuiScreen {
                 (p, clickType) -> guiApi.openStatus(p)));
         gui.set(CATEGORY_SLOTS[3], new GuiButton(new ItemBuilder(Material.ENCHANTED_BOOK).name("&%bスキル").build(),
                 (p, clickType) -> guiApi.openSkill(p)));
+        AchievementApi achievementApi = services.load(AchievementApi.class);
         if (achievementApi != null) {
             gui.set(CATEGORY_SLOTS[4], new GuiButton(new ItemBuilder(Material.NETHER_STAR).name("&%b実績").build(),
                     (p, clickType) -> {

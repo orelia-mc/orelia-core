@@ -1,6 +1,7 @@
 package rpg.quest.service;
 
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.ServicesManager;
 import rpg.api.StatusApi;
 import rpg.core.player.PlayerDataManager;
 import rpg.extra.api.PartyApi;
@@ -25,19 +26,23 @@ public final class QuestEligibilityService {
 
     private final PlayerDataManager playerDataManager;
     private final StatusApi statusApi;
-    private final PartyApi partyApi;
+    private final ServicesManager services;
 
     /**
-     * {@code partyApi} is a soft dependency (orelia-extra may not be installed, see
-     * {@code build.gradle.kts}'s {@code compileOnly}) - when {@code null}, a
+     * {@code PartyApi} is a soft dependency (orelia-extra may not be installed, see
+     * {@code build.gradle.kts}'s {@code compileOnly}) - when unavailable, a
      * {@code party-only} quest fails closed (always ineligible) rather than silently
      * allowing solo acceptance, since the whole point of the flag is that a party is
-     * required and there's no party concept to check against without it.
+     * required and there's no party concept to check against without it. Looked up fresh
+     * in {@link #checkEligibility} rather than once at construction time - {@code
+     * QuestModule} enables well before {@code ExtraApiModule} (which publishes it) in this
+     * jar's single fixed module order, so a cached lookup from the constructor would always
+     * see {@code null} even with party fully available.
      */
-    public QuestEligibilityService(PlayerDataManager playerDataManager, StatusApi statusApi, PartyApi partyApi) {
+    public QuestEligibilityService(PlayerDataManager playerDataManager, StatusApi statusApi, ServicesManager services) {
         this.playerDataManager = playerDataManager;
         this.statusApi = statusApi;
-        this.partyApi = partyApi;
+        this.services = services;
     }
 
     public Optional<Ineligibility> checkEligibility(Player player, QuestData quest) {
@@ -60,6 +65,7 @@ public final class QuestEligibilityService {
         if (level < quest.getRequiredLevel()) {
             return Optional.of(Ineligibility.LEVEL_TOO_LOW);
         }
+        PartyApi partyApi = services.load(PartyApi.class);
         if (quest.isPartyOnly() && !(partyApi != null && partyApi.isInParty(player.getUniqueId()))) {
             return Optional.of(Ineligibility.NOT_IN_PARTY);
         }

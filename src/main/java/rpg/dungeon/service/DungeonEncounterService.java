@@ -5,6 +5,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.ServicesManager;
 import org.bukkit.scheduler.BukkitTask;
 import rpg.api.CombatApi;
 import rpg.api.RelicApi;
@@ -67,7 +68,7 @@ public final class DungeonEncounterService {
     private final ConfigManager configManager;
     private final PlayerDungeonRepository playerDungeonRepository;
     private final PlayerDataManager playerDataManager;
-    private final PartyApi partyApi;
+    private final ServicesManager services;
     private final QuestProgressService questProgressService;
     private final MessageManager messages;
     private final Random random = new Random();
@@ -79,7 +80,7 @@ public final class DungeonEncounterService {
     public DungeonEncounterService(DungeonService dungeonService, DungeonInstanceManager instanceManager,
                                     CombatApi combatApi, RelicApi relicApi, StatusApi statusApi, SchedulerService schedulerService,
                                     ConfigManager configManager, PlayerDungeonRepository playerDungeonRepository,
-                                    PlayerDataManager playerDataManager, PartyApi partyApi,
+                                    PlayerDataManager playerDataManager, ServicesManager services,
                                     QuestProgressService questProgressService, MessageManager messages) {
         this.dungeonService = dungeonService;
         this.instanceManager = instanceManager;
@@ -90,7 +91,7 @@ public final class DungeonEncounterService {
         this.configManager = configManager;
         this.playerDungeonRepository = playerDungeonRepository;
         this.playerDataManager = playerDataManager;
-        this.partyApi = partyApi;
+        this.services = services;
         this.questProgressService = questProgressService;
         this.messages = messages;
     }
@@ -245,9 +246,13 @@ public final class DungeonEncounterService {
      * Resolves who a challenge is judged against: the real party from orelia-extra's
      * {@link PartyApi} (leader's unlock status gates entry, every online member rides along),
      * falling back to a solo party of just {@code initiator} when orelia-extra isn't installed
-     * or {@code initiator} isn't in a party.
+     * or {@code initiator} isn't in a party. Looked up fresh here rather than once at
+     * construction time - {@code DungeonModule} enables well before {@code ExtraApiModule}
+     * (which publishes {@link PartyApi}) in this jar's single fixed module order, so a cached
+     * lookup from the constructor would always see {@code null} even with party fully available.
      */
     private PartyResolution resolveParty(Player initiator) {
+        PartyApi partyApi = services.load(PartyApi.class);
         if (partyApi != null) {
             Set<UUID> memberIds = partyApi.getMemberIds(initiator.getUniqueId());
             if (!memberIds.isEmpty()) {
