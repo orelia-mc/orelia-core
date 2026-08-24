@@ -69,6 +69,10 @@ public final class ChatChannelCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleMute(Player player, String[] args) {
+        if (!muteService.isEnabled()) {
+            messages.send(player, "chat.mute-disabled");
+            return;
+        }
         if (args.length < 2) {
             Set<ChatBadge> muted = muteService.getMuted(player.getUniqueId());
             if (muted.isEmpty()) {

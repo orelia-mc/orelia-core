@@ -2,7 +2,10 @@ package rpg.extra.guild.gui;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.SkullMeta;
 import rpg.extra.guild.model.Guild;
 import rpg.extra.guild.model.GuildRole;
 import rpg.extra.guild.service.GuildService;
@@ -11,6 +14,7 @@ import rpg.gui.framework.GuiButton;
 import rpg.gui.framework.GuiManager;
 import rpg.gui.framework.GuiPageLayout;
 import rpg.gui.framework.GuiPaginator;
+import rpg.util.ColorUtil;
 import rpg.util.ItemBuilder;
 
 import java.util.ArrayList;
@@ -85,12 +89,27 @@ public final class GuildGuiScreen {
     }
 
     private GuiButton memberButton(Map.Entry<UUID, GuildRole> member) {
-        String name = Bukkit.getOfflinePlayer(member.getKey()).getName();
-        boolean online = Bukkit.getPlayer(member.getKey()) != null;
-        return new GuiButton(new ItemBuilder(online ? Material.PLAYER_HEAD : Material.SKELETON_SKULL)
-                .name((online ? "&%a" : "&%7") + (name != null ? name : member.getKey()))
-                .lore(List.of("&%7役職: &%f" + member.getValue().getDisplayName()))
-                .build(), (clicker, clickType) -> {
+        OfflinePlayer offline = Bukkit.getOfflinePlayer(member.getKey());
+        String name = offline.getName();
+        boolean online = offline.isOnline();
+        List<String> lore = List.of("&%7役職: &%f" + member.getValue().getDisplayName());
+        String displayName = (online ? "&%a" : "&%7") + (name != null ? name : member.getKey());
+        if (!online) {
+            return new GuiButton(new ItemBuilder(Material.SKELETON_SKULL).name(displayName).lore(lore).build(),
+                    (clicker, clickType) -> {
+                    });
+        }
+        // Built directly rather than through ItemBuilder - setOwningPlayer is SkullMeta-specific
+        // and ItemBuilder's generic ItemMeta wrapping has no hook for it (see StatusGuiScreen's
+        // own head icon for the same pattern). Without this, a plain PLAYER_HEAD ItemStack always
+        // renders the default Steve skin instead of the member's own.
+        ItemStack head = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta meta = (SkullMeta) head.getItemMeta();
+        meta.setOwningPlayer(offline);
+        meta.displayName(ColorUtil.component(displayName));
+        meta.lore(lore.stream().map(ColorUtil::component).toList());
+        head.setItemMeta(meta);
+        return new GuiButton(head, (clicker, clickType) -> {
         });
     }
 }

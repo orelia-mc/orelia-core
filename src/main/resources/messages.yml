@@ -4,7 +4,7 @@
 # NPC dialogue lines / quest descriptions / story text stay in their own content yml files
 # (npc.yml, quests.yml, story.yml, ...) since those are per-entry authored content, not
 # fixed UI copy.
-config-version: 10
+config-version: 11
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -480,6 +480,7 @@ chat:
   admin-format: "&%c[管理者] &%f{sender}&%7: &%f{message}"
   msg-usage: "&%e使い方: /msg &%7<&%eplayer&%7>&%e &%7<&%emessage&%7>&%e"
   msg-sent: "&%d[あなた -> {player}]&%7: &%f{message}"
+  mute-disabled: "&%eこのサーバーでは /chat mute は現在無効になっています。"
   mute-usage: "&%e使い方: /chat mute &%7<&%ecombat&%7|&%esystem&%7|&%eparty&%7|&%eguild&%7>&%e"
   mute-invalid-category: "&%c不明なカテゴリです: {category}"
   mute-on: "&%c{category}のチャット通知をミュートしました。"

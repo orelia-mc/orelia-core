@@ -6,6 +6,7 @@ import rpg.core.command.AdminCommand;
 import rpg.core.command.AdminCommandRegistry;
 import rpg.core.command.OlRootCommand;
 import rpg.core.command.PlayerCommandRegistry;
+import rpg.core.config.ConfigFile;
 import rpg.core.config.ConfigManager;
 import rpg.core.config.LegacyDataFolderMigrator;
 import rpg.core.listener.PlayerConnectionListener;
@@ -87,7 +88,7 @@ public final class OreliaPlugin extends JavaPlugin {
         LegacyDataFolderMigrator.migrate(getLogger(), getDataFolder());
 
         this.configManager = new ConfigManager(this);
-        this.configManager.register("config.yml");
+        ConfigFile config = this.configManager.register("config.yml");
         this.messageManager = new MessageManager(configManager.register("messages.yml"));
 
         this.schedulerService = new SchedulerService(this);
@@ -96,8 +97,10 @@ public final class OreliaPlugin extends JavaPlugin {
         // Built here (not inside ChatModule) so PartyModule/GuildModule - registered before
         // ChatModule since ChatModule needs their services already built - can reach it too;
         // ChatMuteService itself has no dependency on any module, so there's no ordering issue
-        // giving every module the same shared instance from the start.
-        this.chatMuteService = new ChatMuteService();
+        // giving every module the same shared instance from the start. chat.mute.enabled is a
+        // kill switch (default true) - flip it off in config.yml to disable /chat mute entirely
+        // without removing the feature.
+        this.chatMuteService = new ChatMuteService(config.get().getBoolean("chat.mute.enabled", true));
 
         getServer().getPluginManager().registerEvents(new PlayerConnectionListener(playerDataManager), this);
 

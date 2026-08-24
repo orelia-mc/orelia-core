@@ -23,6 +23,7 @@ import rpg.util.ItemBuilder;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Quest GUI (SOW section 17 "クエスト"). Two entry points:
@@ -82,8 +83,9 @@ public final class QuestGuiScreen {
                 .filter(quest -> quest != null)
                 .toList();
         PlayerQuestComponent component = questComponent(player);
+        Supplier<Gui> refresh = () -> build(player, offeredQuestIds, page);
         GuiPaginator.placePage(guiManager, gui, LAYOUT, quests, page,
-                quest -> questButton(player, quest, component), p -> build(player, offeredQuestIds, p));
+                quest -> questButton(player, quest, component, refresh), p -> build(player, offeredQuestIds, p));
         return gui;
     }
 
@@ -118,8 +120,9 @@ public final class QuestGuiScreen {
         List<QuestData> quests = questRepository.getAll().values().stream()
                 .filter(quest -> quest.getType() == type).toList();
         PlayerQuestComponent component = questComponent(player);
+        Supplier<Gui> refresh = () -> buildTypeQuestList(player, type, page);
         GuiPaginator.placePage(guiManager, gui, LAYOUT, quests, page,
-                quest -> questButton(player, quest, component), p -> buildTypeQuestList(player, type, p));
+                quest -> questButton(player, quest, component, refresh), p -> buildTypeQuestList(player, type, p));
         return gui;
     }
 
@@ -129,7 +132,7 @@ public final class QuestGuiScreen {
                 .orElse(null);
     }
 
-    private GuiButton questButton(Player player, QuestData quest, PlayerQuestComponent component) {
+    private GuiButton questButton(Player player, QuestData quest, PlayerQuestComponent component, Supplier<Gui> refresh) {
         QuestState state = state(component, quest.getId());
         List<String> lore = new ArrayList<>(quest.getDescription());
         lore.add("");
@@ -161,7 +164,7 @@ public final class QuestGuiScreen {
                 .lore(lore)
                 .build(), (clicker, clickType) -> {
             if (!finalLocked) {
-                handleClick(clicker, quest, state, clickType);
+                handleClick(clicker, quest, state, clickType, refresh);
             }
         });
     }
@@ -204,22 +207,35 @@ public final class QuestGuiScreen {
         return messages.format(key);
     }
 
-    /** Shift-click abandons an in-progress (or awaiting-report) quest; a plain click accepts/reports as before. */
-    private void handleClick(Player player, QuestData quest, QuestState state, String clickType) {
+    /**
+     * Shift-click abandons an in-progress (or awaiting-report) quest; a plain click accepts/reports
+     * as before. Re-opens the screen (via {@code refresh}) after any action that actually changed
+     * the player's quest state, since the button that was just clicked still shows the item/lore
+     * baked in at the time this screen was built - without this, the GUI kept showing "クリックして
+     * 受注"/a stale progress bar until the player closed and reopened it themselves.
+     */
+    private void handleClick(Player player, QuestData quest, QuestState state, String clickType, Supplier<Gui> refresh) {
         String questId = quest.getId();
         if (clickType != null && clickType.startsWith("SHIFT_")
                 && (state == QuestState.IN_PROGRESS || state == QuestState.AWAITING_REPORT)) {
             boolean abandoned = progressService.abandon(player.getUniqueId(), questId);
             messages.send(player, abandoned ? "quest.abandoned" : "quest.not-active", "quest", questId);
+            if (abandoned) {
+                guiManager.open(player, refresh.get());
+            }
             return;
         }
         if (state == QuestState.AWAITING_REPORT) {
             boolean reported = progressService.report(player, questId);
             messages.send(player, reported ? "quest.completed" : "quest.report-failed");
+            if (reported) {
+                guiManager.open(player, refresh.get());
+            }
         } else if (state == null || state == QuestState.NOT_ACCEPTED) {
             var failure = progressService.accept(player, questId);
             if (failure.isEmpty()) {
                 messages.send(player, "quest.accepted");
+                guiManager.open(player, refresh.get());
             } else if (failure.get() == QuestEligibilityService.Ineligibility.ON_COOLDOWN) {
                 Duration remaining = eligibilityService.remainingCooldown(player, quest).orElse(Duration.ZERO);
                 messages.send(player, "quest.on-cooldown", "hours", remaining.toHours(), "minutes", remaining.toMinutesPart());
