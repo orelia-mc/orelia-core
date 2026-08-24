@@ -12,8 +12,10 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import rpg.core.command.TabCompletions;
 import rpg.core.message.MessageManager;
+import rpg.extra.friend.gui.FriendGuiScreen;
 import rpg.extra.friend.service.FriendService;
 import rpg.extra.friend.service.FriendTeleportService;
+import rpg.gui.framework.GuiManager;
 import rpg.util.ColorUtil;
 
 import java.util.ArrayList;
@@ -22,24 +24,29 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * {@code /ol friend add|accept|decline|remove|list|tpa|tpaccept|tpdecline} (SOW follow-up
+ * {@code /ol friend add|accept|decline|remove|list|gui|tpa|tpaccept|tpdecline} (SOW follow-up
  * "フレンド機能"). Teleport requests are scoped to existing friends only - never a
  * consent-less teleport.
  */
 public final class FriendCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBCOMMANDS = List.of(
-            "add", "accept", "decline", "remove", "list", "tpa", "tpaccept", "tpdecline");
+            "add", "accept", "decline", "remove", "list", "gui", "tpa", "tpaccept", "tpdecline");
     private static final List<String> ONLINE_PLAYER_TARGET_ACTIONS = List.of("add", "tpa");
 
     private final FriendService friendService;
     private final FriendTeleportService teleportService;
     private final MessageManager messages;
+    private final FriendGuiScreen guiScreen;
+    private final GuiManager guiManager;
 
-    public FriendCommand(FriendService friendService, FriendTeleportService teleportService, MessageManager messages) {
+    public FriendCommand(FriendService friendService, FriendTeleportService teleportService, MessageManager messages,
+                          FriendGuiScreen guiScreen, GuiManager guiManager) {
         this.friendService = friendService;
         this.teleportService = teleportService;
         this.messages = messages;
+        this.guiScreen = guiScreen;
+        this.guiManager = guiManager;
     }
 
     @Override
@@ -85,6 +92,7 @@ public final class FriendCommand implements CommandExecutor, TabCompleter {
                 report(sender, friendService.remove(player, friendId), "friend.removed");
             }
             case "list" -> listFriends(sender, player);
+            case "gui" -> guiManager.open(player, guiScreen.build(player));
             case "tpa" -> {
                 if (args.length < 2) {
                     messages.send(sender, "usage.friend-tpa");

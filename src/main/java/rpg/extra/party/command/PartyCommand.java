@@ -17,8 +17,10 @@ import rpg.extra.chat.NotificationSoundPlayer;
 import rpg.extra.chat.PlayerNameHover;
 import rpg.extra.chat.model.ChatBadge;
 import rpg.extra.chat.service.ChatMuteService;
+import rpg.extra.party.gui.PartyGuiScreen;
 import rpg.extra.party.model.Party;
 import rpg.extra.party.service.PartyService;
+import rpg.gui.framework.GuiManager;
 import rpg.util.ColorUtil;
 
 import java.util.ArrayList;
@@ -28,12 +30,12 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 /**
- * {@code /ol party create|invite|accept|decline|leave|kick|disband|transfer|list|chat} (SOW PartyModule).
+ * {@code /ol party create|invite|accept|decline|leave|kick|disband|transfer|list|gui|chat} (SOW PartyModule).
  */
 public final class PartyCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBCOMMANDS = List.of(
-            "create", "invite", "accept", "decline", "leave", "kick", "disband", "transfer", "list", "chat");
+            "create", "invite", "accept", "decline", "leave", "kick", "disband", "transfer", "list", "gui", "chat");
     private static final List<String> MEMBER_TARGET_ACTIONS = List.of("kick", "transfer");
 
     private final PartyService partyService;
@@ -41,14 +43,18 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
     private final ChatMuteService muteService;
     private final ConfigManager configManager;
     private final Logger logger;
+    private final PartyGuiScreen guiScreen;
+    private final GuiManager guiManager;
 
     public PartyCommand(PartyService partyService, MessageManager messages, ChatMuteService muteService,
-                         ConfigManager configManager, Logger logger) {
+                         ConfigManager configManager, Logger logger, PartyGuiScreen guiScreen, GuiManager guiManager) {
         this.partyService = partyService;
         this.messages = messages;
         this.configManager = configManager;
         this.logger = logger;
         this.muteService = muteService;
+        this.guiScreen = guiScreen;
+        this.guiManager = guiManager;
     }
 
     @Override
@@ -136,6 +142,7 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
                 report(sender, partyService.transferLeadership(player, target.getUniqueId()), "party.leadership-transferred");
             }
             case "list" -> listMembers(sender, player);
+            case "gui" -> guiManager.open(player, guiScreen.build(player));
             case "chat" -> partyChat(sender, player, args);
             default -> messages.send(sender, "usage.party");
         }

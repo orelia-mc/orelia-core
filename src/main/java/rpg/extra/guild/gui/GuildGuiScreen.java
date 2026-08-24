@@ -4,8 +4,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.SkullMeta;
 import rpg.extra.guild.model.Guild;
 import rpg.extra.guild.model.GuildRole;
 import rpg.extra.guild.service.GuildService;
@@ -14,6 +12,7 @@ import rpg.gui.framework.GuiButton;
 import rpg.gui.framework.GuiManager;
 import rpg.gui.framework.GuiPageLayout;
 import rpg.gui.framework.GuiPaginator;
+import rpg.gui.framework.GuiPlayerHead;
 import rpg.util.ColorUtil;
 import rpg.util.ItemBuilder;
 
@@ -28,6 +27,12 @@ import java.util.UUID;
  * orelia-world's {@code DungeonGuiScreen} (list -> detail), but this is the first screen in
  * either repo to actually adopt orelia-core's shared {@link GuiPaginator}/{@link GuiPageLayout}
  * instead of growing its own copy of the paging logic (see those classes' own doc comments).
+ *
+ * <p>The list screen also carries a "ギルドを作成" button when the viewer isn't currently in a
+ * guild - {@code /guild create <name> <tag>} needs two free-text fields Minecraft's inventory UI
+ * has no native input for, so the button closes the inventory and hands the player a
+ * suggest-command chat line to finish typing, the same click-to-suggest pattern used throughout
+ * this plugin's config/quest-GUI tooling rather than a bespoke text-entry screen.
  */
 public final class GuildGuiScreen {
 
@@ -36,6 +41,7 @@ public final class GuildGuiScreen {
     private static final GuiPageLayout MEMBER_LAYOUT =
             new GuiPageLayout(new int[]{10, 11, 12, 13, 14, 15, 16}, 18, 26);
     private static final int BACK_SLOT = 22;
+    private static final int CREATE_SLOT = 4;
 
     private final GuildService guildService;
     private final GuiManager guiManager;
@@ -51,6 +57,9 @@ public final class GuildGuiScreen {
 
     private Gui build(Player player, int page) {
         Gui gui = new Gui("&%8ギルド一覧", 27);
+        if (guildService.getGuild(player.getUniqueId()).isEmpty()) {
+            gui.set(CREATE_SLOT, createButton());
+        }
         List<Guild> guilds = List.copyOf(guildService.getAllGuilds());
         GuiPaginator.placePage(guiManager, gui, LIST_LAYOUT, guilds, page,
                 this::guildButton, p -> build(player, p));
@@ -77,6 +86,15 @@ public final class GuildGuiScreen {
         return gui;
     }
 
+    private GuiButton createButton() {
+        return new GuiButton(new ItemBuilder(Material.EMERALD).name("&%aギルドを作成")
+                .lore(List.of("&%7クリックして名前とタグを入力")).build(), (clicker, clickType) -> {
+            clicker.closeInventory();
+            clicker.sendMessage(ColorUtil.componentWithSuggestCommand(
+                    "&%aクリックしてギルド名とタグを入力: /guild create ", "/guild create "));
+        });
+    }
+
     private GuiButton guildButton(Guild guild) {
         List<String> lore = new ArrayList<>();
         lore.add("&%7メンバー: &%f" + guild.getMembers().size() + "人");
@@ -94,22 +112,7 @@ public final class GuildGuiScreen {
         boolean online = offline.isOnline();
         List<String> lore = List.of("&%7役職: &%f" + member.getValue().getDisplayName());
         String displayName = (online ? "&%a" : "&%7") + (name != null ? name : member.getKey());
-        if (!online) {
-            return new GuiButton(new ItemBuilder(Material.SKELETON_SKULL).name(displayName).lore(lore).build(),
-                    (clicker, clickType) -> {
-                    });
-        }
-        // Built directly rather than through ItemBuilder - setOwningPlayer is SkullMeta-specific
-        // and ItemBuilder's generic ItemMeta wrapping has no hook for it (see StatusGuiScreen's
-        // own head icon for the same pattern). Without this, a plain PLAYER_HEAD ItemStack always
-        // renders the default Steve skin instead of the member's own.
-        ItemStack head = new ItemStack(Material.PLAYER_HEAD);
-        SkullMeta meta = (SkullMeta) head.getItemMeta();
-        meta.setOwningPlayer(offline);
-        meta.displayName(ColorUtil.component(displayName));
-        meta.lore(lore.stream().map(ColorUtil::component).toList());
-        head.setItemMeta(meta);
-        return new GuiButton(head, (clicker, clickType) -> {
+        return new GuiButton(GuiPlayerHead.build(offline, displayName, lore), (clicker, clickType) -> {
         });
     }
 }

@@ -5,12 +5,14 @@ import rpg.database.manager.DatabaseManager;
 import rpg.core.OreliaPlugin;
 import rpg.core.module.RpgModule;
 import rpg.extra.friend.command.FriendCommand;
+import rpg.extra.friend.gui.FriendGuiScreen;
 import rpg.extra.friend.listener.FriendQuitListener;
 import rpg.extra.friend.manager.FriendRequestManager;
 import rpg.extra.friend.manager.TeleportRequestManager;
 import rpg.extra.friend.repository.FriendRepository;
 import rpg.extra.friend.service.FriendService;
 import rpg.extra.friend.service.FriendTeleportService;
+import rpg.gui.framework.GuiManager;
 
 import java.util.logging.Level;
 
@@ -23,6 +25,8 @@ public final class FriendModule implements RpgModule {
 
     private FriendService friendService;
     private FriendTeleportService teleportService;
+    private FriendGuiScreen friendGuiScreen;
+    private GuiManager guiManager;
 
     @Override
     public String getName() {
@@ -48,16 +52,19 @@ public final class FriendModule implements RpgModule {
         TeleportRequestManager teleportRequestManager = new TeleportRequestManager();
         this.friendService = new FriendService(repository, requestManager, maxFriends);
         this.teleportService = new FriendTeleportService(teleportRequestManager, friendService);
+        this.guiManager = new GuiManager();
+        this.friendGuiScreen = new FriendGuiScreen(friendService, guiManager);
 
         plugin.getServer().getPluginManager().registerEvents(
                 new FriendQuitListener(requestManager, teleportRequestManager, plugin.getMessageManager()), plugin);
 
-        FriendCommand friendCommand = new FriendCommand(friendService, teleportService, plugin.getMessageManager());
+        FriendCommand friendCommand = new FriendCommand(friendService, teleportService, plugin.getMessageManager(),
+                friendGuiScreen, guiManager);
         String description = "フレンドを管理します。";
-        String usage = "friend <add|accept|decline|remove|list|tpa|tpaccept|tpdecline>";
+        String usage = "friend <add|accept|decline|remove|list|gui|tpa|tpaccept|tpdecline>";
         plugin.getPlayerCommandRegistry().register("friend", friendCommand, description, usage);
         CommandAliasUtil.registerAlias(plugin, "friend", friendCommand, description,
-                "<add|accept|decline|remove|list|tpa|tpaccept|tpdecline>");
+                "<add|accept|decline|remove|list|gui|tpa|tpaccept|tpdecline>");
     }
 
     @Override
@@ -70,5 +77,13 @@ public final class FriendModule implements RpgModule {
 
     public FriendTeleportService getTeleportService() {
         return teleportService;
+    }
+
+    public FriendGuiScreen getFriendGuiScreen() {
+        return friendGuiScreen;
+    }
+
+    public GuiManager getGuiManager() {
+        return guiManager;
     }
 }
