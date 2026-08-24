@@ -33,6 +33,21 @@ public interface DebugApi {
     List<String> describeConfigKeys(String fileName);
 
     /**
+     * One node per key in {@code fileName}, in on-disk order (not sorted, unlike
+     * {@link #describeConfigKeys}), depth-first - for a human-readable indented "config view"
+     * listing rather than a flat dot-path dump. Empty if {@code fileName} isn't registered.
+     */
+    List<ConfigTreeEntry> listConfigTree(String fileName);
+
+    /**
+     * One node in a config file's tree. {@code path} is the full dot-path (e.g.
+     * {@code "monsters.forest_slime.hp"}), {@code depth} is 0 for a top-level key.
+     * {@code value} is {@code null} for a non-leaf (section) node; a leaf's value is always
+     * stringified the same way {@link #getConfigValue} stringifies it.
+     */
+    record ConfigTreeEntry(String path, int depth, String label, String value, boolean isLeaf) {}
+
+    /**
      * Whether {@code playerId}'s debug mode is currently enabled - while on, job/level weapon-use
      * and skill-cast requirement checks are bypassed for that player. {@code false} if the player
      * isn't online (the flag lives only on their in-memory {@code PlayerData}).

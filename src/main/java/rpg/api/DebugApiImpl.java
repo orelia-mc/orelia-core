@@ -1,10 +1,12 @@
 package rpg.api;
 
+import org.bukkit.configuration.ConfigurationSection;
 import rpg.core.config.ConfigFile;
 import rpg.core.config.ConfigManager;
 import rpg.core.player.PlayerData;
 import rpg.core.player.PlayerDataManager;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -60,6 +62,29 @@ final class DebugApiImpl implements DebugApi {
             return List.of();
         }
         return file.get().getKeys(true).stream().sorted().toList();
+    }
+
+    @Override
+    public List<ConfigTreeEntry> listConfigTree(String fileName) {
+        ConfigFile file = tryGet(fileName);
+        if (file == null) {
+            return List.of();
+        }
+        List<ConfigTreeEntry> entries = new ArrayList<>();
+        collectTree(file.get(), "", 0, entries);
+        return entries;
+    }
+
+    private void collectTree(ConfigurationSection section, String pathPrefix, int depth, List<ConfigTreeEntry> out) {
+        for (String key : section.getKeys(false)) {
+            String path = pathPrefix.isEmpty() ? key : pathPrefix + "." + key;
+            if (section.isConfigurationSection(key)) {
+                out.add(new ConfigTreeEntry(path, depth, key, null, false));
+                collectTree(section.getConfigurationSection(key), path, depth + 1, out);
+            } else {
+                out.add(new ConfigTreeEntry(path, depth, key, String.valueOf(section.get(key)), true));
+            }
+        }
     }
 
     @Override
