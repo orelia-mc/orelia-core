@@ -1,0 +1,200 @@
+# NPC definitions (SOW section 12).
+# type: WEAPON_SHOP | ARMOR_SHOP | ACCESSORY_SHOP | QUEST_RECEPTIONIST | JOB_CHANGE |
+#       ENHANCEMENT | WAREHOUSE | GUILD_RECEPTIONIST | WEAPON_LEVELUP | RELIC_UPGRADE
+# shop-stock kind: WEAPON | ACCESSORY | RELIC | VANILLA
+#   RELIC id must match a key under orelia-core's relics.yml shop-relics: section (fixed,
+#   already-max-level relics - distinct from the rollable ones a dungeon boss drops).
+# RELIC_UPGRADE needs no extra fields - it just opens the "選べる厳選" substat-upgrade GUI
+# (rpg.api.RelicApi#openUpgradeGui) for whatever relic the player is holding, same as /ol relic upgrade.
+# weapon-levelup-item-material: a vanilla Material name consumed (with weapon-levelup-item-amount)
+# alongside weapon-levelup-cost-base + weapon-levelup-cost-per-level * currentLevel money.
+config-version: 1
+
+npcs:
+  weapon_merchant:
+    name: "武器商人ガレット"
+    type: WEAPON_SHOP
+    entity-type: VILLAGER
+    world: world
+    x: 10
+    y: 64
+    z: 10
+    yaw: 180
+    dialogue:
+      - "いらっしゃい！腕利きの武器を揃えているよ。"
+    shop-stock:
+      item_1:
+        kind: WEAPON
+        id: wooden_training_sword
+        price: 50
+      item_2:
+        kind: WEAPON
+        id: hunters_spear
+        price: 300
+      item_3:
+        kind: WEAPON
+        id: hawkeye_bow
+        price: 400
+
+  armor_merchant:
+    name: "防具屋ベルナ"
+    type: ARMOR_SHOP
+    entity-type: VILLAGER
+    world: world
+    x: 12
+    y: 64
+    z: 10
+    yaw: 180
+    dialogue:
+      - "頑丈な防具はいかが？"
+    shop-stock:
+      item_1:
+        kind: VANILLA
+        id: IRON_CHESTPLATE
+        price: 150
+      item_2:
+        kind: VANILLA
+        id: IRON_BOOTS
+        price: 80
+
+  accessory_merchant:
+    name: "装飾品商人ミラ"
+    type: ACCESSORY_SHOP
+    entity-type: WANDERING_TRADER
+    world: world
+    x: 14
+    y: 64
+    z: 10
+    yaw: 180
+    dialogue:
+      - "厳選済みのレリックを取り揃えています。"
+    shop-stock:
+      item_1:
+        kind: RELIC
+        id: shop_guardian_charm
+        price: 400
+      item_2:
+        kind: RELIC
+        id: shop_warriors_ring
+        price: 450
+      item_3:
+        kind: RELIC
+        id: shop_sages_necklace
+        price: 450
+
+  relic_upgrader:
+    name: "厳選師オルギン"
+    type: RELIC_UPGRADE
+    entity-type: WANDERING_TRADER
+    world: world
+    x: 18
+    y: 64
+    z: 10
+    yaw: 180
+    dialogue:
+      - "レリックを持ってきな、望むステータスに育ててやろう。"
+
+  quest_receptionist:
+    name: "クエスト受付ノーラ"
+    type: QUEST_RECEPTIONIST
+    entity-type: VILLAGER
+    world: world
+    x: 0
+    y: 64
+    z: 0
+    yaw: 0
+    dialogue:
+      - "何かお手伝いできることはある？"
+    conditional-item-id: ROTTEN_FLESH
+    conditional-dialogue:
+      - "その腐った肉、ちょうど探していたのよ！"
+    quest-ids:
+      - slime_cull
+      - goblin_supplies
+      - daily_bounty
+      - scout_the_camp
+      - king_of_goblins
+      - trial_of_the_swordsman_quest
+      - flame_lords_showdown
+      - ancient_grove_trial
+      - abyssal_descent
+      - venoms_nest
+      - call_of_the_dragon
+      - skeletal_watch
+      - frost_ambush
+      - troll_hunt
+      - supply_run
+      - herb_gathering
+      - grove_bark_collection
+      - daily_slime_purge
+      - daily_veteran_bounty
+      - weekly_goblin_king_bounty
+      - weekly_cave_delve
+      - event_moonlit_hunt
+      - event_lost_treasure
+
+  job_master:
+    name: "職業指南役ヴィクター"
+    type: JOB_CHANGE
+    entity-type: VILLAGER
+    world: world
+    x: -10
+    y: 64
+    z: 0
+    yaw: 90
+    dialogue:
+      - "自分に合った道を選ぶといい。"
+
+  blacksmith:
+    name: "鍛冶屋ドノヴァン"
+    type: ENHANCEMENT
+    entity-type: VILLAGER
+    world: world
+    x: -12
+    y: 64
+    z: 0
+    yaw: 90
+    dialogue:
+      - "その武器、もっと強くしてやろうか？"
+    enhancement-cost-base: 100
+    enhancement-cost-per-level: 75
+
+  weapon_master:
+    name: "武器鍛錬師イグナス"
+    type: WEAPON_LEVELUP
+    entity-type: VILLAGER
+    world: world
+    x: -14
+    y: 64
+    z: 0
+    yaw: 90
+    dialogue:
+      - "その武器、もっと磨いてやろうか？"
+    weapon-levelup-item-material: EMERALD
+    weapon-levelup-item-amount: 5
+    weapon-levelup-cost-base: 100
+    weapon-levelup-cost-per-level: 50
+
+  warehouse_keeper:
+    name: "倉庫番オットー"
+    type: WAREHOUSE
+    entity-type: VILLAGER
+    world: world
+    x: 0
+    y: 64
+    z: -10
+    yaw: 0
+    dialogue:
+      - "荷物を預かろう。"
+
+  guild_receptionist:
+    name: "ギルド受付リナ"
+    type: GUILD_RECEPTIONIST
+    entity-type: VILLAGER
+    world: world
+    x: 0
+    y: 64
+    z: 10
+    yaw: 0
+    dialogue:
+      - "ギルドへようこそ。"

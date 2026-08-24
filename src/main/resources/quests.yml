@@ -1,0 +1,491 @@
+# Quest definitions (SOW section 11).
+# type: MAIN | SUB | DAILY | WEEKLY | EVENT
+# objective type: KILL_MONSTER | COLLECT_ITEM | DELIVER_ITEM | REACH_LOCATION | TALK_NPC | KILL_BOSS | CLEAR_DUNGEON
+# target-id is a monsters.yml/bosses.yml/npc.yml/dungeons.yml id, or an items.yml weapon id /
+# vanilla Material name for the item objectives. REACH_LOCATION ignores target-id and uses world/x/y/z/radius.
+# cooldown-hours: only meaningful when repeatable is true - how long after completion before
+# the quest can be re-accepted (default 0 = instantly re-acceptable).
+# available-hour-start/available-hour-end: optional time-of-day gate (0-23, server local time).
+# Both -1 (the default) disables the gate. Handy for EVENT-type "night only" style quests.
+# start-dialogue-id/complete-dialogue-id: optional dialogues.yml tree id played on accept/report
+# (NPC flavor). Omit either/both for a quest with no dialogue.
+config-version: 2
+
+quests:
+  slime_cull:
+    name: "スライム討伐"
+    type: MAIN
+    required-level: 1
+    repeatable: false
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7森のスライムを5体討伐しよう。"
+    objectives:
+      obj_1:
+        type: KILL_MONSTER
+        target-id: forest_slime
+        amount: 5
+    reward:
+      exp: 50
+      money: 20
+      skill-points: 1
+
+  goblin_supplies:
+    name: "ゴブリンの補給物資"
+    type: SUB
+    required-level: 3
+    repeatable: false
+    party-only: false
+    prerequisite-quests:
+      - slime_cull
+    description:
+      - "&%7ゴブリンの略奪者を倒し、腐った肉を4つ集めて受付に届けよう。"
+    objectives:
+      obj_1:
+        type: KILL_MONSTER
+        target-id: goblin_raider
+        amount: 3
+      obj_2:
+        type: DELIVER_ITEM
+        target-id: ROTTEN_FLESH
+        amount: 4
+    reward:
+      exp: 120
+      money: 60
+      weapon-id: hunters_spear
+
+  daily_bounty:
+    name: "デイリー討伐依頼"
+    type: DAILY
+    required-level: 1
+    repeatable: true
+    cooldown-hours: 24
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7今日の討伐依頼をこなそう。"
+    objectives:
+      obj_1:
+        type: KILL_MONSTER
+        target-id: goblin_raider
+        amount: 5
+    reward:
+      exp: 40
+      money: 30
+
+  scout_the_camp:
+    name: "野営地の偵察"
+    type: SUB
+    required-level: 2
+    repeatable: false
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7指定された座標まで移動して周辺を偵察しよう。"
+    objectives:
+      obj_1:
+        type: REACH_LOCATION
+        world: world
+        x: 100
+        y: 64
+        z: 100
+        radius: 10
+    reward:
+      exp: 30
+      money: 10
+
+  king_of_goblins:
+    name: "ゴブリンキング討伐"
+    type: MAIN
+    required-level: 15
+    repeatable: false
+    party-only: true
+    prerequisite-quests:
+      - goblin_supplies
+    description:
+      - "&%7ゴブリンの洞窟に潜むゴブリンキングを討伐しよう。"
+    start-dialogue-id: king_of_goblins_briefing
+    complete-dialogue-id: king_of_goblins_victory
+    objectives:
+      obj_1:
+        type: KILL_BOSS
+        target-id: goblin_king_boss
+        amount: 1
+    reward:
+      exp: 500
+      money: 300
+      accessory-id: warriors_ring
+      skill-points: 2
+      title: "ゴブリン殺し"
+
+  # ==================== MAINクエストチェーン(king_of_goblins以降) ====================
+
+  trial_of_the_swordsman_quest:
+    name: "剣士の試練"
+    type: MAIN
+    required-level: 10
+    repeatable: false
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7ソロ専用ダンジョン「剣士の試練」を踏破しよう。"
+    objectives:
+      obj_1:
+        type: CLEAR_DUNGEON
+        target-id: trial_of_the_swordsman
+        amount: 1
+    reward:
+      exp: 200
+      money: 100
+      weapon-id: iron_shortsword
+
+  flame_lords_showdown:
+    name: "業火の王ブレイズロード討伐"
+    type: MAIN
+    required-level: 20
+    repeatable: false
+    party-only: false
+    prerequisite-quests:
+      - king_of_goblins
+    description:
+      - "&%7業火の王ブレイズロードを討伐しよう。強力な炎の力に注意。"
+    objectives:
+      obj_1:
+        type: KILL_BOSS
+        target-id: flame_lord_boss
+        amount: 1
+    reward:
+      exp: 900
+      money: 500
+      accessory-id: berserkers_ring
+      skill-points: 2
+      title: "業火を制する者"
+
+  ancient_grove_trial:
+    name: "古の大樹人討伐"
+    type: MAIN
+    required-level: 25
+    repeatable: false
+    party-only: false
+    prerequisite-quests:
+      - flame_lords_showdown
+    description:
+      - "&%7森の奥に鎮座する古の大樹人を討伐しよう。"
+    objectives:
+      obj_1:
+        type: KILL_BOSS
+        target-id: ancient_treant_boss
+        amount: 1
+    reward:
+      exp: 1100
+      money: 650
+      accessory-id: swift_wing
+      skill-points: 2
+      title: "森の守護者を退けし者"
+
+  abyssal_descent:
+    name: "深淵の亡霊討伐"
+    type: MAIN
+    required-level: 30
+    repeatable: false
+    party-only: false
+    prerequisite-quests:
+      - ancient_grove_trial
+    description:
+      - "&%7深淵に潜む亡霊を討伐しよう。"
+    objectives:
+      obj_1:
+        type: KILL_BOSS
+        target-id: abyssal_wraith_boss
+        amount: 1
+    reward:
+      exp: 1300
+      money: 800
+      accessory-id: archmages_necklace
+      skill-points: 3
+      title: "深淵より生還せし者"
+
+  venoms_nest:
+    name: "毒の女王蜘蛛討伐"
+    type: MAIN
+    required-level: 35
+    repeatable: false
+    party-only: true
+    prerequisite-quests:
+      - abyssal_descent
+    description:
+      - "&%7毒の女王蜘蛛の巣を焼き払おう。パーティーでの挑戦を推奨する。"
+    objectives:
+      obj_1:
+        type: KILL_BOSS
+        target-id: venom_broodmother_boss
+        amount: 1
+    reward:
+      exp: 1600
+      money: 1000
+      accessory-id: phoenix_wing
+      skill-points: 3
+      title: "毒女王を屠りし者"
+
+  call_of_the_dragon:
+    name: "竜の巣窟への挑戦"
+    type: MAIN
+    required-level: 40
+    repeatable: false
+    party-only: true
+    prerequisite-quests:
+      - venoms_nest
+    description:
+      - "&%7大人数パーティーで竜の巣窟に挑み、踏破しよう。"
+    complete-dialogue-id: dragon_lair_finale
+    objectives:
+      obj_1:
+        type: CLEAR_DUNGEON
+        target-id: raid_dragons_lair
+        amount: 1
+    reward:
+      exp: 3000
+      money: 2000
+      weapon-id: dragonslayer_blade
+      skill-points: 5
+      title: "竜の巣窟制覇者"
+
+  # ==================== SUBクエスト追加分 ====================
+
+  skeletal_watch:
+    name: "骸骨の弓兵掃討"
+    type: SUB
+    required-level: 4
+    repeatable: false
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7墓地に出没する骸骨の弓兵を8体討伐しよう。"
+    objectives:
+      obj_1:
+        type: KILL_MONSTER
+        target-id: skeletal_archer
+        amount: 8
+    reward:
+      exp: 80
+      money: 40
+
+  frost_ambush:
+    name: "氷結の射手の待ち伏せ"
+    type: SUB
+    required-level: 11
+    repeatable: false
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7雪山に潜む氷結の射手を6体討伐しよう。"
+    objectives:
+      obj_1:
+        type: KILL_MONSTER
+        target-id: frost_archer
+        amount: 6
+    reward:
+      exp: 180
+      money: 90
+      weapon-id: frozen_glaive
+
+  troll_hunt:
+    name: "洞窟トロル討伐"
+    type: SUB
+    required-level: 9
+    repeatable: false
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7洞窟に住み着いた洞窟トロルを3体討伐しよう。"
+    objectives:
+      obj_1:
+        type: KILL_MONSTER
+        target-id: cave_troll
+        amount: 3
+    reward:
+      exp: 150
+      money: 100
+      weapon-id: berserkers_axe
+
+  supply_run:
+    name: "物資の配達"
+    type: SUB
+    required-level: 6
+    repeatable: false
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7パンを5個集めて受付に届けよう。"
+    objectives:
+      obj_1:
+        type: DELIVER_ITEM
+        target-id: BREAD
+        amount: 5
+    reward:
+      exp: 60
+      money: 50
+
+  herb_gathering:
+    name: "薬草採集"
+    type: SUB
+    required-level: 7
+    repeatable: false
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7甘いベリーを10個集めよう。"
+    objectives:
+      obj_1:
+        type: COLLECT_ITEM
+        target-id: SWEET_BERRIES
+        amount: 10
+    reward:
+      exp: 70
+      money: 45
+
+  grove_bark_collection:
+    name: "大樹の樹皮集め"
+    type: SUB
+    required-level: 23
+    repeatable: false
+    party-only: false
+    prerequisite-quests:
+      - flame_lords_showdown
+    description:
+      - "&%7古の大樹人討伐の準備として、樹皮を16個集めよう。"
+    objectives:
+      obj_1:
+        type: COLLECT_ITEM
+        target-id: OAK_LOG
+        amount: 16
+    reward:
+      exp: 220
+      money: 120
+      accessory-id: guardian_charm
+
+  # ==================== DAILYクエスト追加分 ====================
+
+  daily_slime_purge:
+    name: "デイリー・スライム掃討"
+    type: DAILY
+    required-level: 1
+    repeatable: true
+    cooldown-hours: 12
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7森のスライムを10体討伐しよう。"
+    objectives:
+      obj_1:
+        type: KILL_MONSTER
+        target-id: forest_slime
+        amount: 10
+    reward:
+      exp: 25
+      money: 15
+
+  daily_veteran_bounty:
+    name: "デイリー・熟練者討伐依頼"
+    type: DAILY
+    required-level: 15
+    repeatable: true
+    cooldown-hours: 24
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7洞窟トロルを2体討伐しよう。"
+    objectives:
+      obj_1:
+        type: KILL_MONSTER
+        target-id: cave_troll
+        amount: 2
+    reward:
+      exp: 100
+      money: 80
+
+  # ==================== WEEKLYクエスト(新規カテゴリ) ====================
+
+  weekly_goblin_king_bounty:
+    name: "ウィークリー・ゴブリンキング討伐依頼"
+    type: WEEKLY
+    required-level: 15
+    repeatable: true
+    cooldown-hours: 168
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7週替わりの討伐依頼。ゴブリンキングを討伐しよう。"
+    objectives:
+      obj_1:
+        type: KILL_BOSS
+        target-id: goblin_king_boss
+        amount: 1
+    reward:
+      exp: 600
+      money: 400
+      skill-points: 1
+
+  weekly_cave_delve:
+    name: "ウィークリー・ゴブリンの洞窟踏破"
+    type: WEEKLY
+    required-level: 5
+    repeatable: true
+    cooldown-hours: 168
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7週替わりの依頼。ゴブリンの洞窟を踏破しよう。"
+    objectives:
+      obj_1:
+        type: CLEAR_DUNGEON
+        target-id: goblin_cave
+        amount: 1
+    reward:
+      exp: 200
+      money: 150
+
+  # ==================== EVENTクエスト(新規カテゴリ) ====================
+
+  event_moonlit_hunt:
+    name: "月夜の討伐イベント"
+    type: EVENT
+    required-level: 10
+    repeatable: false
+    party-only: false
+    prerequisite-quests: []
+    available-hour-start: 20
+    available-hour-end: 6
+    description:
+      - "&%7夜間限定の討伐イベント。骸骨の弓兵を6体討伐しよう。"
+    objectives:
+      obj_1:
+        type: KILL_MONSTER
+        target-id: skeletal_archer
+        amount: 6
+    reward:
+      exp: 150
+      money: 100
+      title: "月夜の狩人"
+
+  event_lost_treasure:
+    name: "失われた宝物の噂"
+    type: EVENT
+    required-level: 5
+    repeatable: false
+    party-only: false
+    prerequisite-quests: []
+    description:
+      - "&%7噂の場所まで移動して宝物を探そう。"
+    objectives:
+      obj_1:
+        type: REACH_LOCATION
+        world: world
+        x: 150
+        y: 64
+        z: 150
+        radius: 8
+    reward:
+      exp: 90
+      money: 200

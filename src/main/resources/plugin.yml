@@ -3,10 +3,10 @@ version: '${version}'
 main: rpg.core.OreliaPlugin
 api-version: '1.21'
 authors: [rasp1220, Nyaffle]
-description: RPG foundation plugin (combat, player, status) - weapons, skills, jobs, status, accessories, monsters, bosses, effects, economy, GUI, database, public API
+description: RPG suite plugin (combat, player, status, content, and social/economy layers) - weapons, skills, jobs, status, accessories, monsters, bosses, effects, economy, GUI, database, quest, NPC, dialogue, story, dungeon, cutscene, event, party, guild, trade, mail, auction, housing, pet, mount, ranking, achievement, public API
 folia-supported: false
 
-softdepend: [WorldGuard]
+softdepend: [WorldGuard, Vault]
 
 commands:
   ol:

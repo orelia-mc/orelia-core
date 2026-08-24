@@ -1,0 +1,20 @@
+# Mount definitions for /mount (SOW MountModule).
+# Reload with: /rpgextraadmin reload
+config-version: 1
+
+mounts:
+  horse:
+    name: "馬"
+    entity-type: HORSE
+    speed: 0.225
+    price: 1000
+  strider:
+    name: "ストライダー"
+    entity-type: STRIDER
+    speed: 0.2
+    price: 1500
+  camel:
+    name: "ラクダ"
+    entity-type: CAMEL
+    speed: 0.2
+    price: 2000

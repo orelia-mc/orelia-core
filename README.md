@@ -1,18 +1,18 @@
 <img src="https://orelia-mc.github.io/assets/logo_wide.jpg" />
 <h1 align="center">Orelia Core</h1>
-<p align="center">RPG Foundation Plugin of Orelia-MC</p>
+<p align="center">RPG Suite Plugin of Orelia-MC</p>
 
 ## About
 
-`orelia-core` は Minecraft RPG プラグイン群 **Orelia** の基盤プラグイン(Paper 1.21.x / Java 21)です。戦闘・プレイヤー・ステータス関連のシステムを提供します。
+`orelia-core` は Minecraft RPG プラグイン群 **Orelia** のメインプラグイン(Paper 1.21.x / Java 21)です。旧 orelia-core(戦闘・プレイヤー・ステータス基盤)・orelia-world(クエスト等のコンテンツ層)・orelia-extra(パーティ等のソーシャル/経済層)の3リポジトリは単一プラグインへ統合され、現在は本リポジトリ1つですべての機能を提供します。
 
 Orelia は以下のプラグイン群で構成されています。
 
-- **orelia-core**(本リポジトリ) — Core, Item, Skill, Job, Status, Accessory, Relic, Monster, Boss, Effect, Economy, GUI, Gathering, Region, Town, Database, API, Util
-- [orelia-world](https://github.com/orelia-mc/orelia-world) — Quest, NPC, Dialogue, Story, Dungeon, Region, CutScene, Event
-- [orelia-extra](https://github.com/orelia-mc/orelia-extra) — 後発の MMORPG 系機能(Party, Guild, Trade, ...)
-- [orelia-debug](https://github.com/orelia-mc/orelia-debug) — orelia-core/world/extra のテストプレイを助ける管理者向けデバッグツール
+- **orelia-core**(本リポジトリ) — Core, Item, Skill, Job, Status, Accessory, Relic, Monster, Boss, Effect, Economy, GUI, Gathering, Region, Town, Database, API, Util(旧orelia-core)、Quest, NPC, Dialogue, Story, Dungeon, CutScene, Event, PlayerInfo(旧orelia-world)、Party, Friend, Guild, Chat, Trade, Mail, Auction, Housing, Pet, Mount, Ranking, Achievement(旧orelia-extra)
+- [orelia-debug](https://github.com/orelia-mc/orelia-debug) — orelia-core のテストプレイを助ける管理者向けデバッグツール(独立したプラグインとして残存)
 - [orelia-serverutil](https://github.com/orelia-mc/orelia-serverutil) — RPG機能非依存のサーバー運用・UXプラグイン(ハブ転送、スコアボード/タブリストAPI、joinメッセージ等)
+
+旧 `orelia-world`/`orelia-extra` リポジトリの `rpg.world.api`/`rpg.extra.api` インターフェースは内部のモジュール境界として引き続き存在し、`ServicesManager` にも公開され続けます(`orelia-debug` が実行時にこれらへ依存しているため)。ただし本リポジトリ内のモジュール同士は、もはや「相手のプラグインが読み込まれているか」を気にする必要はありません — 全モジュールが単一の決定的な順序で1つのプラグインとして起動します。
 
 ## Setup
 
@@ -24,8 +24,10 @@ Orelia は以下のプラグイン群で構成されています。
 
 ## Structure
 
-- 公開 API — 他プラグイン(orelia-world / orelia-extra を含む)は `rpg.api` 経由(Bukkit の `ServicesManager` で公開)でのみ本プラグインと連携します。内部モジュールクラスへ直接アクセスすることはありません。`rpg.api.OreliaApi` と、より narrow な `StatusApi` / `JobApi` / `ItemApi` / `AccessoryApi` / `SkillApi` / `GuiApi` / `EffectApi` / `CombatApi` / `RelicApi` / `TownApi` を参照してください。
+- 公開 API — `orelia-debug` のような独立した他プラグインは `rpg.api` / `rpg.world.api` / `rpg.extra.api` 経由(Bukkit の `ServicesManager` で公開)でのみ本プラグインと連携します。内部モジュールクラスへ直接アクセスすることはありません。`rpg.api.OreliaApi` と、より narrow な `StatusApi` / `JobApi` / `ItemApi` / `AccessoryApi` / `SkillApi` / `GuiApi` / `EffectApi` / `CombatApi` / `RelicApi` / `TownApi` / `EconomyApi` / `DebugApi`、および `rpg.world.api.QuestApi` / `WorldDebugApi`、`rpg.extra.api.GuildApi` / `PartyApi` / `AchievementApi` / `ExtraDebugApi` を参照してください。
 - 設定ファイル — 各モジュールが `src/main/resources/` 配下の専用ファイル(`items.yml`, `skills.yml`, `jobs.yml`, `accessories.yml`, `relics.yml`, `monsters.yml`, `bosses.yml`, `effects.yml`, `gui.yml`, `crafting.yml`, `gathering.yml`, `fishing.yml`, `messages.yml`, `config.yml`)を読み込みます。`/oladmin reload` で一括リロードできます。全ファイルが先頭の `config-version` で管理されており、新しいjarで起動すると新規追加されたキー(ネストした階層のキーも含む)は既存ファイルの正しい位置へ自動で追記されます(`rpg.core.config.ConfigMigrator`)。新しいトップレベルセクション・キーを追加したら、そのファイルの `config-version` を1つ上げてください。
+- 3プラグイン統合時のNPC・ネザースターの互換性 — `NamespacedKey` の名前空間はプラグイン名に由来するため、統合により `npc_id`(NPC)と `player_info_item`(プレイヤー情報のネザースター)のタグが `oreliaworld:` から `oreliacore:` へ変わります。統合前に設置したNPCや配布済みのネザースターは古い名前空間のままなので、旧キーも読むフォールバックを入れてあります(`rpg.npc.service.NpcKeys` / `rpg.world.playerinfo.service.PlayerInfoItemKeys`)。これが無いと、既存NPCは反応しなくなった上に `/oladmin npc spawnall` で重複して湧き、既存のネザースターはメニューが開かず・ドロップ保護も外れ・次回参加時にホットバーから押し出されて(持ち物が満杯なら地面に落ちて)新品が配られる、という状態になります。NPCは読み取り時に新しい名前空間へ自動的に貼り直されるため1体につき1回で移行が完了します。統合前のワールド・アイテムが無くなれば、このフォールバックは削除できます。
+- 3プラグイン統合時の設定移行 — 統合前に `plugins/OreliaWorld/`・`plugins/OreliaExtra/` でカスタマイズしていた `*.yml`(`quests.yml`, `npc.yml`, `dungeons.yml`, `achievements.yml` 等)は、統合後の初回起動時に `plugins/OreliaCore/` へ自動でコピーされます(`rpg.core.config.LegacyDataFolderMigrator`)。コピー先に同名ファイルが既にある場合は上書きしません。ただし `config.yml` と `messages.yml` の2つだけは対象外です — この2ファイルは「移動」ではなく「内容をマージ」したため、旧プラグイン版で上書きすると orelia-core 側の設定が失われます。この2つに追加された新セクションは、上記 `ConfigMigrator` が既存ファイルへ差分追記します。DBは統合前から orelia-core の `DatabaseManager` を共有していたため、移行作業は不要です。
 - レリック(厳選アクセサリー) — `accessories.yml`の完全固定ステータスとは別に、ダンジョンのボス討伐でランダムな部位・メインステータスを1本持って生成される個体差ありのアクセサリー(`rpg.api.RelicApi#generateRelic`、orelia-worldから利用)。アクセサリー枠は4→6種(お守り/指輪/ネックリス/羽根/耳飾り/ベルト)に拡張。メインステータスは部位ごとの固定プール(`relics.yml`)からランダムに1本、サブステータス(最大4本)は生成時点で`initial-substat-count-min/max`(既定3〜4本)だけ既に付いた状態で出現します。`/ol relic upgrade`(タブ補完対応)で3レベル毎(最大15、計5回)にプレイヤー自身が「新規追加するステータス」または「既存ステータスを強化」のどちらかを自由に選んで伸ばせます(4本目までは両方の選択肢が同時に提示されます)。1回の増加量は`relics.yml`の`substat-upgrade-min/max`(既定1〜2)からランダム — 完全ランダム厳選との差別化です。同じダンジョン産のレリックを2つ以上装備すると、そのダンジョン専用のセットボーナスが自動で付与されます(`relics.yml`の`dungeon-set-bonuses`)。ボスドロップとは別に、`relics.yml`の`shop-relics:`セクションで固定ステータス・最大レベル(だが控えめな数値)のレリックをNPCショップに並べることもできます(`npc.yml`のshop-stockで`kind: RELIC`)。厳選(`/ol relic upgrade`)はNPC経由でも開けます(`npc.yml`の`type: RELIC_UPGRADE`、`rpg.api.RelicApi#openUpgradeGui`)。
 - ボスバー — ボスをスポーンさせると、7ブロック以内にいるプレイヤーにバニラのボスバー(HP進捗)が表示されます。名札のHPバーと同じスケール済みHPを参照するため数値は一致します。
 - モンスターの名札には、スポーンポイントの`targetLevel`で目安レベルが設定されている場合、名前の横にレベルが表示されます(未設定の個体には表示されません)。プレイヤーがモンスターに倒された際の死亡メッセージも、名札のHPバー装飾が混入しないよう専用のメッセージ(`messages.yml`の`monster.death-message`)に差し替えられます — 近接攻撃・モンスターのスキルで放たれた矢などの遠距離攻撃に加え、範囲斬撃(AOE_SLAM)・火球連射(FIREBALL_BARRAGE)のようなダメージ元エンティティを持たないモンスター/ボスのアビリティ攻撃で倒された場合も対象です。
@@ -55,5 +57,10 @@ Orelia は以下のプラグイン群で構成されています。
 - レベルアップ時のステータス上昇メッセージの属性名を日本語化 — 火属性ダメージ増加等の表記が`FIRE_DMG`のような内部enum名のまま表示されていたのを、`LevelUpFeedbackService#STAT_LABELS`に6属性(火/水/土/風/光/闇属性ダメージ)分のラベルを追加して解消しました。
 - プレイヤーのデフォルト会心率/会心ダメージを`config.yml: status.growth.CRT/CRT_DMG.base`でそれぞれ10/50に変更(旧デフォルトは5/5)。CRT/CRT_DMGは前述の通りレベルでは変わらず固定のため、この値がそのままキャラクターの基礎会心率10%・会心ダメージ+50%になります。
 - 経験値バーの色抜けバグを修正 — `ActionBarService#expBar`が`&r`(全リセット)で終わっていたため、続く`] 1234/3000`の部分だけ他のHUD要素と揃わない白色表示になっていました。専用の色定数を`]`以降にも明示的に適用するよう修正しています。
+- クエストログGUI(`/ol quest gui`) — NPCと会話せずともクエストログGUI(`QuestGuiScreen`、`GuiPaginator`採用)を直接開けます。クエスト種別(MAIN/SUB/DAILY/WEEKLY/EVENT)ごとにカテゴリ分けされ、現在受注できないクエストもロック理由(レベル不足・前提未達成等)付きで一覧に表示されます。デフォルトで23個のクエスト(Lv1〜40)を同梱し、前提クエスト解放通知のクエスト名や`quest.newly-unlocked`はクリックでこのGUIを開けます。主要MAINクエストは受注/報告時に`dialogues.yml`のダイアログツリーを再生します(`start-dialogue-id`/`complete-dialogue-id`)。
+- ギルドGUI(`/guild gui`) — `GuildGuiScreen`(`GuiPaginator`採用)でギルド一覧・メンバー詳細を確認できます。`guild.created`等のギルド名もクリックでこのGUIを開けます。未所属時は一覧画面に「ギルドを作成」ボタンが表示され、クリックすると`/guild create `が自動でチャット欄に入力されます(名前・タグの2つの自由入力はGUIのクリックだけでは完結しないため)。
+- パーティーGUI(`/party gui`)・フレンドGUI(`/friend gui`) — ギルドGUIと同じ`GuiPaginator`ベースで、パーティーは未所属時「パーティーを作成」ボタン・所属時はメンバー一覧(リーダーはShift+クリックで追放)+「招待」(`/party invite `を自動入力)+「脱退/解散」ボタン、フレンドは一覧+「フレンド追加」(`/friend add `を自動入力)ボタン、各エントリはクリックでテレポート申請・Shift+クリックでフレンド解除ができます。いずれもGUIのボタンは`PartyService`/`FriendService`を直接叩かず対応する`/party`・`/friend`コマンドを実行する形にしており、通知サウンド等の既存の副作用がチャットから実行した場合と同じように動作します。
+- チャットミュート — `/chat mute <public|party|guild>`で、自分が実際にタイプしたチャット(全体・パーティー・ギルド)だけをチャンネル単位でミュートできます(`ChatMuteService`)。パーティー招待・ギルド招待・取引申込・メール未読通知などのシステム側からの通知(メッセージ本体+サウンド、`config.yml`の各`notify-sound`)はこのミュートの対象外で常に届きます。`config.yml`の`chat.mute.enabled`をfalseにすると`/chat mute`自体を無効化できます(既存のミュート設定も無視されます)。
+- config閲覧コマンド(`/oladmin config <core|world|extra> view <file> [path]`) — `monsters.yml`/`quests.yml`等の設定ファイルをYAML木構造のまま人間可読な形式で表示し、末端値はクリックで編集コマンドをチャット欄に自動入力できます(`DebugApi`/`WorldDebugApi`/`ExtraDebugApi`の`listConfigTree`)。
 - 戦闘ダメージ計算式の詳細は [DAMAGE_FORMULA.md](DAMAGE_FORMULA.md) を参照してください。
 - orelia-core/world/extra 3リポジトリを横断した未実装機能一覧は [UNIMPLEMENTED_FEATURES.md](UNIMPLEMENTED_FEATURES.md) を参照してください。
