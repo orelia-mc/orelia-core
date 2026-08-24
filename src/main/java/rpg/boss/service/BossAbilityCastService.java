@@ -12,9 +12,12 @@ import org.bukkit.util.Vector;
 import rpg.boss.model.BossAbility;
 import rpg.boss.model.BossData;
 import rpg.boss.repository.BossRepository;
+import rpg.gui.service.ActionBarService;
+import rpg.monster.model.MonsterData;
 import rpg.monster.service.MonsterSpawnService;
 import rpg.status.combat.DamageFormula;
-import rpg.util.ColorUtil;
+
+import java.util.Optional;
 
 import java.util.Collection;
 import java.util.List;
@@ -24,28 +27,41 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Periodically casts a currently-tracked boss's {@link BossAbility}s at nearby players (SOW
- * follow-up: "スキルを発動するボス"). Damage is applied via {@code player.damage(amount)}
- * with no damager entity - deliberately sidesteps
- * {@code rpg.monster.listener.CombatDamageListener}, which would otherwise overwrite an
- * ability's damage with the boss's plain melee attack power the same way it does for any
- * other monster hit.
+ * follow-up: "スキルを発動するボス"). Damage is delivered via the damager-carrying
+ * {@code player.damage(amount, boss)} so it still runs through
+ * {@code rpg.monster.listener.CombatDamageListener} (DEF/crit/weakness, and the scaled-to-vanilla
+ * health conversion) - {@link DamageFormula#ABILITY_OVERRIDE_METADATA} tells that listener the
+ * base amount is already resolved (the boss's own attack power times {@link BossAbility#getDamage()}
+ * as a multiplier) rather than substituting its plain melee attack power.
  */
 public final class BossAbilityCastService {
 
     public static final String FIREBALL_METADATA = "orelia_boss_ability_fireball";
 
     private static final double AGGRO_RANGE = 24.0;
+    private static final long ANNOUNCE_ACTION_BAR_DURATION_MILLIS = 2500L;
 
     private final Plugin plugin;
     private final MonsterSpawnService monsterSpawnService;
     private final BossRepository bossRepository;
     private final Map<UUID, LivingEntity> activeBosses = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, Long>> lastCastAtMillis = new ConcurrentHashMap<>();
+    private ActionBarService actionBarService;
 
     public BossAbilityCastService(Plugin plugin, MonsterSpawnService monsterSpawnService, BossRepository bossRepository) {
         this.plugin = plugin;
         this.monsterSpawnService = monsterSpawnService;
         this.bossRepository = bossRepository;
+    }
+
+    /**
+     * Wired in from {@code GuiModule.onEnable} rather than the constructor, since
+     * {@code ActionBarService} doesn't exist until the gui module enables (Boss registers
+     * before Gui) - same reason {@code SkillActivationListener} is registered from GuiModule
+     * instead of SkillModule.
+     */
+    public void setActionBarService(ActionBarService actionBarService) {
+        this.actionBarService = actionBarService;
     }
 
     public void register(LivingEntity entity) {
@@ -91,8 +107,13 @@ public final class BossAbilityCastService {
 
     private void cast(LivingEntity boss, BossAbility ability, Collection<Player> nearby) {
         if (ability.getAnnounceMessage() != null && !ability.getAnnounceMessage().isBlank()) {
-            String message = ColorUtil.colorize(ability.getAnnounceMessage());
-            nearby.forEach(player -> player.sendMessage(message));
+            // Ability casts happen too often (once per cooldown, per boss) to keep spamming
+            // chat - routed through the action-bar HUD instead so it doesn't bury player chat
+            // mid-fight. No-ops if the gui module hasn't wired ActionBarService in yet.
+            if (actionBarService != null) {
+                String message = ability.getAnnounceMessage();
+                nearby.forEach(player -> actionBarService.showTransient(player, message, ANNOUNCE_ACTION_BAR_DURATION_MILLIS));
+            }
         }
         switch (ability.getType()) {
             case AOE_SLAM -> castAoeSlam(boss, ability, nearby);
@@ -104,13 +125,14 @@ public final class BossAbilityCastService {
         World world = boss.getWorld();
         playParticle(world, boss, ability.getParticle());
         playSound(world, boss, ability.getSound());
+        double scaledDamage = abilityDamage(boss, ability);
         for (Player player : nearby) {
             if (player.getLocation().distance(boss.getLocation()) <= ability.getRadius()) {
-                player.setMetadata(DamageFormula.LAST_ABILITY_ATTACKER_METADATA_KEY, new FixedMetadataValue(plugin, boss));
+                boss.setMetadata(DamageFormula.ABILITY_OVERRIDE_METADATA, new FixedMetadataValue(plugin, true));
                 try {
-                    player.damage(ability.getDamage());
+                    player.damage(scaledDamage, boss);
                 } finally {
-                    player.removeMetadata(DamageFormula.LAST_ABILITY_ATTACKER_METADATA_KEY, plugin);
+                    boss.removeMetadata(DamageFormula.ABILITY_OVERRIDE_METADATA, plugin);
                 }
             }
         }
@@ -118,6 +140,7 @@ public final class BossAbilityCastService {
 
     private void castFireballBarrage(LivingEntity boss, BossAbility ability, Collection<Player> nearby) {
         playSound(boss.getWorld(), boss, ability.getSound());
+        double scaledDamage = abilityDamage(boss, ability);
         for (Player target : nearby) {
             Vector direction = target.getEyeLocation().toVector().subtract(boss.getEyeLocation().toVector()).normalize();
             SmallFireball fireball = boss.getWorld().spawn(boss.getEyeLocation(), SmallFireball.class, projectile -> {
@@ -126,8 +149,21 @@ public final class BossAbilityCastService {
                 projectile.setIsIncendiary(false);
                 projectile.setYield(0f);
             });
-            fireball.setMetadata(FIREBALL_METADATA, new FixedMetadataValue(plugin, new double[] {ability.getDamage(), ability.getRadius()}));
+            fireball.setMetadata(FIREBALL_METADATA, new FixedMetadataValue(plugin, new double[] {scaledDamage, ability.getRadius()}));
         }
+    }
+
+    /**
+     * {@link BossAbility#getDamage()} is a multiplier on the boss's own (level-scaled) attack
+     * power, not an absolute amount - keeps ability damage in step with
+     * {@code MonsterLevelScalingConfig} the same way the boss's plain melee attack already is.
+     * Falls back to the raw configured value if the boss has no resolvable {@code MonsterData}
+     * (shouldn't normally happen for a spawned, tracked boss).
+     */
+    private double abilityDamage(LivingEntity boss, BossAbility ability) {
+        Optional<MonsterData> data = monsterSpawnService.dataOf(boss);
+        return data.map(d -> ability.getDamage() * monsterSpawnService.scaledAttackPowerOf(boss, d))
+                .orElse(ability.getDamage());
     }
 
     private void playParticle(World world, LivingEntity boss, String particleName) {
@@ -137,6 +173,12 @@ public final class BossAbilityCastService {
         }
     }
 
+    // bosses.yml stores legacy enum-style sound names (e.g. ENTITY_BLAZE_SHOOT) rather than
+    // namespaced keys - Sound.valueOf is deprecated but remains the only lossless way to
+    // resolve those without maintaining our own legacy-name-to-key table (a mechanical
+    // "_" -> "." rewrite is wrong for names like ENTITY_IRON_GOLEM_ATTACK, whose real key is
+    // entity.iron_golem.attack).
+    @SuppressWarnings("deprecation")
     private void playSound(World world, LivingEntity boss, String soundName) {
         try {
             world.playSound(boss.getLocation(), Sound.valueOf(soundName), 2.0f, 0.9f);

@@ -3,6 +3,7 @@ package rpg.util;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -93,6 +94,20 @@ public final class ColorUtil {
     /** Same as {@link #component(String)}, but opens {@code url} when the player clicks the text. */
     public static Component componentWithUrl(String input, String url) {
         return component(input).clickEvent(ClickEvent.openUrl(url));
+    }
+
+    /** Same as {@link #component(String)}, but pre-fills {@code command} into the player's chat input (not run) when clicked. */
+    public static Component componentWithSuggestCommand(String input, String command) {
+        return component(input).clickEvent(ClickEvent.suggestCommand(command));
+    }
+
+    /**
+     * Same as {@link #component(String)}, but shows {@code item}'s vanilla tooltip (name/lore/
+     * enchantments) on hover - the same {@code HoverEvent.showItem} vanilla's own {@code [Item]}
+     * chat-share tooltip uses. {@link ItemStack#asHoverEvent()} is Paper API, not vanilla Bukkit.
+     */
+    public static Component componentWithItemHover(String input, ItemStack item) {
+        return component(input).hoverEvent(item.asHoverEvent());
     }
 
     private static String expandHex(String input) {

@@ -46,6 +46,7 @@ public final class StatusRepository implements SchemaOwner {
                     )
                     """);
             migrateCurrentMpColumn(connection, statement);
+            migrateNameColumn(connection, statement);
         }
     }
 
@@ -54,6 +55,19 @@ public final class StatusRepository implements SchemaOwner {
         try (ResultSet columns = connection.getMetaData().getColumns(null, null, "player_status", "current_mp")) {
             if (columns.next()) {
                 statement.execute("ALTER TABLE player_status RENAME COLUMN current_mp TO current_sp");
+            }
+        }
+    }
+
+    /**
+     * One-time migration for installs created before the leaderboard needed a name column.
+     * Existing rows get a NULL name until their owner's next join re-syncs it via
+     * {@link #syncName} (see {@link rpg.core.player.PlayerNameSyncListener}).
+     */
+    private void migrateNameColumn(Connection connection, Statement statement) throws SQLException {
+        try (ResultSet columns = connection.getMetaData().getColumns(null, null, "player_status", "name")) {
+            if (!columns.next()) {
+                statement.execute("ALTER TABLE player_status ADD COLUMN name VARCHAR(32)");
             }
         }
     }
@@ -84,14 +98,16 @@ public final class StatusRepository implements SchemaOwner {
         return new PlayerStatusComponent(uuid, 1, 0L, baseStats, baseStats.get(StatType.HP), baseStats.get(StatType.SP));
     }
 
-    /** Top {@code limit} players by level (ties broken by experience), joined against the
-     * {@code players} table for their last known name (SOW RankingModule). */
+    private static final String UNKNOWN_NAME_PLACEHOLDER = "???";
+
+    /** Top {@code limit} players by level (ties broken by experience). Name comes from
+     * {@code player_status.name}, synced on join via {@link #syncName} (SOW RankingModule) -
+     * a row that hasn't seen its owner join since this column was added falls back to
+     * {@value #UNKNOWN_NAME_PLACEHOLDER}. */
     public List<LeaderboardEntry> findTopByLevel(int limit) {
         String sql = """
-                SELECT s.uuid, p.name, s.level, s.experience
-                FROM player_status s
-                JOIN players p ON p.uuid = s.uuid
-                ORDER BY s.level DESC, s.experience DESC
+                SELECT uuid, name, level, experience FROM player_status
+                ORDER BY level DESC, experience DESC
                 LIMIT ?
                 """;
         List<LeaderboardEntry> entries = new ArrayList<>();
@@ -100,9 +116,10 @@ public final class StatusRepository implements SchemaOwner {
             statement.setInt(1, limit);
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
+                    String name = resultSet.getString("name");
                     entries.add(new LeaderboardEntry(
                             UUID.fromString(resultSet.getString("uuid")),
-                            resultSet.getString("name"),
+                            name != null ? name : UNKNOWN_NAME_PLACEHOLDER,
                             resultSet.getInt("level"),
                             resultSet.getLong("experience")));
                 }
@@ -111,6 +128,33 @@ public final class StatusRepository implements SchemaOwner {
             throw new IllegalStateException("Failed to load level leaderboard", e);
         }
         return entries;
+    }
+
+    /**
+     * Upserts just the {@code name} column, called from {@link rpg.core.player.PlayerNameSyncListener}
+     * on join. Other columns fall back to {@code player_status}'s own defaults (level=1,
+     * experience=0, ...) when inserting a row that doesn't exist yet - the subsequent
+     * {@link #loadOrCreate}/{@link #save} calls for that player own the real values.
+     */
+    public void syncName(UUID uuid, String name) {
+        String sql = switch (databaseManager.getType()) {
+            case SQLITE -> """
+                    INSERT INTO player_status (uuid, name) VALUES (?, ?)
+                    ON CONFLICT(uuid) DO UPDATE SET name = excluded.name
+                    """;
+            case MYSQL -> """
+                    INSERT INTO player_status (uuid, name) VALUES (?, ?)
+                    ON DUPLICATE KEY UPDATE name = VALUES(name)
+                    """;
+        };
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, uuid.toString());
+            statement.setString(2, name);
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to sync name for " + uuid, e);
+        }
     }
 
     public void save(PlayerStatusComponent component) {

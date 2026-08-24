@@ -54,7 +54,6 @@ public final class WeaponRepository {
                 section.getDouble("attack-power", 1.0),
                 ElementType.valueOf(section.getString("element", "NONE").trim().toUpperCase()),
                 section.getDouble("crit-rate", 5.0),
-                section.getDouble("crit-multiplier", 1.5),
                 requiredJob,
                 section.getInt("required-level", 1),
                 section.getStringList("description"),

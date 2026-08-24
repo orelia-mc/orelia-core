@@ -8,12 +8,16 @@
 # crit-multiplier: optional multiplier applied on a crit (default 1.5, only matters if crit-rate > 0).
 # abilities: optional periodic attacks cast at nearby players (MonsterAbilityCastService), same
 # shape as bosses.yml's own abilities block: type is AOE_SLAM or FIREBALL_BARRAGE, damage/radius/
-# cooldown-seconds/particle/sound. No announce-message key here (unlike bosses.yml) - regular
-# monsters cast abilities every few seconds, and broadcasting a chat line each time would spam
-# every nearby player; sound + particle alone carry the "ability happening" signal. Do not
-# configure abilities here for a monster id that's also referenced by bosses.yml's monster-id
-# (goblin_king, flame_lord below) - that entity spawns through the separate boss ability system
-# instead when spawned as a boss.
+# cooldown-seconds/particle/sound. damage is a MULTIPLIER on this monster's own (level-scaled)
+# attack-power, not an absolute amount - e.g. damage: 1.5 hits for 1.5x this monster's current
+# scaled attack power. This keeps ability damage properly scaled through the DEF/crit/weakness
+# pipeline and MonsterLevelScalingConfig instead of bypassing it as a fixed vanilla amount (see
+# rpg.monster.listener.CombatDamageListener#ABILITY_OVERRIDE_METADATA). No announce-message key
+# here (unlike bosses.yml) - regular monsters cast abilities every few seconds, and broadcasting
+# a chat line each time would spam every nearby player; sound + particle alone carry the
+# "ability happening" signal. Do not configure abilities here for a monster id that's also
+# referenced by bosses.yml's monster-id (goblin_king, flame_lord below) - that entity spawns
+# through the separate boss ability system instead when spawned as a boss.
 config-version: 2
 
 monsters:
@@ -62,7 +66,7 @@ monsters:
       war_cry_slam:
         name: "雄叫びの一撃"
         type: AOE_SLAM
-        damage: 8
+        damage: 1.6
         radius: 3
         cooldown-seconds: 10
         particle: SWEEP_ATTACK
@@ -89,7 +93,7 @@ monsters:
       numbing_volley:
         name: "痺れ矢の乱射"
         type: AOE_SLAM
-        damage: 6
+        damage: 1.5
         radius: 4
         cooldown-seconds: 12
         particle: CRIT
@@ -168,7 +172,7 @@ monsters:
       ground_slam:
         name: "地響き"
         type: AOE_SLAM
-        damage: 9
+        damage: 1.0
         radius: 3
         cooldown-seconds: 11
         particle: BLOCK_CRACK
@@ -201,7 +205,7 @@ monsters:
       frost_volley:
         name: "氷結の乱射"
         type: AOE_SLAM
-        damage: 7
+        damage: 1.0
         radius: 4
         cooldown-seconds: 12
         particle: SNOWFLAKE

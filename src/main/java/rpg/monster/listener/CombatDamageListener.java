@@ -139,7 +139,10 @@ public final class CombatDamageListener implements Listener {
             StatSheet stats = statusService.getFinalStats(attacker.getUniqueId()).orElse(null);
             double critDmg = stats != null ? stats.get(StatType.CRT_DMG) : 0;
             double weaponCritRate = (data != null ? data.getCritRate() : 0.0) + (stats != null ? stats.get(StatType.CRT) : 0);
-            double critMultiplier = data != null ? data.getCritMultiplier() : DamageFormula.DEFAULT_CRIT_MULTIPLIER;
+            // Crit multiplier is no longer a per-weapon stat - every weapon uses the same base
+            // (DamageFormula.DEFAULT_CRIT_MULTIPLIER) and only the player's CRT_DMG stat moves it,
+            // so "how hard a crit hits" lives in one place instead of two overlapping numbers.
+            double critMultiplier = DamageFormula.DEFAULT_CRIT_MULTIPLIER;
 
             double elementalDamageBonus = elementalDamageBonusPercentFor(data != null ? data.getElement() : ElementType.NONE, stats);
 
@@ -173,6 +176,11 @@ public final class CombatDamageListener implements Listener {
         if (event.getDamager() instanceof LivingEntity attacker) {
             MonsterData data = spawnService.dataOf(attacker).orElse(null);
             if (data != null) {
+                if (attacker.hasMetadata(DamageFormula.ABILITY_OVERRIDE_METADATA)) {
+                    // AOE_SLAM/FIREBALL_BARRAGE already folded the ability's damage multiplier
+                    // into event.getDamage() - only DEF/crit/weakness are left to resolve here.
+                    return new AttackInput(event.getDamage(), 0, data.getCritRate(), data.getCritMultiplier(), 0, 0, data.getElement());
+                }
                 return new AttackInput(spawnService.scaledAttackPowerOf(attacker, data), 0, data.getCritRate(), data.getCritMultiplier(), 0, 0, data.getElement());
             }
         }
@@ -208,7 +216,8 @@ public final class CombatDamageListener implements Listener {
         double atkPercent = stats != null ? stats.get(StatType.ATK) : 0;
         double critDmg = stats != null ? stats.get(StatType.CRT_DMG) : 0;
         double critRate = (data != null ? data.getCritRate() : 0.0) + (stats != null ? stats.get(StatType.CRT) : 0);
-        double critMultiplier = data != null ? data.getCritMultiplier() : DamageFormula.DEFAULT_CRIT_MULTIPLIER;
+        // Crit multiplier is no longer a per-weapon stat - see the melee resolveAttack branch.
+        double critMultiplier = DamageFormula.DEFAULT_CRIT_MULTIPLIER;
         ElementType element = data != null ? data.getElement() : ElementType.NONE;
         double elementalDamageBonus = elementalDamageBonusPercentFor(element, stats);
         return new AttackInput(baseAttackPower, atkPercent, critRate, critMultiplier, critDmg, elementalDamageBonus, element);

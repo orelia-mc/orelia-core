@@ -104,11 +104,11 @@ There are exactly two top-level Bukkit commands, both dispatchers: `/ol` (player
 ### WorldGuard region lookup (`rpg.region.service.RegionQueryService`) and town detection (`rpg.town`)
 
 `RegionQueryService` is the one place orelia-core talks to WorldGuard to find out *which*
-region IDs apply at a `Location` (`getRegionIds`, most specific first) - reflection-only,
-same rationale as `rpg.gathering.service.RegionProtectionService` (this build environment
-can't reach WorldGuard's Maven repo, so there's no compile-time dependency on its jar/API):
-fail-open, an empty list if WorldGuard isn't installed, its API doesn't match, or nothing
-applies there. `RegionModule` owns it and registers right after `DatabaseModule` since
+region IDs apply at a `Location` (`getRegionIds`, most specific first) - reflection-only
+(this build environment can't reach WorldGuard's Maven repo, so there's no compile-time
+dependency on its jar/API): fail-open, an empty list if WorldGuard isn't installed, its API
+doesn't match, or nothing applies there. `RegionModule` owns it and registers right after
+`DatabaseModule` since
 `GatheringModule` (fishing's area-based loot, see below) needs it before `TownModule` exists.
 
 `getRegionIds` also resolves each applicable region's WorldGuard parent (`ProtectedRegion#getParent()`)

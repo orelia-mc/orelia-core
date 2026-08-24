@@ -26,6 +26,18 @@ public final class DamageFormula {
     public static final String SKILL_OVERRIDE_METADATA = "orelia_skill_active";
 
     /**
+     * Metadata key set on the *attacking monster/boss* while its own AOE_SLAM/FIREBALL_BARRAGE
+     * ability damage event is in flight - the monster-side counterpart to
+     * {@link #SKILL_OVERRIDE_METADATA}. {@code event.getDamage()} already holds the ability's
+     * fully-resolved scaled damage (the monster's own attack power times the ability's
+     * configured multiplier), so {@code rpg.monster.listener.CombatDamageListener} only resolves
+     * DEF/crit/elemental weakness against this specific victim rather than substituting the
+     * monster's plain melee attack power. See
+     * {@code rpg.monster.service.MonsterAbilityCastService}/{@code rpg.boss.service.BossAbilityCastService}.
+     */
+    public static final String ABILITY_OVERRIDE_METADATA = "orelia_ability_active";
+
+    /**
      * Metadata key set on the *victim* with the pre-vanilla-conversion "scaled" damage amount
      * (a player's/scaled monster's HP pool can be in the hundreds while their real vanilla
      * health stays near 20 - see {@code rpg.status.service.ScaledHealthService}), so the

@@ -47,7 +47,8 @@ public final class ScaledHealthService {
         if (scaledMax <= 0) {
             return scaledDamage;
         }
-        return (scaledDamage / scaledMax) * vanillaMaxHealth(victim);
+        double vanillaMax = vanillaMaxHealth(victim);
+        return MathUtil.clamp((scaledDamage / scaledMax) * vanillaMax, 0, vanillaMax);
     }
 
     private static double vanillaMaxHealth(LivingEntity entity) {

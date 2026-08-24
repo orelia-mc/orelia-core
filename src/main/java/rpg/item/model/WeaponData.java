@@ -20,7 +20,6 @@ public final class WeaponData {
     private final double attackPower;
     private final ElementType element;
     private final double critRate;
-    private final double critMultiplier;
     private final JobType requiredJob;
     private final int requiredLevel;
     private final List<String> description;
@@ -34,7 +33,7 @@ public final class WeaponData {
     private final Material baseMaterial;
 
     public WeaponData(String id, String name, WeaponType weaponType, int weaponLevel, Rarity rarity,
-                       double attackPower, ElementType element, double critRate, double critMultiplier,
+                       double attackPower, ElementType element, double critRate,
                        JobType requiredJob, int requiredLevel, List<String> description,
                        int customModelData, double sellPrice, int skillSlotCount, boolean unbreakable,
                        int bulkChopRadius, int gatherRequiredLevel, int luckLevel, Material baseMaterial) {
@@ -46,7 +45,6 @@ public final class WeaponData {
         this.attackPower = attackPower;
         this.element = element;
         this.critRate = critRate;
-        this.critMultiplier = critMultiplier;
         this.requiredJob = requiredJob;
         this.requiredLevel = requiredLevel;
         this.description = description;
@@ -90,10 +88,6 @@ public final class WeaponData {
 
     public double getCritRate() {
         return critRate;
-    }
-
-    public double getCritMultiplier() {
-        return critMultiplier;
     }
 
     public JobType getRequiredJob() {

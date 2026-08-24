@@ -47,17 +47,22 @@ public final class BossFireballHitListener implements Listener {
         impact.getWorld().spawnParticle(Particle.EXPLOSION, impact, 1);
         // Both monster (MonsterAbilityCastService) and boss (BossAbilityCastService) fireball
         // barrages share this one listener - the shooter is whichever LivingEntity cast it.
+        // damage was already resolved to a scaled amount (shooter's attack power x the
+        // ability's multiplier) by the caster before the fireball was launched - see
+        // DamageFormula#ABILITY_OVERRIDE_METADATA.
         LivingEntity shooter = fireball.getShooter() instanceof LivingEntity living ? living : null;
         for (Player player : impact.getWorld().getNearbyPlayers(impact, radius)) {
             if (shooter != null) {
-                player.setMetadata(DamageFormula.LAST_ABILITY_ATTACKER_METADATA_KEY, new FixedMetadataValue(plugin, shooter));
-            }
-            try {
-                player.damage(damage);
-            } finally {
-                if (shooter != null) {
-                    player.removeMetadata(DamageFormula.LAST_ABILITY_ATTACKER_METADATA_KEY, plugin);
+                shooter.setMetadata(DamageFormula.ABILITY_OVERRIDE_METADATA, new FixedMetadataValue(plugin, true));
+                try {
+                    player.damage(damage, shooter);
+                } finally {
+                    shooter.removeMetadata(DamageFormula.ABILITY_OVERRIDE_METADATA, plugin);
                 }
+            } else {
+                // Shooter despawned/invalid before impact - fall back to a damager-less hit
+                // rather than dropping the damage entirely.
+                player.damage(damage);
             }
         }
         fireball.remove();

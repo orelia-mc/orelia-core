@@ -23,7 +23,6 @@ import rpg.gathering.repository.PlayerGatheringRepository;
 import rpg.gathering.service.BlockRegenService;
 import rpg.gathering.service.GatheringLevelService;
 import rpg.gathering.service.RegenExclusionService;
-import rpg.gathering.service.RegionProtectionService;
 import rpg.job.JobModule;
 import rpg.region.RegionModule;
 import rpg.status.StatusModule;
@@ -99,13 +98,11 @@ public final class GatheringModule implements RpgModule {
         YamlConfiguration config = plugin.getConfigManager().get("gathering.yml").get();
         regenService.start(config.getLong("regen-tick-period-ticks", 100L));
 
-        RegionProtectionService protectionService = new RegionProtectionService(plugin);
-
         plugin.getServer().getPluginManager().registerEvents(
-                new GatherBlockBreakListener(definitions, regenService, levelService, protectionService,
+                new GatherBlockBreakListener(definitions, regenService, levelService,
                         jobModule.getJobManager(), exclusionService, miningLuckConfig, plugin), plugin);
         plugin.getServer().getPluginManager().registerEvents(
-                new FarmingListener(definitions, levelService, radiusConfig, protectionService, plugin), plugin);
+                new FarmingListener(definitions, levelService, radiusConfig, plugin), plugin);
         plugin.getServer().getPluginManager().registerEvents(new GatherChunkLoadListener(regenService), plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new FishingListener(jobModule.getJobService(), plugin.getPlayerDataManager(), levelService,

@@ -79,7 +79,6 @@ public final class WeaponFactory {
             lore.add("&%b属性 &%f" + data.getElement());
         }
         lore.add("&%e会心率 &%f" + data.getCritRate() + "%");
-        lore.add("&%e会心倍率 &%f" + data.getCritMultiplier() + "x");
         if (data.getRequiredJob() != null) {
             lore.add("&%7必要職業 &%f" + data.getRequiredJob());
         }

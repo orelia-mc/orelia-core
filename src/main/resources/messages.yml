@@ -60,8 +60,8 @@ item:
 status:
   level-up-title: "&%eレベルアップ！"
   level-up-subtitle: "&%aLv.{level}"
-  level-up-chat: "&%aレベルが{level}に上がりました！"
-  level-up-stat-line: "&%7  {stat} &%f+{value}"
+  level-up-chat: "&%aレベルが{level}に上がりました！ &%7以下のステータスが上昇しました:"
+  level-up-stat-line: "&%7   ▸ {stat} &%f+{value}"
 
 job:
   not-chosen: "&%e職業がまだ選択されていません。ギルドで職業を選びましょう。"

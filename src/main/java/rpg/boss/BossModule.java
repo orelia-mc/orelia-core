@@ -93,4 +93,8 @@ public final class BossModule implements RpgModule {
     public BossRepository getRepository() {
         return repository;
     }
+
+    public BossAbilityCastService getAbilityCastService() {
+        return abilityCastService;
+    }
 }
