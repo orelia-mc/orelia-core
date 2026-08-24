@@ -9,14 +9,18 @@ import rpg.util.ColorUtil;
  * {@link rpg.extra.chat.service.ChatMuteService} mutes by. Icons are picked from symbols that
  * render in vanilla Minecraft's default chat font without needing orelia-resourcepack.
  *
- * <p>{@link #COMBAT} has no call site wired up yet - boss ability/phase announcements already
- * moved to ActionBar/Title (see dynamic-chat-design.md), so this is a landing spot for future
- * combat-related chat lines (kill logs, etc.) rather than something currently sent.
+ * <p>Deliberately covers only the three channels a player actually types messages into
+ * (public/party/guild) - {@code /chat mute} mutes a channel's <em>user-sent</em> chat lines
+ * only. System-driven notifications (mail unread, party/guild invite received, trade request
+ * received, ...) are never gated by this and always show/play regardless of mute state - see
+ * each of those call sites for why. An earlier revision also had {@code COMBAT} (never wired to
+ * an actual chat line - boss ability/phase announcements moved to ActionBar/Title instead) and
+ * {@code SYSTEM} (used only to gate the mail-unread notice, which shouldn't be mutable per the
+ * rule above) as mutable categories; both were removed rather than kept unused.
  */
 public enum ChatBadge {
 
-    COMBAT("⚔", "&%c", "戦闘"),
-    SYSTEM("✉", "&%6", "システム"),
+    PUBLIC("✎", "&%f", "全体"),
     PARTY("❤", "&%9", "パーティー"),
     GUILD("⚑", "&%a", "ギルド");
 

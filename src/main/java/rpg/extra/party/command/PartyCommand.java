@@ -185,16 +185,19 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
         return names;
     }
 
-    /** Sends the invite text plus clickable 承認/拒否 buttons (SOW: party invite click-to-respond). */
+    /**
+     * Sends the invite text plus clickable 承認/拒否 buttons (SOW: party invite click-to-respond).
+     * Always plays the notify sound when config-enabled - this is a system-driven notification,
+     * not a user-sent chat line, so {@code /chat mute party} (which only mutes actual party chat
+     * messages) doesn't affect it. See {@link ChatBadge}'s own doc comment.
+     */
     private void sendInviteNotification(Player invitee, Player inviter) {
         messages.send(invitee, "party.invite-received", "player", inviter.getName());
-        if (!muteService.isMuted(invitee.getUniqueId(), ChatBadge.PARTY)) {
-            var config = configManager.get("config.yml").get();
-            NotificationSoundPlayer.play(invitee, config.getBoolean("party.notify-sound.enabled", true),
-                    config.getString("party.notify-sound.name", "ENTITY_EXPERIENCE_ORB_PICKUP"),
-                    config.getDouble("party.notify-sound.volume", 1.0),
-                    config.getDouble("party.notify-sound.pitch", 1.0), logger);
-        }
+        var config = configManager.get("config.yml").get();
+        NotificationSoundPlayer.play(invitee, config.getBoolean("party.notify-sound.enabled", true),
+                config.getString("party.notify-sound.name", "ENTITY_EXPERIENCE_ORB_PICKUP"),
+                config.getDouble("party.notify-sound.volume", 1.0),
+                config.getDouble("party.notify-sound.pitch", 1.0), logger);
         Component accept = ColorUtil.component(messages.format("party.invite-accept-button"))
                 .clickEvent(ClickEvent.runCommand("/ol party accept"))
                 .hoverEvent(HoverEvent.showText(ColorUtil.component(messages.format("party.invite-accept-hover"))));

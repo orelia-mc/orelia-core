@@ -58,7 +58,7 @@ public final class MailModule implements RpgModule {
 
         plugin.getServer().getPluginManager().registerEvents(
                 new MailUnreadJoinListener(mailService, plugin.getMessageManager(), plugin.getSchedulerService(),
-                        mailConfig, plugin.getLogger(), plugin.getChatMuteService()),
+                        mailConfig, plugin.getLogger()),
                 plugin);
 
         plugin.getSchedulerService().runTimer(mailService::purgeExpired,

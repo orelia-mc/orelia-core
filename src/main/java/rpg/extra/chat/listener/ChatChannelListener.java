@@ -24,9 +24,12 @@ import rpg.extra.party.service.PartyService;
  * {@link ChatChannelService}) instead of the default public broadcast. Runs at
  * {@link EventPriority#LOW} - before orelia-serverutil's own {@code ChatModule} (unspecified/
  * NORMAL priority) - so a cancelled event here means serverutil's renderer never actually gets
- * broadcast to anyone. {@link ChatChannel#PUBLIC} is left completely untouched (event not
- * cancelled), so serverutil keeps owning public-chat formatting exactly as before this feature
- * existed.
+ * broadcast to anyone. {@link ChatChannel#PUBLIC} is left otherwise untouched (event not
+ * cancelled, no reformatting) so serverutil keeps owning public-chat formatting exactly as
+ * before this feature existed - the only thing this listener does for it is strip out any
+ * viewer who has muted {@link ChatBadge#PUBLIC}, via {@link AsyncChatEvent#viewers()} (a
+ * mutable set every listener - including serverutil's own - and Paper's final delivery both
+ * read from), rather than cancelling the event outright.
  */
 public final class ChatChannelListener implements Listener {
 
@@ -50,6 +53,8 @@ public final class ChatChannelListener implements Listener {
         Player player = event.getPlayer();
         ChatChannel channel = channelService.getChannel(player.getUniqueId());
         if (channel == ChatChannel.PUBLIC) {
+            event.viewers().removeIf(viewer -> viewer instanceof Player p && !p.equals(player)
+                    && muteService.isMuted(p.getUniqueId(), ChatBadge.PUBLIC));
             return;
         }
         event.setCancelled(true);

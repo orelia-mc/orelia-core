@@ -25,7 +25,7 @@ import java.util.Set;
 public final class ChatChannelCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> FIRST_ARG_OPTIONS = List.of("public", "party", "guild", "admin", "mute");
-    private static final List<String> CATEGORY_NAMES = List.of("combat", "system", "party", "guild");
+    private static final List<String> CATEGORY_NAMES = List.of("public", "party", "guild");
 
     private final ChatChannelService channelService;
     private final ChatMuteService muteService;

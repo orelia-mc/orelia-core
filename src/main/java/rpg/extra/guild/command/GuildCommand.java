@@ -87,13 +87,14 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
                     target.sendMessage(ColorUtil.componentWithCommand(
                             messages.getPrefix() + messages.format("guild.invite-received", "player", player.getName()),
                             "/guild accept"));
-                    if (!muteService.isMuted(target.getUniqueId(), ChatBadge.GUILD)) {
-                        var config = configManager.get("config.yml").get();
-                        NotificationSoundPlayer.play(target, config.getBoolean("guild.notify-sound.enabled", true),
-                                config.getString("guild.notify-sound.name", "ENTITY_EXPERIENCE_ORB_PICKUP"),
-                                config.getDouble("guild.notify-sound.volume", 1.0),
-                                config.getDouble("guild.notify-sound.pitch", 1.0), logger);
-                    }
+                    // Always plays when config-enabled - a system-driven notification, not a
+                    // user-sent chat line, so /chat mute guild (which only mutes actual guild
+                    // chat messages) doesn't affect it. See ChatBadge's own doc comment.
+                    var config = configManager.get("config.yml").get();
+                    NotificationSoundPlayer.play(target, config.getBoolean("guild.notify-sound.enabled", true),
+                            config.getString("guild.notify-sound.name", "ENTITY_EXPERIENCE_ORB_PICKUP"),
+                            config.getDouble("guild.notify-sound.volume", 1.0),
+                            config.getDouble("guild.notify-sound.pitch", 1.0), logger);
                 }
             });
             case "accept" -> {

@@ -11,8 +11,6 @@ import org.bukkit.inventory.ItemStack;
 import rpg.core.command.TabCompletions;
 import rpg.core.message.MessageManager;
 import rpg.extra.chat.NotificationSoundPlayer;
-import rpg.extra.chat.model.ChatBadge;
-import rpg.extra.chat.service.ChatMuteService;
 import rpg.extra.trade.config.TradeConfig;
 import rpg.extra.trade.model.TradeSession;
 import rpg.extra.trade.service.TradeService;
@@ -36,15 +34,12 @@ public final class TradeCommand implements CommandExecutor, TabCompleter {
     private final MessageManager messages;
     private final TradeConfig tradeConfig;
     private final Logger logger;
-    private final ChatMuteService muteService;
 
-    public TradeCommand(TradeService tradeService, MessageManager messages, TradeConfig tradeConfig, Logger logger,
-                         ChatMuteService muteService) {
+    public TradeCommand(TradeService tradeService, MessageManager messages, TradeConfig tradeConfig, Logger logger) {
         this.tradeService = tradeService;
         this.messages = messages;
         this.tradeConfig = tradeConfig;
         this.logger = logger;
-        this.muteService = muteService;
     }
 
     @Override
@@ -137,11 +132,12 @@ public final class TradeCommand implements CommandExecutor, TabCompleter {
                 if (result == TradeService.ActionResult.OK) {
                     messages.send(player, "trade.request-sent", "player", target.getName());
                     messages.send(target, "trade.request-received", "player", player.getName());
-                    if (!muteService.isMuted(target.getUniqueId(), ChatBadge.SYSTEM)) {
-                        NotificationSoundPlayer.play(target, tradeConfig.isNotifySoundEnabled(),
-                                tradeConfig.getNotifySoundName(), tradeConfig.getNotifySoundVolume(),
-                                tradeConfig.getNotifySoundPitch(), logger);
-                    }
+                    // Always plays when config-enabled - a system-driven notification, not a
+                    // user-sent chat line, so /chat mute never affects it (trade has no chat
+                    // channel of its own to mute). See ChatBadge's own doc comment.
+                    NotificationSoundPlayer.play(target, tradeConfig.isNotifySoundEnabled(),
+                            tradeConfig.getNotifySoundName(), tradeConfig.getNotifySoundVolume(),
+                            tradeConfig.getNotifySoundPitch(), logger);
                 } else {
                     report(sender, result);
                 }

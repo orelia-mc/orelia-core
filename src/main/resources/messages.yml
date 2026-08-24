@@ -481,7 +481,7 @@ chat:
   msg-usage: "&%e使い方: /msg &%7<&%eplayer&%7>&%e &%7<&%emessage&%7>&%e"
   msg-sent: "&%d[あなた -> {player}]&%7: &%f{message}"
   mute-disabled: "&%eこのサーバーでは /chat mute は現在無効になっています。"
-  mute-usage: "&%e使い方: /chat mute &%7<&%ecombat&%7|&%esystem&%7|&%eparty&%7|&%eguild&%7>&%e"
+  mute-usage: "&%e使い方: /chat mute &%7<&%epublic&%7|&%eparty&%7|&%eguild&%7>&%e"
   mute-invalid-category: "&%c不明なカテゴリです: {category}"
   mute-on: "&%c{category}のチャット通知をミュートしました。"
   mute-off: "&%a{category}のチャット通知のミュートを解除しました。"
