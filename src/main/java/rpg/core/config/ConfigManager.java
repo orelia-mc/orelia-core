@@ -6,9 +6,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.Level;
 
 /**
@@ -71,7 +75,58 @@ public final class ConfigManager {
     }
 
     public void reloadAll() {
+        reloadAllWithDiff();
+    }
+
+    /** One leaf key's before/after value in a reloaded file - either side is {@code null} for a key that was added/removed on disk. */
+    public record KeyChange(String path, String before, String after) {
+    }
+
+    /** Every changed leaf key in one config file, in {@code /oladmin reload}'s report. Only present for a file that actually changed. */
+    public record FileDiff(String fileName, List<KeyChange> changes) {
+    }
+
+    /**
+     * Reloads every registered file (same effect as {@link #reloadAll}) and reports which leaf
+     * keys actually changed value, were added, or were removed - lets an admin who hand-edited
+     * a yml file on disk and ran {@code /oladmin reload} see exactly what took effect, instead
+     * of a plain "reloaded" with no way to confirm the edit was even read correctly.
+     */
+    public List<FileDiff> reloadAllWithDiff() {
+        Map<String, Map<String, Object>> before = new LinkedHashMap<>();
+        files.forEach((name, file) -> before.put(name, file.snapshotLeaves()));
         files.values().forEach(ConfigFile::reload);
+
+        List<FileDiff> diffs = new ArrayList<>();
+        for (Map.Entry<String, ConfigFile> entry : files.entrySet()) {
+            String name = entry.getKey();
+            Map<String, Object> beforeSnapshot = before.get(name);
+            Map<String, Object> afterSnapshot = entry.getValue().snapshotLeaves();
+            List<KeyChange> changes = diffSnapshots(beforeSnapshot, afterSnapshot);
+            if (!changes.isEmpty()) {
+                diffs.add(new FileDiff(name, changes));
+            }
+        }
+        return diffs;
+    }
+
+    private List<KeyChange> diffSnapshots(Map<String, Object> before, Map<String, Object> after) {
+        Set<String> allPaths = new TreeSet<>(new LinkedHashSet<>(before.keySet()));
+        allPaths.addAll(after.keySet());
+        List<KeyChange> changes = new ArrayList<>();
+        for (String path : allPaths) {
+            boolean hadBefore = before.containsKey(path);
+            boolean hasAfter = after.containsKey(path);
+            Object beforeValue = before.get(path);
+            Object afterValue = after.get(path);
+            boolean valueChanged = hadBefore && hasAfter && !java.util.Objects.equals(beforeValue, afterValue);
+            if (!hadBefore || !hasAfter || valueChanged) {
+                changes.add(new KeyChange(path,
+                        hadBefore ? String.valueOf(beforeValue) : null,
+                        hasAfter ? String.valueOf(afterValue) : null));
+            }
+        }
+        return changes;
     }
 
     /** Names of every config file registered so far (e.g. {@code "config.yml"}), for debug tooling. */

@@ -139,7 +139,13 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
                     messages.send(sender, "command.player-not-found", "player", args[1]);
                     return true;
                 }
-                report(sender, partyService.transferLeadership(player, target.getUniqueId()), "party.leadership-transferred");
+                PartyService.ActionResult result = partyService.transferLeadership(player, target.getUniqueId());
+                report(sender, result, "party.leadership-transferred");
+                if (result == PartyService.ActionResult.OK) {
+                    partyService.getParty(player.getUniqueId())
+                            .ifPresent(party -> broadcastToParty(party, player.getUniqueId(),
+                                    "party.leadership-transferred-quit", "player", target.getName()));
+                }
             }
             case "list" -> listMembers(sender, player);
             case "gui" -> guiManager.open(player, guiScreen.build(player));

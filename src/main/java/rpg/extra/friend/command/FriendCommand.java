@@ -77,8 +77,28 @@ public final class FriendCommand implements CommandExecutor, TabCompleter {
                     sendFriendRequestNotification(target, player);
                 }
             }
-            case "accept" -> report(sender, friendService.accept(player), "friend.accepted");
-            case "decline" -> report(sender, friendService.decline(player), "friend.declined");
+            case "accept" -> {
+                UUID requesterId = friendService.peekPendingRequester(player.getUniqueId()).orElse(null);
+                FriendService.ActionResult result = friendService.accept(player);
+                report(sender, result, "friend.accepted");
+                if (result == FriendService.ActionResult.OK && requesterId != null) {
+                    Player requester = Bukkit.getPlayer(requesterId);
+                    if (requester != null) {
+                        messages.send(requester, "friend.accepted-notice", "player", player.getName());
+                    }
+                }
+            }
+            case "decline" -> {
+                UUID requesterId = friendService.peekPendingRequester(player.getUniqueId()).orElse(null);
+                FriendService.ActionResult result = friendService.decline(player);
+                report(sender, result, "friend.declined");
+                if (result == FriendService.ActionResult.OK && requesterId != null) {
+                    Player requester = Bukkit.getPlayer(requesterId);
+                    if (requester != null) {
+                        messages.send(requester, "friend.declined-notice", "player", player.getName());
+                    }
+                }
+            }
             case "remove" -> {
                 if (args.length < 2) {
                     messages.send(sender, "usage.friend-remove");
@@ -89,7 +109,14 @@ public final class FriendCommand implements CommandExecutor, TabCompleter {
                     messages.send(sender, "friend.not-friends");
                     return true;
                 }
-                report(sender, friendService.remove(player, friendId), "friend.removed");
+                FriendService.ActionResult result = friendService.remove(player, friendId);
+                report(sender, result, "friend.removed");
+                if (result == FriendService.ActionResult.OK) {
+                    Player removedFriend = Bukkit.getPlayer(friendId);
+                    if (removedFriend != null) {
+                        messages.send(removedFriend, "friend.removed-notice", "player", player.getName());
+                    }
+                }
             }
             case "list" -> listFriends(sender, player);
             case "gui" -> guiManager.open(player, guiScreen.build(player));

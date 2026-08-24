@@ -14,10 +14,14 @@ import java.util.UUID;
  */
 public final class GuildService {
 
+    /** Counted by {@code String#length()} (UTF-16 code units) - every character these are meant to bound (kana/kanji included) is one BMP code unit, so this is an accurate character count for the names/tags this is actually validating. */
+    public static final int MAX_NAME_LENGTH = 16;
+    public static final int MAX_TAG_LENGTH = 5;
+
     public enum ActionResult {
         OK, ALREADY_IN_GUILD, NOT_IN_GUILD, INSUFFICIENT_ROLE, TARGET_ALREADY_IN_GUILD,
         NO_PENDING_INVITE, CANNOT_TARGET_SELF, CANNOT_TARGET_LEADER, LEADER_MUST_DISBAND,
-        NAME_TAKEN, TAG_TAKEN, TARGET_NOT_MEMBER
+        NAME_TAKEN, TAG_TAKEN, NAME_TOO_LONG, TAG_TOO_LONG, TARGET_NOT_MEMBER
     }
 
     private final GuildManager manager;
@@ -26,9 +30,21 @@ public final class GuildService {
         this.manager = manager;
     }
 
+    /**
+     * {@code name}/{@code tag} uniqueness is case-insensitive via {@link String#equalsIgnoreCase}
+     * (full Unicode case-folding, not just ASCII - "Guild"/"guild" collide the same as any
+     * Japanese text would under its own casing rules) against every existing guild, checked
+     * before length so a duplicate is reported even if it also happens to be too long.
+     */
     public ActionResult create(Player leader, String name, String tag) {
         if (manager.getByPlayer(leader.getUniqueId()).isPresent()) {
             return ActionResult.ALREADY_IN_GUILD;
+        }
+        if (name.length() > MAX_NAME_LENGTH) {
+            return ActionResult.NAME_TOO_LONG;
+        }
+        if (tag.length() > MAX_TAG_LENGTH) {
+            return ActionResult.TAG_TOO_LONG;
         }
         for (Guild existing : manager.getAll()) {
             if (existing.getName().equalsIgnoreCase(name)) {

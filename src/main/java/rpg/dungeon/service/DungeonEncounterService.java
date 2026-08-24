@@ -1,5 +1,6 @@
 package rpg.dungeon.service;
 
+import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -23,8 +24,10 @@ import rpg.dungeon.model.PlayerDungeonComponent;
 import rpg.dungeon.repository.PlayerDungeonRepository;
 import rpg.extra.api.PartyApi;
 import rpg.quest.service.QuestProgressService;
+import rpg.util.ColorUtil;
 import rpg.util.MoneyFormat;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -58,6 +61,10 @@ public final class DungeonEncounterService {
 
     /** Delay between a successful arena reservation and the actual teleport/enemy spawn - the "10秒後に挑戦" warmup. */
     private static final long ENTRY_COUNTDOWN_TICKS = 200L;
+    // Re-shown every second by the countdown timer below - fade-in/out kept short relative to
+    // the 1-second tick interval so consecutive titles replace each other cleanly with no gap.
+    private static final Title.Times COUNTDOWN_TITLE_TIMES =
+            Title.Times.times(Duration.ofMillis(50), Duration.ofMillis(900), Duration.ofMillis(100));
 
     private final DungeonService dungeonService;
     private final DungeonInstanceManager instanceManager;
@@ -139,7 +146,11 @@ public final class DungeonEncounterService {
     /**
      * Announces the entry countdown once per second (was a single "N秒後に挑戦します" message
      * at the start, with nothing after it until the teleport) so players get a clear beat
-     * leading up to entry, then spawns the encounter once it reaches zero.
+     * leading up to entry, then spawns the encounter once it reaches zero. Shown as a Title
+     * rather than a chat line - a fresh chat message every second for several seconds straight
+     * buried everything else being said, and a countdown is exactly the kind of transient,
+     * glanceable cue Title/ActionBar exist for (same reasoning as level-up/quest-objective
+     * feedback elsewhere in this codebase).
      */
     private void startEntryCountdown(DungeonInstance instance, Integer difficulty) {
         long[] secondsRemaining = {ENTRY_COUNTDOWN_TICKS / 20L};
@@ -157,10 +168,14 @@ public final class DungeonEncounterService {
     }
 
     private void announceCountdown(DungeonInstance instance, long secondsRemaining) {
+        Title title = Title.title(
+                ColorUtil.component(messages.format("dungeon.entry-countdown-title", "seconds", secondsRemaining)),
+                ColorUtil.component(messages.raw("dungeon.entry-countdown-subtitle")),
+                COUNTDOWN_TITLE_TIMES);
         for (UUID memberId : instance.getMembers().keySet()) {
             Player member = Bukkit.getPlayer(memberId);
             if (member != null) {
-                messages.send(member, "dungeon.entry-countdown", "seconds", secondsRemaining);
+                member.showTitle(title);
             }
         }
     }

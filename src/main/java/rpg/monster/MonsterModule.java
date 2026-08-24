@@ -11,6 +11,7 @@ import rpg.monster.listener.CombatDamageListener;
 import rpg.monster.listener.DamageDisplayListener;
 import rpg.monster.listener.MonsterDeathListener;
 import rpg.monster.listener.MonsterHealthBarListener;
+import rpg.monster.listener.MonsterSlimeSplitListener;
 import rpg.monster.listener.MonsterSunImmunityListener;
 import rpg.monster.listener.ProjectileAttackPowerListener;
 import rpg.monster.listener.ProjectileKeys;
@@ -92,6 +93,7 @@ public final class MonsterModule implements RpgModule {
         plugin.getServer().getPluginManager().registerEvents(
                 new MonsterDeathListener(spawnService, dropService, spawnPointService, plugin.getMessageManager()), plugin);
         plugin.getServer().getPluginManager().registerEvents(new MonsterHealthBarListener(spawnService), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new MonsterSlimeSplitListener(spawnService), plugin);
         DamageDisplayService damageDisplayService = new DamageDisplayService(plugin);
         plugin.getServer().getPluginManager().registerEvents(new DamageDisplayListener(plugin, damageDisplayService), plugin);
 

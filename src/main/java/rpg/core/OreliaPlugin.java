@@ -9,6 +9,8 @@ import rpg.core.command.PlayerCommandRegistry;
 import rpg.core.config.ConfigFile;
 import rpg.core.config.ConfigManager;
 import rpg.core.config.LegacyDataFolderMigrator;
+
+import java.util.List;
 import rpg.core.listener.PlayerConnectionListener;
 import rpg.core.message.MessageManager;
 import rpg.core.module.ModuleManager;
@@ -198,9 +200,11 @@ public final class OreliaPlugin extends JavaPlugin {
         }
     }
 
-    public void reload() {
-        configManager.reloadAll();
+    /** @return every config file's leaf-key changes from this reload (see {@link ConfigManager#reloadAllWithDiff}) - empty if nothing on disk actually changed. */
+    public List<ConfigManager.FileDiff> reload() {
+        java.util.List<ConfigManager.FileDiff> diffs = configManager.reloadAllWithDiff();
         moduleManager.reloadAll();
+        return diffs;
     }
 
     public ConfigManager getConfigManager() {

@@ -66,8 +66,9 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
 
         switch (args[0].toLowerCase()) {
             case "reload" -> {
-                plugin.reload();
+                var diffs = plugin.reload();
                 messages.send(sender, "admin.reloaded");
+                ConfigReloadReport.send(sender, diffs);
             }
             case "spawn" -> spawnMonster(sender, args);
             case "spawnboss" -> spawnBoss(sender, args);

@@ -122,10 +122,22 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
                             .ifPresent(guild -> broadcastToGuild(guild, player.getUniqueId(), "guild.member-left", "player", target.getName()));
                 }
             });
-            case "promote" -> withTarget(sender, player, args, target ->
-                    report(sender, guildService.setRole(player, target.getUniqueId(), GuildRole.OFFICER), "guild.promoted"));
-            case "demote" -> withTarget(sender, player, args, target ->
-                    report(sender, guildService.setRole(player, target.getUniqueId(), GuildRole.MEMBER), "guild.demoted"));
+            case "promote" -> withTarget(sender, player, args, target -> {
+                GuildService.ActionResult result = guildService.setRole(player, target.getUniqueId(), GuildRole.OFFICER);
+                report(sender, result, "guild.promoted");
+                if (result == GuildService.ActionResult.OK) {
+                    guildService.getGuild(player.getUniqueId())
+                            .ifPresent(guild -> broadcastToGuild(guild, player.getUniqueId(), "guild.member-promoted", "player", target.getName()));
+                }
+            });
+            case "demote" -> withTarget(sender, player, args, target -> {
+                GuildService.ActionResult result = guildService.setRole(player, target.getUniqueId(), GuildRole.MEMBER);
+                report(sender, result, "guild.demoted");
+                if (result == GuildService.ActionResult.OK) {
+                    guildService.getGuild(player.getUniqueId())
+                            .ifPresent(guild -> broadcastToGuild(guild, player.getUniqueId(), "guild.member-demoted", "player", target.getName()));
+                }
+            });
             case "disband" -> {
                 Guild guild = guildService.getGuild(player.getUniqueId()).orElse(null);
                 GuildService.ActionResult result = guildService.disband(player);
@@ -134,8 +146,15 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
                     broadcastToGuild(guild, player.getUniqueId(), "guild.disbanded-notice");
                 }
             }
-            case "transfer" -> withTarget(sender, player, args, target ->
-                    report(sender, guildService.transferLeadership(player, target.getUniqueId()), "guild.leadership-transferred"));
+            case "transfer" -> withTarget(sender, player, args, target -> {
+                GuildService.ActionResult result = guildService.transferLeadership(player, target.getUniqueId());
+                report(sender, result, "guild.leadership-transferred");
+                if (result == GuildService.ActionResult.OK) {
+                    guildService.getGuild(player.getUniqueId())
+                            .ifPresent(guild -> broadcastToGuild(guild, player.getUniqueId(),
+                                    "guild.leadership-transferred-notice", "player", target.getName()));
+                }
+            });
             case "list" -> showList(sender, args);
             case "info" -> showInfo(sender, player);
             case "gui" -> openGui(player);
@@ -300,6 +319,8 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
             case LEADER_MUST_DISBAND -> "guild.leader-must-disband";
             case NAME_TAKEN -> "guild.name-taken";
             case TAG_TAKEN -> "guild.tag-taken";
+            case NAME_TOO_LONG -> "guild.name-too-long";
+            case TAG_TOO_LONG -> "guild.tag-too-long";
             case TARGET_NOT_MEMBER -> "guild.target-not-member";
             case OK -> successKey;
         };

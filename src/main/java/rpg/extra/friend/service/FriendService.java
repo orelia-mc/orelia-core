@@ -5,6 +5,7 @@ import rpg.extra.friend.manager.FriendRequestManager;
 import rpg.extra.friend.repository.FriendRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -60,6 +61,15 @@ public final class FriendService {
     public ActionResult decline(Player target) {
         return requestManager.consumeFriendRequest(target.getUniqueId()).isPresent()
                 ? ActionResult.OK : ActionResult.NO_PENDING_REQUEST;
+    }
+
+    /**
+     * Looks at {@code targetId}'s pending incoming request without consuming it - callers use
+     * this to learn who to notify once {@link #accept}/{@link #decline} (which do consume it)
+     * report success, since those two don't hand the requester id back themselves.
+     */
+    public Optional<UUID> peekPendingRequester(UUID targetId) {
+        return requestManager.peekRequester(targetId);
     }
 
     public ActionResult remove(Player player, UUID friendId) {

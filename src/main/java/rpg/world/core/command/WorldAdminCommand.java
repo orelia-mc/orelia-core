@@ -4,6 +4,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import rpg.core.OreliaPlugin;
+import rpg.core.command.ConfigReloadReport;
 
 /**
  * {@code /oladmin worldreload} - re-reads every orelia-world config file and asks each
@@ -21,8 +22,9 @@ public final class WorldAdminCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        plugin.reload();
+        var diffs = plugin.reload();
         plugin.getMessageManager().send(sender, "admin.reloaded");
+        ConfigReloadReport.send(sender, diffs);
         return true;
     }
 }

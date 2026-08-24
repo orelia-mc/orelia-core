@@ -10,6 +10,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.inventory.ItemStack;
 import rpg.core.command.TabCompletions;
 import rpg.core.message.MessageManager;
+import rpg.core.player.PlayerData;
+import rpg.core.player.PlayerDataManager;
 import rpg.item.manager.ItemManager;
 import rpg.item.model.WeaponData;
 import rpg.status.model.PlayerStatusComponent;
@@ -20,27 +22,36 @@ import java.util.List;
 /**
  * {@code /oladmin item give <player> <id> [amount]} - admin-facing weapon spawner used for
  * testing and manual reward grants until the shop/quest reward pipelines cover it.
- * {@code /oladmin item levelup} lets a player level up their held weapon themselves, gated by
- * their own character level (see {@code rpg.item.service.WeaponIdentityService#levelUp}) -
- * the normal in-game path is the weapon-levelup NPC (orelia-world), this command is a
- * manual/testing entry point.
+ * {@code /oladmin item levelup [amount]} lets a player level up their held weapon themselves,
+ * gated by their own character level (see {@code rpg.item.service.WeaponIdentityService#levelUp})
+ * - the normal in-game path is the weapon-levelup NPC (orelia-world), this command is a
+ * manual/testing entry point. With debugmode active ({@code rpg.api.DebugApi#isDebugMode}),
+ * the character-level gate is bypassed entirely (feeds {@link Integer#MAX_VALUE} as the
+ * effective player level into the same cap formula, rather than duplicating/forking it) and
+ * {@code [amount]} lets several levels be applied in one call - both otherwise painful to test
+ * by hand one `/oladmin item levelup` at a time while also having to actually level up a
+ * character just to unlock the next weapon-level tier.
  */
 public final class ItemCommand implements CommandExecutor, TabCompleter {
 
     private final ItemManager itemManager;
     private final StatusService statusService;
     private final MessageManager messages;
+    private final PlayerDataManager playerDataManager;
 
-    public ItemCommand(ItemManager itemManager, StatusService statusService, MessageManager messages) {
+    public ItemCommand(ItemManager itemManager, StatusService statusService, MessageManager messages,
+                        PlayerDataManager playerDataManager) {
         this.itemManager = itemManager;
         this.statusService = statusService;
         this.messages = messages;
+        this.playerDataManager = playerDataManager;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length >= 1 && args[0].equalsIgnoreCase("levelup")) {
-            return levelUp(sender);
+            int amount = args.length >= 2 ? parseAmount(args[1]) : 1;
+            return levelUp(sender, amount);
         }
         if (args.length < 3 || !args[0].equalsIgnoreCase("give")) {
             messages.send(sender, "item.usage-give", "label", label);
@@ -67,7 +78,7 @@ public final class ItemCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
-    private boolean levelUp(CommandSender sender) {
+    private boolean levelUp(CommandSender sender, int amount) {
         if (!(sender instanceof Player player)) {
             messages.send(sender, "command.player-only");
             return true;
@@ -81,9 +92,26 @@ public final class ItemCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        int playerLevel = statusService.component(player.getUniqueId()).map(PlayerStatusComponent::getLevel).orElse(1);
-        int newLevel = itemManager.getIdentityService().levelUp(weapon, data, playerLevel);
-        if (newLevel < 0) {
+        boolean debugMode = playerDataManager.get(player.getUniqueId()).map(PlayerData::isDebugMode).orElse(false);
+        // debugmode bypasses the character-level gate by feeding the cap formula an effectively
+        // unlimited player level instead of forking/duplicating WeaponIdentityService#levelUp's
+        // own cap logic - see this class's own doc comment.
+        int effectivePlayerLevel = debugMode
+                ? Integer.MAX_VALUE
+                : statusService.component(player.getUniqueId()).map(PlayerStatusComponent::getLevel).orElse(1);
+
+        int newLevel = -1;
+        int levelsGained = 0;
+        for (int i = 0; i < amount; i++) {
+            int result = itemManager.getIdentityService().levelUp(weapon, data, effectivePlayerLevel);
+            if (result < 0) {
+                break;
+            }
+            newLevel = result;
+            levelsGained++;
+        }
+
+        if (levelsGained == 0) {
             messages.send(player, "item.weapon-level-capped");
         } else {
             itemManager.refreshWeaponLore(weapon, data);
@@ -94,7 +122,7 @@ public final class ItemCommand implements CommandExecutor, TabCompleter {
 
     private int parseAmount(String raw) {
         try {
-            return Math.max(1, Integer.parseInt(raw));
+            return Math.min(1000, Math.max(1, Integer.parseInt(raw)));
         } catch (NumberFormatException e) {
             return 1;
         }
