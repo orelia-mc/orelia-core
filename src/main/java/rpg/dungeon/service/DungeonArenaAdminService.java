@@ -58,6 +58,28 @@ public final class DungeonArenaAdminService {
 
     public enum RemoveResult { OK, DUNGEON_NOT_FOUND, INDEX_OUT_OF_RANGE, LAST_ARENA }
 
+    public enum SetResult { OK, DUNGEON_NOT_FOUND, INDEX_OUT_OF_RANGE }
+
+    /**
+     * Overwrites the arena at 1-based {@code index} (matching {@link #listArenas}'s numbering)
+     * with {@code location}, instead of appending a new one - lets an admin relocate an existing
+     * entry point without a remove-then-add round trip (which would also briefly risk hitting
+     * {@link RemoveResult#LAST_ARENA} on a single-arena dungeon).
+     */
+    public SetResult setArena(String dungeonId, int index, Location location) {
+        DungeonData existing = repository.findById(dungeonId).orElse(null);
+        if (existing == null) {
+            return SetResult.DUNGEON_NOT_FOUND;
+        }
+        List<DungeonArena> arenas = new ArrayList<>(existing.getArenas());
+        if (index < 1 || index > arenas.size()) {
+            return SetResult.INDEX_OUT_OF_RANGE;
+        }
+        arenas.set(index - 1, new DungeonArena(location.getWorld().getName(), location.getX(), location.getY(), location.getZ()));
+        applyArenas(dungeonId, existing, arenas);
+        return SetResult.OK;
+    }
+
     /**
      * Removes the arena at 1-based {@code index} (matching the numbering {@link #listArenas}
      * prints for admin use). {@link RemoveResult#LAST_ARENA} blocks removing a dungeon's only
