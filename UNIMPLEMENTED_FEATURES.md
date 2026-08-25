@@ -24,10 +24,9 @@ orelia-core / orelia-world / orelia-extra 3リポジトリを横断して、コ�
 
 - ~~モンスターの能動スキル/AI行動~~ → `MonsterData.abilities`(`List<MonsterAbility>`)として実装され、`MonsterAbilityCastService`が`tick()`・クールダウン管理込みで実際に実行している。ボスと同じ仕組み(`BossAbilityCastService`)がベースモンスターにも適用済み。
 - ~~アクセサリー枠31〜35の追加種別~~ → `AccessoryType`は現在`CHARM`/`RING`/`NECKLACE`/`WING`/`EARRING`/`BELT`の6種に拡張されており、未使用の予約スロットは見当たらない。
+- ~~ダンジョン⇔クエストの自動連携~~ → `DungeonEncounterService#forceEnd`が`DungeonEndReason.CLEARED`時にパーティ全員分`QuestProgressService#onDungeonCleared`を呼んでおり、「ダンジョンクリア」を条件とするクエスト目標は既に自動進行する。`QuestProgressService`側のJavadocが「未接続のフック」という古い記述のまま残っていたのを2026-08-25に修正済み(実装自体は既に繋がっていた)。
 
 ## orelia-world
-
-- **ダンジョン⇔クエストの自動連携**: `QuestProgressService`に「ダンジョンモジュールが統合されたら呼び出すためのフック」というコメント付きメソッドがあるが、`dungeon`モジュール側からは呼ばれておらず、「ダンジョンクリア」を条件とするクエスト目標が自動進行しない(手動連携待ち、と明記)。
 - **NPC経由のギルド機能**: `NpcInteractListener`は現状ダイアログ機能のみを扱っており、「ギルド機能は将来のモジュール向けのフック」とコメントされている。ギルド自体(`GuildModule`)はorelia-extra側に実装済みだが、orelia-world側のNPC(受付NPC等)からギルド関連操作(入会・管理等)を行う導線はまだ無い。
 - **カットシーンのBGM再生**: `CutSceneStepType`はカメラ/メッセージ/エフェクト/タイトル表示の演出タイプを持つが、BGM再生は「future addition」とコメントされており未実装。
 
