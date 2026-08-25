@@ -2,14 +2,21 @@ package rpg.extra.mount;
 
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.configuration.file.YamlConfiguration;
+import rpg.api.CombatApi;
+import rpg.api.StatusApi;
 import rpg.database.manager.DatabaseManager;
 import rpg.core.OreliaPlugin;
 import rpg.core.module.RpgModule;
 import rpg.extra.mount.command.MountCommand;
+import rpg.extra.mount.config.MountGrowthLevelingConfig;
+import rpg.extra.mount.listener.MountGrowthKillListener;
 import rpg.extra.mount.listener.MountLifecycleListener;
+import rpg.extra.mount.manager.MountGrowthManager;
 import rpg.extra.mount.manager.MountManager;
 import rpg.extra.mount.repository.MountConfigRepository;
+import rpg.extra.mount.repository.MountGrowthRepository;
 import rpg.extra.mount.repository.MountOwnershipRepository;
+import rpg.extra.mount.service.MountGrowthService;
 import rpg.extra.mount.service.MountService;
 
 import java.util.logging.Level;
@@ -22,6 +29,7 @@ public final class MountModule implements RpgModule {
 
     private final MountConfigRepository configRepository = new MountConfigRepository();
     private final MountManager mountManager = new MountManager();
+    private final MountGrowthLevelingConfig growthLevelingConfig = new MountGrowthLevelingConfig();
     private MountService mountService;
     private OreliaPlugin plugin;
 
@@ -43,18 +51,41 @@ public final class MountModule implements RpgModule {
         }
 
         reloadMounts();
+        growthLevelingConfig.load(plugin.getConfigManager().get("config.yml").get());
+
+        // Cross-block dependency (Mount is social/economy, Status/Monster are foundation) -
+        // legitimate here since ApiModule registers well before MountModule in the fixed order.
+        // Same reasoning as PetModule's own StatusApi/CombatApi dependency, added for the same
+        // growth feature.
+        StatusApi statusApi = plugin.getServer().getServicesManager().load(StatusApi.class);
+        if (statusApi == null) {
+            throw new IllegalStateException("mount module requires OreliaCore's StatusApi");
+        }
+        CombatApi combatApi = plugin.getServer().getServicesManager().load(CombatApi.class);
+        if (combatApi == null) {
+            throw new IllegalStateException("mount module requires OreliaCore's CombatApi");
+        }
 
         MountOwnershipRepository ownershipRepository = new MountOwnershipRepository(databaseManager);
+        MountGrowthRepository growthRepository = new MountGrowthRepository(databaseManager);
         try {
             ownershipRepository.createSchemaIfNotExists();
+            growthRepository.createSchemaIfNotExists();
         } catch (Exception e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to initialize mount schema", e);
         }
+        plugin.getPlayerDataManager().registerLoader(new MountGrowthManager(growthRepository));
 
-        this.mountService = new MountService(configRepository, ownershipRepository, mountManager, economy);
+        MountGrowthService growthService = new MountGrowthService(plugin.getPlayerDataManager(), configRepository,
+                statusApi, plugin.getMessageManager());
+        mountManager.setOnDespawn(growthService::clearGrowthBonus);
+
+        this.mountService = new MountService(configRepository, ownershipRepository, mountManager, economy, growthService);
         mountService.loadAll();
 
         plugin.getServer().getPluginManager().registerEvents(new MountLifecycleListener(mountManager), plugin);
+        plugin.getServer().getPluginManager().registerEvents(
+                new MountGrowthKillListener(combatApi, mountManager, mountService, growthService, growthLevelingConfig), plugin);
         plugin.getPlayerCommandRegistry().register("mount", new MountCommand(mountService, plugin.getMessageManager()),
                 "乗り物を管理します。", "mount [list|buy <id>|summon [id]|dismiss]");
     }
@@ -67,6 +98,7 @@ public final class MountModule implements RpgModule {
     @Override
     public void onReload() {
         reloadMounts();
+        growthLevelingConfig.load(plugin.getConfigManager().get("config.yml").get());
     }
 
     private void reloadMounts() {

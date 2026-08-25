@@ -30,15 +30,17 @@ public final class PetService {
     private final PetOwnershipRepository ownershipRepository;
     private final PetManager petManager;
     private final Economy economy;
+    private final PetGrowthService growthService;
     private final Map<UUID, Set<String>> unlockedByOwner = new ConcurrentHashMap<>();
     private final Map<UUID, String> selectedByOwner = new ConcurrentHashMap<>();
 
     public PetService(PetConfigRepository configRepository, PetOwnershipRepository ownershipRepository,
-                       PetManager petManager, Economy economy) {
+                       PetManager petManager, Economy economy, PetGrowthService growthService) {
         this.configRepository = configRepository;
         this.ownershipRepository = ownershipRepository;
         this.petManager = petManager;
         this.economy = economy;
+        this.growthService = growthService;
     }
 
     public void loadAll() {
@@ -115,6 +117,7 @@ public final class PetService {
         petManager.register(player.getUniqueId(), entity);
         selectedByOwner.put(player.getUniqueId(), petId);
         ownershipRepository.saveSelection(player.getUniqueId(), petId);
+        growthService.applyGrowthBonus(player.getUniqueId(), petId);
         return ActionResult.OK;
     }
 

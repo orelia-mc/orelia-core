@@ -5,7 +5,7 @@
 # added - on next startup, ConfigManager appends the new section (with its comments) to any
 # existing config.yml that's missing it, without touching anything you've already customized.
 # Never bump this for a value-only change (e.g. tweaking a default), only for new/removed keys.
-config-version: 10
+config-version: 11
 
 chat:
   mute:
@@ -276,4 +276,17 @@ trade:
     name: ENTITY_EXPERIENCE_ORB_PICKUP
     volume: 1.0
     pitch: 1.0
+
+pet:
+  growth:
+    # Growth XP granted to the player's currently-selected pet species for each tagged
+    # (monsters.yml-defined) monster killed while that pet is summoned. Gated on CombatApi's
+    # own "is this a real tagged monster" check, same as quest KILL_MONSTER objectives - a
+    # vanilla cow/zombie never grants this. The per-level stat curve itself lives in
+    # pets.yml (species template data), not here.
+    xp-per-kill: 5
+
+mount:
+  growth:
+    xp-per-kill: 5
 
