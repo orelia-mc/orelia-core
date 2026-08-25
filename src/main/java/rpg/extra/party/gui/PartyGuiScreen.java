@@ -125,11 +125,13 @@ public final class PartyGuiScreen {
             }));
         }
 
-        gui.set(CHAT_SLOT, new GuiButton(new ItemBuilder(Material.WRITABLE_BOOK).name("&%bパーティーチャットを送信")
-                .lore(List.of("&%7クリックしてメッセージをチャットで入力")).build(), (clicker, clickType) -> {
-            clicker.closeInventory();
-            messages.send(clicker, "party.chat-prompt-message");
-            chatInput.request(clicker, message -> clicker.performCommand("party chat " + message));
+        // Switches the clicker's currently-selected chat channel to party (ChatChannelCommand /
+        // ChatChannelService#switchChannel) rather than prompting for a one-off message - every
+        // ordinary chat line typed afterward routes to party chat until switched again.
+        gui.set(CHAT_SLOT, new GuiButton(new ItemBuilder(Material.WRITABLE_BOOK).name("&%bパーティーチャットに切り替え")
+                .lore(List.of("&%7クリックしてチャットの送信先をパーティーに切り替える")).build(), (clicker, clickType) -> {
+            clicker.performCommand("chat party");
+            guiManager.open(clicker, build(clicker));
         }));
 
         String leaveLabel = viewerIsLeader ? "&%c解散" : "&%c脱退";
