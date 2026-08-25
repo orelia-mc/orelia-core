@@ -57,9 +57,19 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
-            int page = args.length >= 2 ? parsePageOrDefault(args[1]) : 1;
             List<OlCommandRegistry.Entry> entries = new ArrayList<>(BUILTIN_ENTRIES);
             entries.addAll(registry.getEntries());
+            // "/oladmin help <subcommand>" shows just that one entry instead of the full
+            // paginated listing - args[1] is only treated as a page number once it doesn't
+            // match a subcommand name (so "/oladmin help 2" still pages as before).
+            if (args.length >= 2) {
+                var single = findEntry(entries, args[1]);
+                if (single.isPresent()) {
+                    CommandHelpUtil.sendHelp(sender, label, List.of(single.get()), 1);
+                    return true;
+                }
+            }
+            int page = args.length >= 2 ? parsePageOrDefault(args[1]) : 1;
             CommandHelpUtil.sendHelp(sender, label, entries, page);
             return true;
         }
@@ -93,6 +103,11 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    /** Case-insensitive lookup by {@link OlCommandRegistry.Entry#name()} - used by "/oladmin help <name>" to find a single entry among built-ins plus everything the registry holds. */
+    private java.util.Optional<OlCommandRegistry.Entry> findEntry(List<OlCommandRegistry.Entry> entries, String name) {
+        return entries.stream().filter(entry -> entry.name().equalsIgnoreCase(name)).findFirst();
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length <= 1) {
@@ -100,6 +115,11 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             options.add("help");
             options.addAll(registry.getNames());
             return TabCompletions.matching(options, args.length == 0 ? "" : args[0]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("help")) {
+            List<String> options = new ArrayList<>(TOP_LEVEL_SUBCOMMANDS);
+            options.addAll(registry.getNames());
+            return TabCompletions.matching(options, args[1]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("spawn")) {
             return TabCompletions.matching(monsterIds(), args[1]);

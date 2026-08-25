@@ -27,6 +27,16 @@ public final class OlRootCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
+            // "/ol help <subcommand>" shows just that one entry instead of the full paginated
+            // listing - args[1] is only treated as a page number once it doesn't match a
+            // registered subcommand name (so "/ol help 2" still pages as before).
+            if (args.length >= 2) {
+                var single = registry.getEntry(args[1]);
+                if (single.isPresent()) {
+                    CommandHelpUtil.sendHelp(sender, label, List.of(single.get()), 1);
+                    return true;
+                }
+            }
             int page = args.length >= 2 ? parsePageOrDefault(args[1]) : 1;
             CommandHelpUtil.sendHelp(sender, label, registry.getEntries(), page);
             return true;
@@ -53,6 +63,9 @@ public final class OlRootCommand implements CommandExecutor, TabCompleter {
             List<String> options = new ArrayList<>(registry.getNames());
             options.add("help");
             return TabCompletions.matching(options, args.length == 0 ? "" : args[0]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("help")) {
+            return TabCompletions.matching(registry.getNames(), args[1]);
         }
         CommandExecutor executor = registry.get(args[0]).orElse(null);
         if (executor instanceof TabCompleter completer) {
