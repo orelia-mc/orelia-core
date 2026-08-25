@@ -2,6 +2,7 @@ package rpg.extra.auction;
 
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.configuration.file.YamlConfiguration;
+import rpg.core.command.CommandAliasUtil;
 import rpg.database.manager.DatabaseManager;
 import rpg.extra.auction.command.AuctionCommand;
 import rpg.extra.auction.config.AuctionConfig;
@@ -59,9 +60,11 @@ public final class AuctionModule implements RpgModule {
 
         GuiManager guiManager = new GuiManager();
         this.guiScreen = new AuctionGuiScreen(auctionService, guiManager, plugin.getMessageManager());
-        plugin.getPlayerCommandRegistry().register("auction",
-                new AuctionCommand(auctionService, guiScreen, guiManager, plugin.getMessageManager()),
-                "オークションを利用します。", "auction [list|sell <price>|start <startPrice> [hours]|bid <id> <amount>|collect]");
+        AuctionCommand auctionCommand = new AuctionCommand(auctionService, guiScreen, guiManager, plugin.getMessageManager());
+        String description = "オークションを利用します。";
+        String usage = "auction [list|sell <price>|start <startPrice> [hours]|bid <id> <amount>|collect]";
+        plugin.getPlayerCommandRegistry().register("auction", auctionCommand, description, usage);
+        CommandAliasUtil.registerAlias(plugin, "auction", auctionCommand, description, usage);
 
         plugin.getSchedulerService().runTimer(auctionService::expireOverdueListings,
                 auctionConfig.getExpiryCheckPeriodTicks(), auctionConfig.getExpiryCheckPeriodTicks());

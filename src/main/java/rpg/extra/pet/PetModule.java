@@ -6,6 +6,7 @@ import rpg.api.CombatApi;
 import rpg.api.StatusApi;
 import rpg.database.manager.DatabaseManager;
 import rpg.core.OreliaPlugin;
+import rpg.core.command.CommandAliasUtil;
 import rpg.core.module.RpgModule;
 import rpg.extra.pet.command.PetCommand;
 import rpg.extra.pet.config.PetGrowthLevelingConfig;
@@ -94,9 +95,11 @@ public final class PetModule implements RpgModule {
         plugin.getServer().getPluginManager().registerEvents(new PetQuitListener(petManager), plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new PetGrowthKillListener(combatApi, petManager, petService, growthService, growthLevelingConfig), plugin);
-        plugin.getPlayerCommandRegistry().register("pet",
-                new PetCommand(petService, guiScreen, guiManager, plugin.getMessageManager()),
-                "ペットを管理します。", "pet [list|gui|buy <id>|summon [id]|dismiss]");
+        PetCommand petCommand = new PetCommand(petService, guiScreen, guiManager, plugin.getMessageManager());
+        String description = "ペットを管理します。";
+        String usage = "pet [list|gui|buy <id>|summon [id]|dismiss]";
+        plugin.getPlayerCommandRegistry().register("pet", petCommand, description, usage);
+        CommandAliasUtil.registerAlias(plugin, "pet", petCommand, description, "[list|gui|buy <id>|summon [id]|dismiss]");
 
         plugin.getSchedulerService().runTimer(petManager::tickFollow, FOLLOW_TICK_PERIOD_TICKS, FOLLOW_TICK_PERIOD_TICKS);
     }

@@ -2,6 +2,7 @@ package rpg.extra.ranking;
 
 import rpg.api.StatusApi;
 import rpg.core.OreliaPlugin;
+import rpg.core.command.CommandAliasUtil;
 import rpg.core.module.RpgModule;
 import rpg.extra.ranking.command.RankingCommand;
 import rpg.extra.ranking.gui.RankingGuiScreen;
@@ -28,9 +29,10 @@ public final class RankingModule implements RpgModule {
         }
 
         this.guiScreen = new RankingGuiScreen(statusApi);
-        plugin.getPlayerCommandRegistry().register("ranking",
-                new RankingCommand(guiScreen, new GuiManager(), plugin.getMessageManager()),
-                "レベルランキングを表示します。", "ranking");
+        RankingCommand rankingCommand = new RankingCommand(guiScreen, new GuiManager(), plugin.getMessageManager());
+        String description = "レベルランキングを表示します。";
+        plugin.getPlayerCommandRegistry().register("ranking", rankingCommand, description, "ranking");
+        CommandAliasUtil.registerAlias(plugin, "ranking", rankingCommand, description, "");
     }
 
     @Override

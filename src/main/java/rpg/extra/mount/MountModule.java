@@ -6,6 +6,7 @@ import rpg.api.CombatApi;
 import rpg.api.StatusApi;
 import rpg.database.manager.DatabaseManager;
 import rpg.core.OreliaPlugin;
+import rpg.core.command.CommandAliasUtil;
 import rpg.core.module.RpgModule;
 import rpg.extra.mount.command.MountCommand;
 import rpg.extra.mount.config.MountGrowthLevelingConfig;
@@ -86,8 +87,11 @@ public final class MountModule implements RpgModule {
         plugin.getServer().getPluginManager().registerEvents(new MountLifecycleListener(mountManager), plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new MountGrowthKillListener(combatApi, mountManager, mountService, growthService, growthLevelingConfig), plugin);
-        plugin.getPlayerCommandRegistry().register("mount", new MountCommand(mountService, plugin.getMessageManager()),
-                "乗り物を管理します。", "mount [list|buy <id>|summon [id]|dismiss]");
+        MountCommand mountCommand = new MountCommand(mountService, plugin.getMessageManager());
+        String description = "乗り物を管理します。";
+        String usage = "mount [list|buy <id>|summon [id]|dismiss]";
+        plugin.getPlayerCommandRegistry().register("mount", mountCommand, description, usage);
+        CommandAliasUtil.registerAlias(plugin, "mount", mountCommand, description, "[list|buy <id>|summon [id]|dismiss]");
     }
 
     @Override

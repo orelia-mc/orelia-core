@@ -2,6 +2,7 @@ package rpg.gathering;
 
 import org.bukkit.configuration.file.YamlConfiguration;
 import rpg.core.OreliaPlugin;
+import rpg.core.command.CommandAliasUtil;
 import rpg.core.module.RpgModule;
 import rpg.database.DatabaseModule;
 import rpg.gathering.command.GatheringAdminCommand;
@@ -108,9 +109,10 @@ public final class GatheringModule implements RpgModule {
                 new FishingListener(jobModule.getJobService(), plugin.getPlayerDataManager(), levelService,
                         fishingConfig, fishingLootRepository, regionModule.getQueryService(), plugin.getMessageManager()), plugin);
 
-        plugin.getPlayerCommandRegistry().register("gathering",
-                new GatheringCommand(levelService, radiusConfig, jobModule.getJobManager()),
-                "採掘/伐採/農業のレベルを確認します。", "gathering");
+        GatheringCommand gatheringCommand = new GatheringCommand(levelService, radiusConfig, jobModule.getJobManager());
+        String gatheringDescription = "採掘/伐採/農業のレベルを確認します。";
+        plugin.getPlayerCommandRegistry().register("gathering", gatheringCommand, gatheringDescription, "gathering");
+        CommandAliasUtil.registerAlias(plugin, "gathering", gatheringCommand, gatheringDescription, "");
         plugin.getAdminCommandRegistry().register("gathering",
                 new GatheringAdminCommand(regenService, plugin.getMessageManager()),
                 "採取システムの再生成待ちタスクをリセットします。", "gathering resetregen confirm");
