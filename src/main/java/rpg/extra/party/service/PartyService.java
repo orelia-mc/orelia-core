@@ -4,6 +4,7 @@ import org.bukkit.entity.Player;
 import rpg.extra.party.manager.PartyManager;
 import rpg.extra.party.model.Party;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -55,8 +56,17 @@ public final class PartyService {
         return ActionResult.OK;
     }
 
+    /** Accepts the oldest (first-received) pending invite. */
     public ActionResult accept(Player invitee) {
-        Optional<Party> party = manager.consumeInvite(invitee.getUniqueId());
+        return accept(invitee, manager.peekInvite(invitee.getUniqueId()).map(Party::getId).orElse(null));
+    }
+
+    /** Accepts a specific party's invite (not necessarily the oldest) - {@code partyId} null-safe. */
+    public ActionResult accept(Player invitee, UUID partyId) {
+        if (partyId == null) {
+            return ActionResult.NO_PENDING_INVITE;
+        }
+        Optional<Party> party = manager.consumeInvite(invitee.getUniqueId(), partyId);
         if (party.isEmpty()) {
             return ActionResult.NO_PENDING_INVITE;
         }
@@ -67,12 +77,18 @@ public final class PartyService {
         return ActionResult.OK;
     }
 
+    /** Declines the oldest (first-received) pending invite. */
     public ActionResult decline(Player invitee) {
-        Optional<Party> party = manager.consumeInvite(invitee.getUniqueId());
-        if (party.isEmpty()) {
+        return decline(invitee, manager.peekInvite(invitee.getUniqueId()).map(Party::getId).orElse(null));
+    }
+
+    /** Declines a specific party's invite (not necessarily the oldest). */
+    public ActionResult decline(Player invitee, UUID partyId) {
+        if (partyId == null) {
             return ActionResult.NO_PENDING_INVITE;
         }
-        return ActionResult.OK;
+        return manager.consumeInvite(invitee.getUniqueId(), partyId).isPresent()
+                ? ActionResult.OK : ActionResult.NO_PENDING_INVITE;
     }
 
     public ActionResult leave(Player player) {
@@ -162,9 +178,14 @@ public final class PartyService {
         return ActionResult.OK;
     }
 
-    /** The party {@code playerId} has a pending invite to, if any - for the GUI's accept/decline prompt. */
+    /** The oldest party {@code playerId} has a pending invite to, if any - for the GUI's accept/decline prompt. */
     public Optional<Party> peekPendingInvite(UUID playerId) {
         return manager.peekInvite(playerId);
+    }
+
+    /** Every party currently inviting {@code playerId}, oldest first - for the GUI's ordered pending-invites list. */
+    public List<Party> peekAllPendingInvites(UUID playerId) {
+        return manager.peekAllInvites(playerId);
     }
 
     public Optional<Party> getParty(UUID playerId) {

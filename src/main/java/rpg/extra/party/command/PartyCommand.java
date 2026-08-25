@@ -87,14 +87,15 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
                 }
             }
             case "accept" -> {
-                PartyService.ActionResult result = partyService.accept(player);
+                UUID partyId = resolveInviteParty(player, args);
+                PartyService.ActionResult result = partyService.accept(player, partyId);
                 report(sender, result, "party.accepted");
                 if (result == PartyService.ActionResult.OK) {
                     partyService.getParty(player.getUniqueId())
                             .ifPresent(party -> broadcastToParty(party, player.getUniqueId(), "party.member-joined", "player", player.getName()));
                 }
             }
-            case "decline" -> report(sender, partyService.decline(player), "party.declined");
+            case "decline" -> report(sender, partyService.decline(player, resolveInviteParty(player, args)), "party.declined");
             case "leave" -> {
                 Party party = partyService.getParty(player.getUniqueId()).orElse(null);
                 PartyService.ActionResult result = partyService.leave(player);
@@ -169,7 +170,40 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
         if (MEMBER_TARGET_ACTIONS.stream().anyMatch(args[0]::equalsIgnoreCase)) {
             return TabCompletions.matching(onlineMemberNames(player), args[1]);
         }
+        if (args[0].equalsIgnoreCase("accept") || args[0].equalsIgnoreCase("decline")) {
+            return TabCompletions.matching(pendingInviterLeaderNames(player), args[1]);
+        }
         return List.of();
+    }
+
+    /**
+     * {@code /party accept|decline [leaderName]} - since a {@link Party} has no name/tag of its
+     * own (unlike a guild), the inviting party's leader name is what identifies "which invite"
+     * when more than one is pending at once. With no name, falls back to the oldest pending
+     * invite (unchanged single-invite behavior).
+     */
+    private UUID resolveInviteParty(Player invitee, String[] args) {
+        if (args.length < 2) {
+            return partyService.peekPendingInvite(invitee.getUniqueId()).map(Party::getId).orElse(null);
+        }
+        for (Party party : partyService.peekAllPendingInvites(invitee.getUniqueId())) {
+            String leaderName = Bukkit.getOfflinePlayer(party.getLeaderId()).getName();
+            if (args[1].equalsIgnoreCase(leaderName)) {
+                return party.getId();
+            }
+        }
+        return null;
+    }
+
+    private List<String> pendingInviterLeaderNames(Player invitee) {
+        List<String> names = new ArrayList<>();
+        for (Party party : partyService.peekAllPendingInvites(invitee.getUniqueId())) {
+            String leaderName = Bukkit.getOfflinePlayer(party.getLeaderId()).getName();
+            if (leaderName != null) {
+                names.add(leaderName);
+            }
+        }
+        return names;
     }
 
     /** Online party members' names, excluding {@code viewer} themselves - used for the "kick"/"transfer" tab completion. */

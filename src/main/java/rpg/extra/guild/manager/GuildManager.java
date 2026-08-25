@@ -1,9 +1,11 @@
 package rpg.extra.guild.manager;
 
+import rpg.core.util.PendingQueue;
 import rpg.extra.guild.model.Guild;
 import rpg.extra.guild.model.GuildRole;
 import rpg.extra.guild.repository.GuildRepository;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -21,7 +23,8 @@ public final class GuildManager {
     private final GuildRepository repository;
     private final Map<UUID, Guild> guildsById = new HashMap<>();
     private final Map<UUID, UUID> playerToGuild = new HashMap<>();
-    private final Map<UUID, UUID> pendingInvites = new HashMap<>();
+    /** invitee -> ordered guild ids - multiple guilds can invite the same player at once, oldest first. Was a plain (non-concurrent) single-slot Map before; PendingQueue is internally concurrent. */
+    private final PendingQueue<UUID> pendingInvites = new PendingQueue<>();
 
     public GuildManager(GuildRepository repository) {
         this.repository = repository;
@@ -57,21 +60,37 @@ public final class GuildManager {
     }
 
     public void invite(UUID guildId, UUID inviteeId) {
-        pendingInvites.put(inviteeId, guildId);
+        pendingInvites.add(inviteeId, guildId);
     }
 
-    /** Looks at the pending invite without consuming it - lets the GUI show an accept/decline prompt before the player types anything. */
+    /** Looks at the oldest pending invite without consuming it - lets the GUI show an accept/decline prompt before the player types anything. */
     public Optional<Guild> peekInvite(UUID inviteeId) {
-        return Optional.ofNullable(pendingInvites.get(inviteeId)).map(guildsById::get);
+        return pendingInvites.peekOldest(inviteeId).map(guildsById::get);
+    }
+
+    /** Every guild currently inviting {@code inviteeId}, oldest first - for the GUI's ordered pending-invites list. */
+    public List<Guild> peekAllInvites(UUID inviteeId) {
+        List<Guild> guilds = new ArrayList<>();
+        for (UUID guildId : pendingInvites.peekAll(inviteeId)) {
+            Guild guild = guildsById.get(guildId);
+            if (guild != null) {
+                guilds.add(guild);
+            }
+        }
+        return guilds;
     }
 
     public Optional<Guild> consumeInvite(UUID inviteeId) {
-        UUID guildId = pendingInvites.remove(inviteeId);
-        return guildId == null ? Optional.empty() : Optional.ofNullable(guildsById.get(guildId));
+        return pendingInvites.consumeOldest(inviteeId).map(guildsById::get);
+    }
+
+    /** Consumes one specific guild's invite (not necessarily the oldest). */
+    public Optional<Guild> consumeInvite(UUID inviteeId, UUID guildId) {
+        return pendingInvites.consume(inviteeId, guildId).map(guildsById::get);
     }
 
     public void clearInvite(UUID inviteeId) {
-        pendingInvites.remove(inviteeId);
+        pendingInvites.clear(inviteeId);
     }
 
     public void persist(Guild guild) {
