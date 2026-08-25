@@ -1,5 +1,6 @@
 # House plot definitions for /house (SOW HousingModule).
-# Reload with: /rpgextraadmin reload
+# Reload with: /oladmin reload
+# New plots can also be registered in-game with /oladmin houseplot register|move|remove|list.
 config-version: 1
 
 plots:

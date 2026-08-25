@@ -110,4 +110,9 @@ public final class HousingService {
         available.keySet().removeAll(ownerToPlot.values());
         return available;
     }
+
+    /** Whether {@code plotId} currently has an owner - used by {@code HousePlotAdminService#remove} to block deleting a plot someone already paid for. */
+    public boolean isOwned(String plotId) {
+        return ownerToPlot.containsValue(plotId);
+    }
 }

@@ -67,4 +67,5 @@ Orelia は以下のプラグイン群で構成されています。
 - スライムの分裂を無効化しました(タグ付きOreliaモンスターのみ対象。分裂した子スライムはOreliaの管理外で報酬やステータススケーリングの対象にならず、実質的な不具合として扱われていたため)。
 - ダンジョン入場前のカウントダウンはチャットの連投ではなくTitleで表示されるようになりました。
 - 戦闘ダメージ計算式の詳細は [DAMAGE_FORMULA.md](DAMAGE_FORMULA.md) を参照してください。
+- 住宅区画・ダンジョンアリーナの現地登録(`/oladmin houseplot register|move|remove|list`、`/oladmin dungeonarena add|remove|list`) — これまで`housing.yml`/`dungeons.yml`を手編集しないと増やせなかった住宅区画・ダンジョン入場地点を、管理者がその場に立って登録できます(`rpg.npc.service.NpcAdminService`と同じ、Locationを`*.yml`へ書き戻す方式)。既にプレイヤーが所有している区画は削除をブロックし、ダンジョンの最後の1つのアリーナは削除できません(空リストになると`dungeons.yml`のレガシーな単一座標フォールバックが再び有効になってしまうため)。`houseplot`/`dungeonarena`という名前は、`orelia-debug`が既に`/oladmin house`/`/oladmin dungeon`をテストプレイ用コマンドとして使っているのを避けるため(`dungeonblock`が既存のトリガーブロック設置コマンドと別概念であるのと同様)。
 - orelia-core/world/extra 3リポジトリを横断した未実装機能一覧は [UNIMPLEMENTED_FEATURES.md](UNIMPLEMENTED_FEATURES.md) を参照してください。

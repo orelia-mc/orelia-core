@@ -97,4 +97,11 @@ public final class DungeonRepository {
     public Map<String, DungeonData> getAll() {
         return Map.copyOf(dungeons);
     }
+
+    /** Replaces an existing in-memory dungeon definition (e.g. after an arena add/remove via {@code DungeonArenaAdminService}). No-op if {@code id} isn't already registered. */
+    public void replace(String id, DungeonData data) {
+        if (dungeons.containsKey(id)) {
+            dungeons.put(id, data);
+        }
+    }
 }

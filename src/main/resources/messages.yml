@@ -4,7 +4,7 @@
 # NPC dialogue lines / quest descriptions / story text stay in their own content yml files
 # (npc.yml, quests.yml, story.yml, ...) since those are per-entry authored content, not
 # fixed UI copy.
-config-version: 12
+config-version: 13
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -243,6 +243,13 @@ dungeon:
     list-empty: "&%e登録されているダンジョントリガーブロックはありません。"
     list-header: "&%aダンジョントリガーブロック一覧 &%7({page}/{total}ページ)"
     list-entry: "&%7- {dungeon} @ {world} {x},{y},{z}"
+    arena-usage: "&%e使い方: /oladmin dungeonarena &%7<&%eadd &%7<&%edungeon-id&%7>&%e&%7|&%eremove &%7<&%edungeon-id&%7>&%e &%7<&%eindex&%7>&%e&%7|&%elist &%7<&%edungeon-id&%7>&%e&%7>&%e"
+    arena-added: "&%aダンジョン「{dungeon}」にアリーナを追加しました。"
+    arena-removed: "&%aダンジョン「{dungeon}」のアリーナ#{index}を削除しました。"
+    arena-index-out-of-range: "&%c指定したアリーナ番号は存在しません。"
+    arena-last-one: "&%c最後のアリーナは削除できません。少なくとも1つは必要です。"
+    arena-list-header: "&%aダンジョン「{dungeon}」のアリーナ一覧:"
+    arena-list-entry: "&%7- #{index}: {world} {x},{y},{z}"
 
 party:
   created: "&%aパーティーを作成しました。"
@@ -439,6 +446,20 @@ housing:
   insufficient-funds: "&%c所持金が足りません。"
   no-house: "&%c自宅を所有していません。/ol house list で購入できます。"
   world-not-found: "&%c自宅のワールドが見つかりません。"
+  admin:
+    usage: "&%e使い方: /oladmin houseplot &%7<&%eregister &%7<&%eid&%7>&%e &%7<&%eprice&%7>&%e [name...]&%7|&%emove &%7<&%eid&%7>&%e&%7|&%eremove &%7<&%eid&%7>&%e&%7|&%elist [page]&%7>&%e"
+    usage-register: "&%e使い方: /oladmin houseplot register &%7<&%eid&%7>&%e &%7<&%eprice&%7>&%e [name...]"
+    usage-move: "&%e使い方: /oladmin houseplot move &%7<&%eid&%7>&%e"
+    usage-remove: "&%e使い方: /oladmin houseplot remove &%7<&%eid&%7>&%e"
+    already-exists: "&%c区画ID「{id}」は既に使用されています。"
+    registered: "&%a区画「{id}」を登録しました。"
+    moved: "&%a区画「{id}」を移動しました。"
+    removed: "&%a区画「{id}」を削除しました。"
+    not-found: "&%c区画「{id}」は存在しません。"
+    owned: "&%c区画「{id}」は既に所有者がいるため削除できません。"
+    list-empty: "&%e登録済みの区画がありません。"
+    list-header: "&%a区画一覧 &%7({page}/{total}ページ)"
+    list-entry: "&%7- {id} ({name}) {price}G @ {world} {x},{y},{z}"
 
 pet:
   no-pets-available: "&%e利用可能なペットがありません。"

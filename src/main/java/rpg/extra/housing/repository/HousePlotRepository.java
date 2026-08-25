@@ -49,4 +49,19 @@ public final class HousePlotRepository {
     public Map<String, HousePlot> getAll() {
         return Map.copyOf(plots);
     }
+
+    /** Adds a brand-new plot to the in-memory registry. Overwrites silently if {@code id} already exists - callers check {@link #findById} first (see {@code HousePlotAdminService#register}). */
+    public void add(String id, HousePlot plot) {
+        plots.put(id, plot);
+    }
+
+    /** Replaces an existing plot's definition in place (e.g. after an admin move). */
+    public void replace(String id, HousePlot plot) {
+        plots.put(id, plot);
+    }
+
+    /** Removes a plot from the in-memory registry. Returns false if {@code id} wasn't present. */
+    public boolean remove(String id) {
+        return plots.remove(id) != null;
+    }
 }

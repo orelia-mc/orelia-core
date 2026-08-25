@@ -8,6 +8,7 @@ import rpg.api.StatusApi;
 import rpg.core.command.CommandAliasUtil;
 import rpg.database.manager.DatabaseManager;
 import rpg.dungeon.command.DungeonAdminCommand;
+import rpg.dungeon.command.DungeonArenaAdminCommand;
 import rpg.dungeon.command.DungeonCommand;
 import rpg.dungeon.gui.DungeonGuiScreen;
 import rpg.dungeon.listener.DungeonBlockInteractListener;
@@ -18,6 +19,7 @@ import rpg.dungeon.manager.DungeonPlayerManager;
 import rpg.dungeon.repository.DungeonBlockRepository;
 import rpg.dungeon.repository.DungeonRepository;
 import rpg.dungeon.repository.PlayerDungeonRepository;
+import rpg.dungeon.service.DungeonArenaAdminService;
 import rpg.dungeon.service.DungeonEncounterService;
 import rpg.dungeon.service.DungeonService;
 import rpg.gui.framework.GuiManager;
@@ -111,6 +113,11 @@ public final class DungeonModule implements RpgModule {
         plugin.getAdminCommandRegistry().register("dungeonblock",
                 new DungeonAdminCommand(blockRepository, repository, plugin.getMessageManager()),
                 "ダンジョンの開放トリガーブロックを設置・解除します。", "dungeonblock set <dungeon-id>|remove|list [page]");
+
+        DungeonArenaAdminService arenaAdminService = new DungeonArenaAdminService(repository, plugin.getConfigManager());
+        plugin.getAdminCommandRegistry().register("dungeonarena",
+                new DungeonArenaAdminCommand(arenaAdminService, repository, plugin.getMessageManager()),
+                "ダンジョンのアリーナ（挑戦開始地点）を追加・削除します。", "dungeonarena add <dungeon-id>|remove <dungeon-id> <index>|list <dungeon-id>");
     }
 
     @Override
