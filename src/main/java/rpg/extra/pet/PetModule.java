@@ -2,15 +2,22 @@ package rpg.extra.pet;
 
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.configuration.file.YamlConfiguration;
+import rpg.api.CombatApi;
+import rpg.api.StatusApi;
 import rpg.database.manager.DatabaseManager;
 import rpg.core.OreliaPlugin;
 import rpg.core.module.RpgModule;
 import rpg.extra.pet.command.PetCommand;
+import rpg.extra.pet.config.PetGrowthLevelingConfig;
 import rpg.extra.pet.gui.PetGuiScreen;
+import rpg.extra.pet.listener.PetGrowthKillListener;
 import rpg.extra.pet.listener.PetQuitListener;
+import rpg.extra.pet.manager.PetGrowthManager;
 import rpg.extra.pet.manager.PetManager;
 import rpg.extra.pet.repository.PetConfigRepository;
+import rpg.extra.pet.repository.PetGrowthRepository;
 import rpg.extra.pet.repository.PetOwnershipRepository;
+import rpg.extra.pet.service.PetGrowthService;
 import rpg.extra.pet.service.PetService;
 import rpg.gui.framework.GuiManager;
 
@@ -27,6 +34,7 @@ public final class PetModule implements RpgModule {
     private final PetConfigRepository configRepository = new PetConfigRepository();
     private final PetManager petManager = new PetManager();
     private final GuiManager guiManager = new GuiManager();
+    private final PetGrowthLevelingConfig growthLevelingConfig = new PetGrowthLevelingConfig();
     private PetService petService;
     private PetGuiScreen guiScreen;
     private OreliaPlugin plugin;
@@ -49,19 +57,43 @@ public final class PetModule implements RpgModule {
         }
 
         reloadPets();
+        growthLevelingConfig.load(plugin.getConfigManager().get("config.yml").get());
+
+        // Cross-block dependency (Pet is social/economy, Status/Monster are foundation) -
+        // legitimate here since ApiModule registers well before PetModule in the fixed order.
+        // Needed for the growth feature: pet stat bonuses go through StatusApi rather than
+        // reaching into rpg.status internals, and growth XP is gated on "is this a tagged
+        // Orelia monster" via CombatApi, same as QuestKillListener's own kill gate.
+        StatusApi statusApi = plugin.getServer().getServicesManager().load(StatusApi.class);
+        if (statusApi == null) {
+            throw new IllegalStateException("pet module requires OreliaCore's StatusApi");
+        }
+        CombatApi combatApi = plugin.getServer().getServicesManager().load(CombatApi.class);
+        if (combatApi == null) {
+            throw new IllegalStateException("pet module requires OreliaCore's CombatApi");
+        }
 
         PetOwnershipRepository ownershipRepository = new PetOwnershipRepository(databaseManager);
+        PetGrowthRepository growthRepository = new PetGrowthRepository(databaseManager);
         try {
             ownershipRepository.createSchemaIfNotExists();
+            growthRepository.createSchemaIfNotExists();
         } catch (Exception e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to initialize pet schema", e);
         }
+        plugin.getPlayerDataManager().registerLoader(new PetGrowthManager(growthRepository));
 
-        this.petService = new PetService(configRepository, ownershipRepository, petManager, economy);
+        PetGrowthService growthService = new PetGrowthService(plugin.getPlayerDataManager(), configRepository,
+                statusApi, plugin.getMessageManager());
+        petManager.setOnDespawn(growthService::clearGrowthBonus);
+
+        this.petService = new PetService(configRepository, ownershipRepository, petManager, economy, growthService);
         petService.loadAll();
         this.guiScreen = new PetGuiScreen(petService, petManager, plugin.getMessageManager());
 
         plugin.getServer().getPluginManager().registerEvents(new PetQuitListener(petManager), plugin);
+        plugin.getServer().getPluginManager().registerEvents(
+                new PetGrowthKillListener(combatApi, petManager, petService, growthService, growthLevelingConfig), plugin);
         plugin.getPlayerCommandRegistry().register("pet",
                 new PetCommand(petService, guiScreen, guiManager, plugin.getMessageManager()),
                 "ペットを管理します。", "pet [list|gui|buy <id>|summon [id]|dismiss]");
@@ -77,6 +109,7 @@ public final class PetModule implements RpgModule {
     @Override
     public void onReload() {
         reloadPets();
+        growthLevelingConfig.load(plugin.getConfigManager().get("config.yml").get());
     }
 
     private void reloadPets() {

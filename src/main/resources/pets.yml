@@ -1,16 +1,30 @@
 # Pet definitions for /pet (SOW PetModule).
-# Reload with: /rpgextraadmin reload
-config-version: 1
+# Reload with: /oladmin reload
+config-version: 2
 
 pets:
   wolf:
     name: "オオカミ"
     entity-type: WOLF
     price: 500
+    # Optional per-species growth curve - a species with no growth: section never grants a
+    # stat bonus (opt-out by omission, see PetDefinition.PetGrowthTemplate#none).
+    growth:
+      max-level: 20
+      exp-per-level: 50
+      per-level:
+        ATK: 0.5
+        DEF: 0.3
   cat:
     name: "ネコ"
     entity-type: CAT
     price: 500
+    growth:
+      max-level: 20
+      exp-per-level: 50
+      per-level:
+        CRT: 0.1
+        SPD: 0.05
   parrot:
     name: "オウム"
     entity-type: PARROT

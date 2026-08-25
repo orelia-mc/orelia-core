@@ -475,6 +475,8 @@ pet:
   not-unlocked: "&%cそのペットはまだ購入していません。"
   insufficient-funds: "&%c所持金が足りません。"
   no-active-pet: "&%c呼び出し中のペットがいません。"
+  growth:
+    level-up: "&%aペット「{name}」がLv.{level}になりました！"
 
 mount:
   no-mounts-available: "&%e利用可能な乗り物がありません。"
@@ -490,6 +492,8 @@ mount:
   not-unlocked: "&%cその乗り物はまだ購入していません。"
   insufficient-funds: "&%c所持金が足りません。"
   no-active-mount: "&%c呼び出し中の乗り物がいません。"
+  growth:
+    level-up: "&%a乗り物「{name}」がLv.{level}になりました！"
 
 achievement:
   none: "&%e実績がありません。"

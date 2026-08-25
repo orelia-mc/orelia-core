@@ -4,6 +4,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
 import rpg.extra.pet.model.PetDefinition;
+import rpg.extra.pet.model.PetDefinition.PetGrowthTemplate;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -36,7 +37,23 @@ public final class PetConfigRepository {
                 id,
                 section.getString("name", id),
                 EntityType.valueOf(section.getString("entity-type", "WOLF").trim().toUpperCase()),
-                section.getDouble("price", 0));
+                section.getDouble("price", 0),
+                parseGrowth(section.getConfigurationSection("growth")));
+    }
+
+    /** Absent {@code growth:} section (most species, opt-in only) returns {@link PetGrowthTemplate#none()}. */
+    private PetGrowthTemplate parseGrowth(ConfigurationSection section) {
+        if (section == null) {
+            return PetGrowthTemplate.none();
+        }
+        Map<String, Double> perLevelStats = new LinkedHashMap<>();
+        ConfigurationSection statsSection = section.getConfigurationSection("per-level");
+        if (statsSection != null) {
+            for (String statName : statsSection.getKeys(false)) {
+                perLevelStats.put(statName, statsSection.getDouble(statName, 0));
+            }
+        }
+        return new PetGrowthTemplate(section.getInt("max-level", 1), section.getLong("exp-per-level", 0), perLevelStats);
     }
 
     public Optional<PetDefinition> findById(String id) {

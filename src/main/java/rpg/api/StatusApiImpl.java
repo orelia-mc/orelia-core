@@ -1,6 +1,8 @@
 package rpg.api;
 
 import rpg.status.model.PlayerStatusComponent;
+import rpg.status.model.StatSheet;
+import rpg.status.model.StatType;
 import rpg.status.service.StatusService;
 
 import java.util.HashMap;
@@ -66,5 +68,25 @@ final class StatusApiImpl implements StatusApi {
         return statusService.getLeaderboard(limit).stream()
                 .map(entry -> new LeaderboardEntry(entry.uuid(), entry.name(), entry.level(), entry.experience()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void setEquipmentContribution(UUID playerId, String sourceKey, Map<String, Double> stats) {
+        StatSheet sheet = StatSheet.empty();
+        stats.forEach((name, value) -> {
+            try {
+                sheet.set(StatType.valueOf(name), value);
+            } catch (IllegalArgumentException ignored) {
+                // Unknown stat name (e.g. a typo in a caller's own config) - skipped, not fatal,
+                // same "visible but not process-ending" taste as MessageManager's ??key?? for a
+                // missing messages.yml key.
+            }
+        });
+        statusService.setEquipmentContribution(playerId, sourceKey, sheet);
+    }
+
+    @Override
+    public void clearEquipmentContribution(UUID playerId, String sourceKey) {
+        statusService.clearEquipmentContribution(playerId, sourceKey);
     }
 }

@@ -1,6 +1,6 @@
 # Mount definitions for /mount (SOW MountModule).
-# Reload with: /rpgextraadmin reload
-config-version: 1
+# Reload with: /oladmin reload
+config-version: 2
 
 mounts:
   horse:
@@ -8,6 +8,13 @@ mounts:
     entity-type: HORSE
     speed: 0.225
     price: 1000
+    # Optional per-species growth curve - a species with no growth: section never grants a
+    # stat bonus (opt-out by omission, see MountDefinition.MountGrowthTemplate#none).
+    growth:
+      max-level: 20
+      exp-per-level: 50
+      per-level:
+        SPD: 0.01
   strider:
     name: "ストライダー"
     entity-type: STRIDER
@@ -18,3 +25,8 @@ mounts:
     entity-type: CAMEL
     speed: 0.2
     price: 2000
+    growth:
+      max-level: 20
+      exp-per-level: 50
+      per-level:
+        DEF: 0.3

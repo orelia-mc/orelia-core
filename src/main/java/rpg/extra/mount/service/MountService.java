@@ -34,15 +34,17 @@ public final class MountService {
     private final MountOwnershipRepository ownershipRepository;
     private final MountManager mountManager;
     private final Economy economy;
+    private final MountGrowthService growthService;
     private final Map<UUID, Set<String>> unlockedByOwner = new ConcurrentHashMap<>();
     private final Map<UUID, String> selectedByOwner = new ConcurrentHashMap<>();
 
     public MountService(MountConfigRepository configRepository, MountOwnershipRepository ownershipRepository,
-                         MountManager mountManager, Economy economy) {
+                         MountManager mountManager, Economy economy, MountGrowthService growthService) {
         this.configRepository = configRepository;
         this.ownershipRepository = ownershipRepository;
         this.mountManager = mountManager;
         this.economy = economy;
+        this.growthService = growthService;
     }
 
     public void loadAll() {
@@ -124,6 +126,7 @@ public final class MountService {
         entity.addPassenger(player);
         selectedByOwner.put(player.getUniqueId(), mountId);
         ownershipRepository.saveSelection(player.getUniqueId(), mountId);
+        growthService.applyGrowthBonus(player.getUniqueId(), mountId);
         return ActionResult.OK;
     }
 
