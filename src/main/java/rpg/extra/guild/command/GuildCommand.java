@@ -32,14 +32,14 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 /**
- * {@code /ol guild create|invite|accept|leave|kick|promote|demote|disband|transfer|list|info|chat}
+ * {@code /ol guild create|invite|accept|decline|leave|kick|promote|demote|disband|transfer|list|info|chat}
  * (SOW GuildModule).
  */
 public final class GuildCommand implements CommandExecutor, TabCompleter {
 
     private static final int LIST_PAGE_SIZE = 15;
     private static final List<String> SUBCOMMANDS = List.of(
-            "create", "invite", "accept", "leave", "kick", "promote", "demote", "disband", "transfer", "list", "info", "gui", "chat");
+            "create", "invite", "accept", "decline", "leave", "kick", "promote", "demote", "disband", "transfer", "list", "info", "gui", "chat");
     private static final List<String> MEMBER_TARGET_ACTIONS = List.of("kick", "promote", "demote", "transfer");
 
     private final GuildService guildService;
@@ -98,13 +98,14 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
                 }
             });
             case "accept" -> {
-                GuildService.ActionResult result = guildService.accept(player);
+                GuildService.ActionResult result = guildService.accept(player, resolveInviteGuild(player, args));
                 report(sender, result, "guild.accepted");
                 if (result == GuildService.ActionResult.OK) {
                     guildService.getGuild(player.getUniqueId())
                             .ifPresent(guild -> broadcastToGuild(guild, player.getUniqueId(), "guild.member-joined", "player", player.getName()));
                 }
             }
+            case "decline" -> report(sender, guildService.decline(player, resolveInviteGuild(player, args)), "guild.declined");
             case "leave" -> {
                 Guild guild = guildService.getGuild(player.getUniqueId()).orElse(null);
                 GuildService.ActionResult result = guildService.leave(player);
@@ -182,7 +183,36 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
         if (MEMBER_TARGET_ACTIONS.stream().anyMatch(args[0]::equalsIgnoreCase)) {
             return TabCompletions.matching(onlineMemberNames(player), args[1]);
         }
+        if (args[0].equalsIgnoreCase("accept") || args[0].equalsIgnoreCase("decline")) {
+            return TabCompletions.matching(pendingInviteGuildNames(player), args[1]);
+        }
         return List.of();
+    }
+
+    /**
+     * {@code /guild accept|decline [guildName]} - a guild name (not tag; tags aren't guaranteed
+     * unique-enough to type quickly, and the name already is per {@link GuildService#create})
+     * identifies "which invite" when more than one is pending at once. With no name, falls back
+     * to the oldest pending invite (unchanged single-invite behavior).
+     */
+    private UUID resolveInviteGuild(Player invitee, String[] args) {
+        if (args.length < 2) {
+            return guildService.peekPendingInvite(invitee.getUniqueId()).map(Guild::getId).orElse(null);
+        }
+        for (Guild guild : guildService.peekAllPendingInvites(invitee.getUniqueId())) {
+            if (args[1].equalsIgnoreCase(guild.getName())) {
+                return guild.getId();
+            }
+        }
+        return null;
+    }
+
+    private List<String> pendingInviteGuildNames(Player invitee) {
+        List<String> names = new ArrayList<>();
+        for (Guild guild : guildService.peekAllPendingInvites(invitee.getUniqueId())) {
+            names.add(guild.getName());
+        }
+        return names;
     }
 
     /** Online guild members' names, excluding {@code viewer} themselves - used for kick/promote/demote/transfer tab completion. */

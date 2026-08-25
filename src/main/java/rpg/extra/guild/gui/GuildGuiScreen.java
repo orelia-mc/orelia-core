@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 /**
  * GUI counterpart of every {@code /guild} subcommand - list -> detail drill-down (same shape as
@@ -40,10 +41,10 @@ public final class GuildGuiScreen {
             new GuiPageLayout(new int[]{10, 11, 12, 13, 14, 15, 16}, 18, 26);
     private static final GuiPageLayout MEMBER_LAYOUT =
             new GuiPageLayout(new int[]{10, 11, 12, 13, 14, 15, 16}, 18, 26);
+    private static final GuiPageLayout PENDING_LAYOUT = new GuiPageLayout(IntStream.range(0, 18).toArray(), 18, 26);
     private static final int BACK_SLOT = 22;
     private static final int CREATE_SLOT = 4;
-    private static final int INVITE_ACCEPT_SLOT = 2;
-    private static final int INVITE_DECLINE_SLOT = 6;
+    private static final int PENDING_INVITES_SLOT = 4;
     private static final int INVITE_SLOT = 19;
     private static final int CHAT_SLOT = 20;
     private static final int LEAVE_SLOT = 24;
@@ -66,10 +67,12 @@ public final class GuildGuiScreen {
 
     private Gui build(Player player, int page) {
         Gui gui = new Gui("&%8ギルド一覧", 27);
-        Guild pendingInvite = guildService.peekPendingInvite(player.getUniqueId()).orElse(null);
-        if (pendingInvite != null) {
-            gui.set(INVITE_ACCEPT_SLOT, inviteResponseButton(true, pendingInvite));
-            gui.set(INVITE_DECLINE_SLOT, inviteResponseButton(false, pendingInvite));
+        int pendingCount = guildService.peekAllPendingInvites(player.getUniqueId()).size();
+        if (pendingCount > 0) {
+            gui.set(PENDING_INVITES_SLOT, new GuiButton(new ItemBuilder(Material.WRITTEN_BOOK)
+                    .name("&%e招待が" + pendingCount + "件届いています")
+                    .lore(List.of("&%7クリックして一覧を開く")).build(),
+                    (clicker, clickType) -> guiManager.open(clicker, buildPendingInvites(clicker, 0))));
         } else if (guildService.getGuild(player.getUniqueId()).isEmpty()) {
             gui.set(CREATE_SLOT, createButton());
         }
@@ -79,12 +82,24 @@ public final class GuildGuiScreen {
         return gui;
     }
 
-    private GuiButton inviteResponseButton(boolean accept, Guild guild) {
-        Material material = accept ? Material.LIME_DYE : Material.RED_DYE;
-        String label = accept ? "&%a招待を承認: [" + guild.getTag() + "] " + guild.getName()
-                : "&%c招待を拒否: [" + guild.getTag() + "] " + guild.getName();
-        return new GuiButton(new ItemBuilder(material).name(label).build(), (clicker, clickType) -> {
-            clicker.performCommand(accept ? "guild accept" : "guild decline");
+    /** Every guild currently inviting the viewer, oldest first - each entry answered independently, not just the single oldest one. */
+    private Gui buildPendingInvites(Player player, int page) {
+        Gui gui = new Gui("&%8届いているギルド招待", 27);
+        gui.set(BACK_SLOT, new GuiButton(new ItemBuilder(Material.ARROW).name("&%c« 戻る").build(),
+                (clicker, clickType) -> guiManager.open(clicker, build(clicker, 0))));
+
+        List<Guild> invites = guildService.peekAllPendingInvites(player.getUniqueId());
+        GuiPaginator.placePage(guiManager, gui, PENDING_LAYOUT, invites, page,
+                this::pendingInviteButton, p -> buildPendingInvites(player, p));
+        return gui;
+    }
+
+    private GuiButton pendingInviteButton(Guild guild) {
+        List<String> lore = List.of("&%a左クリックで承認", "&%c右クリックで拒否");
+        return new GuiButton(new ItemBuilder(Material.WHITE_BANNER).name("&%e[" + guild.getTag() + "] " + guild.getName())
+                .lore(lore).build(), (clicker, clickType) -> {
+            boolean decline = clickType != null && clickType.contains("RIGHT");
+            clicker.performCommand("guild " + (decline ? "decline " : "accept ") + guild.getName());
             guiManager.open(clicker, build(clicker, 0));
         });
     }
