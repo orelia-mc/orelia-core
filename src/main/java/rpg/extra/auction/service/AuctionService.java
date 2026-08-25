@@ -18,7 +18,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * List/buy/cancel/collect flow for the player-run auction house (SOW AuctionModule). Money
+ * List/buy/bid/cancel/collect flow for the player-run auction house (SOW AuctionModule). Money
  * moves through Vault's {@link Economy}; orelia-extra never touches orelia-core's economy
  * internals directly.
  */
@@ -26,7 +26,8 @@ public final class AuctionService {
 
     public enum ActionResult {
         OK, NOT_FOUND, ALREADY_RESOLVED, NOT_OWNER, CANNOT_BUY_OWN, INSUFFICIENT_FUNDS, INVALID_PRICE, EMPTY_HAND,
-        INVENTORY_FULL, MAX_LISTINGS_REACHED;
+        INVENTORY_FULL, MAX_LISTINGS_REACHED,
+        NOT_A_BID_LISTING, IS_A_BID_LISTING, CANNOT_BID_OWN, BID_TOO_LOW, CANNOT_CANCEL_HAS_BIDS;
 
         /** {@code messages.yml} key for this result's human-readable reason (see {@code auction.reason.*}) - never show the raw enum name to a player. */
         public String reasonMessageKey() {
@@ -68,7 +69,7 @@ public final class AuctionService {
         return active;
     }
 
-    /** Expired (unsold) listings a seller can reclaim their item from. Sales settle instantly at buy time. */
+    /** Expired (unsold, or a bid auction that closed with no bids) listings a seller can reclaim their item from. A buy-now sale / a settled bid auction both settle instantly, never landing here. */
     public List<AuctionListing> getCollectable(UUID playerId) {
         List<AuctionListing> collectable = new ArrayList<>();
         for (AuctionListing listing : listingsById.values()) {
@@ -79,12 +80,25 @@ public final class AuctionService {
         return collectable;
     }
 
-    /** Uses {@link AuctionConfig#getDefaultDurationMillis()} rather than a caller-supplied duration. */
+    /** Flat-price instant-buy listing, using {@link AuctionConfig#getDefaultDurationMillis()}. */
     public ActionResult list(Player seller, double price) {
         return list(seller, price, config.getDefaultDurationMillis());
     }
 
     public ActionResult list(Player seller, double price, long durationMillis) {
+        return createListing(seller, price, durationMillis, AuctionListing.ListingType.BUY_NOW);
+    }
+
+    /** Timed bid auction starting at {@code startPrice}, using {@link AuctionConfig#getDefaultDurationMillis()}. */
+    public ActionResult startAuction(Player seller, double startPrice) {
+        return startAuction(seller, startPrice, config.getDefaultDurationMillis());
+    }
+
+    public ActionResult startAuction(Player seller, double startPrice, long durationMillis) {
+        return createListing(seller, startPrice, durationMillis, AuctionListing.ListingType.BID);
+    }
+
+    private ActionResult createListing(Player seller, double price, long durationMillis, AuctionListing.ListingType type) {
         if (price <= 0) {
             return ActionResult.INVALID_PRICE;
         }
@@ -100,8 +114,68 @@ public final class AuctionService {
 
         long now = System.currentTimeMillis();
         AuctionListing listing = new AuctionListing(UUID.randomUUID(), seller.getUniqueId(), seller.getName(),
-                toList, price, now, now + durationMillis, AuctionListing.Status.ACTIVE, null);
+                toList, type, price, now, now + durationMillis, AuctionListing.Status.ACTIVE, null,
+                null, null, null);
         listingsById.put(listing.getId(), listing);
+        repository.save(listing);
+        return ActionResult.OK;
+    }
+
+    /**
+     * The minimum amount a new bid on {@code listing} must meet. With no bid yet, the starting
+     * price itself; otherwise the current highest bid increased by
+     * {@link AuctionConfig#getBidMinIncrementRate()}. Shared by the command and the GUI's
+     * quick-bid so the two never compute this differently.
+     */
+    public double minimumNextBid(AuctionListing listing) {
+        Double currentBid = listing.getCurrentBidAmount();
+        return currentBid == null ? listing.getPrice() : currentBid * (1 + config.getBidMinIncrementRate());
+    }
+
+    /**
+     * Places a bid, escrowing the bidder's funds immediately (withdrawn now, refunded to the
+     * previous highest bidder via {@link Economy#depositPlayer(org.bukkit.OfflinePlayer, double)}
+     * the instant they're outbid - same call shape {@link #buy} already uses for seller payout,
+     * just a different recipient). Chosen over a check-only-at-bid-time/withdraw-at-close design
+     * because that would risk a winning bidder no longer having the funds by the time the
+     * auction closes (possibly minutes to days later), with no clean recovery once the seller's
+     * item is already committed to them.
+     */
+    public ActionResult bid(Player bidder, UUID listingId, double amount) {
+        AuctionListing listing = listingsById.get(listingId);
+        if (listing == null) {
+            return ActionResult.NOT_FOUND;
+        }
+        if (listing.getType() != AuctionListing.ListingType.BID) {
+            return ActionResult.NOT_A_BID_LISTING;
+        }
+        if (listing.getStatus() != AuctionListing.Status.ACTIVE || listing.isExpiredByTime()) {
+            return ActionResult.ALREADY_RESOLVED;
+        }
+        if (listing.getSellerId().equals(bidder.getUniqueId())) {
+            return ActionResult.CANNOT_BID_OWN;
+        }
+        if (amount < minimumNextBid(listing)) {
+            return ActionResult.BID_TOO_LOW;
+        }
+        if (!economy.has(bidder, amount)) {
+            return ActionResult.INSUFFICIENT_FUNDS;
+        }
+        UUID previousBidderId = listing.getCurrentBidderId();
+        Double previousBidAmount = listing.getCurrentBidAmount();
+
+        economy.withdrawPlayer(bidder, amount);
+        if (previousBidderId != null) {
+            economy.depositPlayer(Bukkit.getOfflinePlayer(previousBidderId), previousBidAmount);
+            String itemName = listing.getDisplayName();
+            mailService.send(previousBidderId, null,
+                    messages.format("auction.outbid-mail-subject", "item", itemName),
+                    messages.format("auction.outbid-mail-body", "item", itemName, "amount", amount));
+        }
+
+        listing.setCurrentBidderId(bidder.getUniqueId());
+        listing.setCurrentBidderName(bidder.getName());
+        listing.setCurrentBidAmount(amount);
         repository.save(listing);
         return ActionResult.OK;
     }
@@ -110,6 +184,9 @@ public final class AuctionService {
         AuctionListing listing = listingsById.get(listingId);
         if (listing == null) {
             return ActionResult.NOT_FOUND;
+        }
+        if (listing.getType() == AuctionListing.ListingType.BID) {
+            return ActionResult.IS_A_BID_LISTING;
         }
         if (listing.getStatus() != AuctionListing.Status.ACTIVE) {
             return ActionResult.ALREADY_RESOLVED;
@@ -153,6 +230,12 @@ public final class AuctionService {
         if (listing.getStatus() != AuctionListing.Status.ACTIVE) {
             return ActionResult.ALREADY_RESOLVED;
         }
+        // A bid listing that already has a bid can't be cancelled - simpler than a
+        // refund-and-cancel path for an edge case sellers can trivially avoid (don't cancel
+        // once someone's bid), and matches real-world auction-house norms.
+        if (listing.getType() == AuctionListing.ListingType.BID && listing.getCurrentBidderId() != null) {
+            return ActionResult.CANNOT_CANCEL_HAS_BIDS;
+        }
         listing.setStatus(AuctionListing.Status.EXPIRED);
         repository.save(listing);
         return collect(seller, listingId);
@@ -179,22 +262,52 @@ public final class AuctionService {
     }
 
     /**
-     * Marks any listing past its expiry as EXPIRED so the seller can collect it back, and
-     * mails them a heads-up - previously only a successful sale sent mail, so an unsold
-     * listing just silently sat there until the seller happened to check the auction GUI.
-     * Call periodically.
+     * Marks any listing past its expiry as EXPIRED (seller can collect it back) or, for a bid
+     * listing that has at least one bid, settles the sale to the highest bidder - item delivered
+     * via mail attachment (there's no "collect" path for a third-party winner, only the seller's
+     * own reclaim), proceeds deposited to the seller immediately, both parties mailed. Call
+     * periodically.
      */
     public void expireOverdueListings() {
         for (AuctionListing listing : listingsById.values()) {
             if (listing.getStatus() == AuctionListing.Status.ACTIVE && listing.isExpiredByTime()) {
-                listing.setStatus(AuctionListing.Status.EXPIRED);
-                repository.save(listing);
-                String itemName = listing.getDisplayName();
-                String subject = messages.format("auction.expired-mail-subject", "item", itemName);
-                String body = messages.format("auction.expired-mail-body", "item", itemName);
-                mailService.send(listing.getSellerId(), null, subject, body);
+                if (listing.getType() == AuctionListing.ListingType.BID && listing.getCurrentBidderId() != null) {
+                    settleBidAuction(listing);
+                } else {
+                    expireUnsold(listing);
+                }
             }
         }
+    }
+
+    private void expireUnsold(AuctionListing listing) {
+        listing.setStatus(AuctionListing.Status.EXPIRED);
+        repository.save(listing);
+        String itemName = listing.getDisplayName();
+        String subject = messages.format("auction.expired-mail-subject", "item", itemName);
+        String body = messages.format("auction.expired-mail-body", "item", itemName);
+        mailService.send(listing.getSellerId(), null, subject, body);
+    }
+
+    private void settleBidAuction(AuctionListing listing) {
+        double amount = listing.getCurrentBidAmount();
+        double fee = amount * config.getFeeRate();
+        double net = amount - fee;
+        economy.depositPlayer(Bukkit.getOfflinePlayer(listing.getSellerId()), net);
+
+        String itemName = listing.getDisplayName();
+        mailService.send(listing.getSellerId(), null,
+                messages.format("auction.sold-mail-subject", "item", itemName),
+                messages.format("auction.sold-mail-body", "item", itemName, "price", amount,
+                        "buyer", listing.getCurrentBidderName(), "fee", fee, "net", net));
+        mailService.send(listing.getCurrentBidderId(), null,
+                messages.format("auction.won-mail-subject", "item", itemName),
+                messages.format("auction.won-mail-body", "item", itemName, "price", amount),
+                listing.getItem().clone());
+
+        listing.setBuyerId(listing.getCurrentBidderId());
+        listing.setStatus(AuctionListing.Status.COLLECTED);
+        repository.save(listing);
     }
 
     /** Listings still occupying one of the seller's {@link AuctionConfig#getMaxListingsPerSeller()} slots - ACTIVE (unsold) or EXPIRED-but-not-yet-collected. */

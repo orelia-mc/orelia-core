@@ -21,8 +21,6 @@ import java.util.logging.Level;
  */
 public final class AuctionModule implements RpgModule {
 
-    private static final long EXPIRY_CHECK_PERIOD_TICKS = 20L * 60;
-
     private final AuctionConfig auctionConfig = new AuctionConfig();
     private AuctionService auctionService;
     private AuctionGuiScreen guiScreen;
@@ -63,10 +61,10 @@ public final class AuctionModule implements RpgModule {
         this.guiScreen = new AuctionGuiScreen(auctionService, guiManager, plugin.getMessageManager());
         plugin.getPlayerCommandRegistry().register("auction",
                 new AuctionCommand(auctionService, guiScreen, guiManager, plugin.getMessageManager()),
-                "オークションを利用します。", "auction [list|sell <price>|collect]");
+                "オークションを利用します。", "auction [list|sell <price>|start <startPrice> [hours]|bid <id> <amount>|collect]");
 
         plugin.getSchedulerService().runTimer(auctionService::expireOverdueListings,
-                EXPIRY_CHECK_PERIOD_TICKS, EXPIRY_CHECK_PERIOD_TICKS);
+                auctionConfig.getExpiryCheckPeriodTicks(), auctionConfig.getExpiryCheckPeriodTicks());
     }
 
     @Override

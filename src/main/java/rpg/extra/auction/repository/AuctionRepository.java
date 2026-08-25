@@ -42,13 +42,34 @@ public final class AuctionRepository implements SchemaOwner {
                         seller_uuid VARCHAR(36) NOT NULL,
                         seller_name VARCHAR(32),
                         item TEXT NOT NULL,
+                        listing_type VARCHAR(16) NOT NULL DEFAULT 'BUY_NOW',
                         price DOUBLE NOT NULL,
                         listed_at BIGINT NOT NULL,
                         expires_at BIGINT NOT NULL,
                         status VARCHAR(16) NOT NULL,
-                        buyer_uuid VARCHAR(36)
+                        buyer_uuid VARCHAR(36),
+                        current_bidder_uuid VARCHAR(36),
+                        current_bidder_name VARCHAR(32),
+                        current_bid_amount DOUBLE
                     )
                     """);
+            migrateBiddingColumns(connection, statement);
+        }
+    }
+
+    /** One-time migration for installs created before bidding was added - adds the 4 new columns, defaulting existing rows to BUY_NOW/no-bid. */
+    private void migrateBiddingColumns(Connection connection, Statement statement) throws SQLException {
+        addColumnIfMissing(connection, statement, "listing_type", "VARCHAR(16) NOT NULL DEFAULT 'BUY_NOW'");
+        addColumnIfMissing(connection, statement, "current_bidder_uuid", "VARCHAR(36)");
+        addColumnIfMissing(connection, statement, "current_bidder_name", "VARCHAR(32)");
+        addColumnIfMissing(connection, statement, "current_bid_amount", "DOUBLE");
+    }
+
+    private void addColumnIfMissing(Connection connection, Statement statement, String column, String definition) throws SQLException {
+        try (ResultSet columns = connection.getMetaData().getColumns(null, null, "auction_listing", column)) {
+            if (!columns.next()) {
+                statement.execute("ALTER TABLE auction_listing ADD COLUMN " + column + " " + definition);
+            }
         }
     }
 
@@ -75,29 +96,42 @@ public final class AuctionRepository implements SchemaOwner {
             throw new IllegalStateException("Corrupt auction item for listing " + resultSet.getString("id"), e);
         }
         String buyerRaw = resultSet.getString("buyer_uuid");
+        String bidderRaw = resultSet.getString("current_bidder_uuid");
+        // current_bidder_uuid and current_bid_amount are always written together (see #save) -
+        // no bid yet means both are NULL, so bidderRaw == null is a reliable proxy without
+        // relying on ResultSet#wasNull's "last column read" ordering footgun.
+        Double bidAmount = bidderRaw == null ? null : resultSet.getDouble("current_bid_amount");
         return new AuctionListing(
                 UUID.fromString(resultSet.getString("id")),
                 UUID.fromString(resultSet.getString("seller_uuid")),
                 resultSet.getString("seller_name"),
                 item,
+                AuctionListing.ListingType.valueOf(resultSet.getString("listing_type")),
                 resultSet.getDouble("price"),
                 resultSet.getLong("listed_at"),
                 resultSet.getLong("expires_at"),
                 AuctionListing.Status.valueOf(resultSet.getString("status")),
-                buyerRaw == null ? null : UUID.fromString(buyerRaw));
+                buyerRaw == null ? null : UUID.fromString(buyerRaw),
+                bidderRaw == null ? null : UUID.fromString(bidderRaw),
+                resultSet.getString("current_bidder_name"),
+                bidAmount);
     }
 
     public void save(AuctionListing listing) {
         String sql = switch (databaseManager.getType()) {
             case SQLITE -> """
-                    INSERT INTO auction_listing (id, seller_uuid, seller_name, item, price, listed_at, expires_at, status, buyer_uuid)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(id) DO UPDATE SET status = excluded.status, buyer_uuid = excluded.buyer_uuid
+                    INSERT INTO auction_listing (id, seller_uuid, seller_name, item, listing_type, price, listed_at, expires_at, status, buyer_uuid, current_bidder_uuid, current_bidder_name, current_bid_amount)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(id) DO UPDATE SET status = excluded.status, buyer_uuid = excluded.buyer_uuid,
+                        current_bidder_uuid = excluded.current_bidder_uuid, current_bidder_name = excluded.current_bidder_name,
+                        current_bid_amount = excluded.current_bid_amount
                     """;
             case MYSQL -> """
-                    INSERT INTO auction_listing (id, seller_uuid, seller_name, item, price, listed_at, expires_at, status, buyer_uuid)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON DUPLICATE KEY UPDATE status = VALUES(status), buyer_uuid = VALUES(buyer_uuid)
+                    INSERT INTO auction_listing (id, seller_uuid, seller_name, item, listing_type, price, listed_at, expires_at, status, buyer_uuid, current_bidder_uuid, current_bidder_name, current_bid_amount)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE status = VALUES(status), buyer_uuid = VALUES(buyer_uuid),
+                        current_bidder_uuid = VALUES(current_bidder_uuid), current_bidder_name = VALUES(current_bidder_name),
+                        current_bid_amount = VALUES(current_bid_amount)
                     """;
         };
         try (Connection connection = databaseManager.getConnection();
@@ -106,11 +140,19 @@ public final class AuctionRepository implements SchemaOwner {
             statement.setString(2, listing.getSellerId().toString());
             statement.setString(3, listing.getSellerName());
             statement.setString(4, serialize(listing.getItem()));
-            statement.setDouble(5, listing.getPrice());
-            statement.setLong(6, listing.getListedAtMillis());
-            statement.setLong(7, listing.getExpiresAtMillis());
-            statement.setString(8, listing.getStatus().name());
-            statement.setString(9, listing.getBuyerId() == null ? null : listing.getBuyerId().toString());
+            statement.setString(5, listing.getType().name());
+            statement.setDouble(6, listing.getPrice());
+            statement.setLong(7, listing.getListedAtMillis());
+            statement.setLong(8, listing.getExpiresAtMillis());
+            statement.setString(9, listing.getStatus().name());
+            statement.setString(10, listing.getBuyerId() == null ? null : listing.getBuyerId().toString());
+            statement.setString(11, listing.getCurrentBidderId() == null ? null : listing.getCurrentBidderId().toString());
+            statement.setString(12, listing.getCurrentBidderName());
+            if (listing.getCurrentBidAmount() == null) {
+                statement.setNull(13, java.sql.Types.DOUBLE);
+            } else {
+                statement.setDouble(13, listing.getCurrentBidAmount());
+            }
             statement.executeUpdate();
         } catch (SQLException | IOException e) {
             throw new IllegalStateException("Failed to save auction listing " + listing.getId(), e);

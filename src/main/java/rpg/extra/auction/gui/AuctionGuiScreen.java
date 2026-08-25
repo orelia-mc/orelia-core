@@ -59,12 +59,10 @@ public final class AuctionGuiScreen {
 
     private GuiButton listingButton(AuctionListing listing, Player viewer, int page) {
         boolean own = listing.getSellerId().equals(viewer.getUniqueId());
+        boolean bidListing = listing.getType() == AuctionListing.ListingType.BID;
         return new GuiButton(new ItemBuilder(listing.getItem().getType())
                 .name((own ? "&%e" : "&%f") + listing.getDisplayName())
-                .lore(List.of(
-                        "&%7出品者: &%f" + listing.getSellerName(),
-                        "&%7価格: &%6" + MoneyFormat.format(listing.getPrice()),
-                        own ? "&%cクリックでキャンセル" : "&%aクリックで購入"))
+                .lore(listingLore(listing, own, bidListing))
                 .build(), (clicker, clickType) -> {
             if (own) {
                 AuctionService.ActionResult result = auctionService.cancel(clicker, listing.getId());
@@ -72,6 +70,16 @@ public final class AuctionGuiScreen {
                     messages.send(clicker, "auction.cancelled");
                 } else {
                     messages.send(clicker, "auction.cancel-failed", "reason", messages.format(result.reasonMessageKey()));
+                }
+            } else if (bidListing) {
+                // GUI click = quick-bid at the computed minimum increment (same formula the
+                // /ol auction bid command validates against, via the one shared
+                // AuctionService#minimumNextBid method) - a custom amount still needs the command.
+                AuctionService.ActionResult result = auctionService.bid(clicker, listing.getId(), auctionService.minimumNextBid(listing));
+                if (result == AuctionService.ActionResult.OK) {
+                    messages.send(clicker, "auction.bid-placed", "price", auctionService.minimumNextBid(listing));
+                } else {
+                    messages.send(clicker, "auction.bid-failed", "reason", messages.format(result.reasonMessageKey()));
                 }
             } else {
                 AuctionService.ActionResult result = auctionService.buy(clicker, listing.getId());
@@ -81,11 +89,23 @@ public final class AuctionGuiScreen {
                     messages.send(clicker, "auction.buy-failed", "reason", messages.format(result.reasonMessageKey()));
                 }
             }
-            // The listing this button represents may have just sold/been cancelled -
-            // the whole screen needs re-laying-out (remaining listings shift slots),
-            // not just this one icon, so reopen rather than patch a single slot.
+            // The listing this button represents may have just sold/been bid on/been
+            // cancelled - the whole screen needs re-laying-out (remaining listings shift
+            // slots), not just this one icon, so reopen rather than patch a single slot.
             guiManager.open(clicker, build(clicker, page));
         });
+    }
+
+    private List<String> listingLore(AuctionListing listing, boolean own, boolean bidListing) {
+        String priceLine = bidListing
+                ? (listing.getCurrentBidAmount() != null
+                        ? "&%7現在の入札額: &%6" + MoneyFormat.format(listing.getCurrentBidAmount())
+                        : "&%7開始価格: &%6" + MoneyFormat.format(listing.getPrice()) + " &%7(入札なし)")
+                : "&%7価格: &%6" + MoneyFormat.format(listing.getPrice());
+        String actionLine = own
+                ? "&%cクリックでキャンセル"
+                : bidListing ? "&%aクリックで入札 (&%6" + MoneyFormat.format(auctionService.minimumNextBid(listing)) + "&%a〜)" : "&%aクリックで購入";
+        return List.of("&%7出品者: &%f" + listing.getSellerName(), priceLine, actionLine);
     }
 
     /**

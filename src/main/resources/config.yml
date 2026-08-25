@@ -5,7 +5,7 @@
 # added - on next startup, ConfigManager appends the new section (with its comments) to any
 # existing config.yml that's missing it, without touching anything you've already customized.
 # Never bump this for a value-only change (e.g. tweaking a default), only for new/removed keys.
-config-version: 11
+config-version: 12
 
 chat:
   mute:
@@ -254,14 +254,22 @@ mail:
     pitch: 1.0
 
 auction:
-  # Fraction of the sale price deducted as a fee on a successful purchase (0.05 = 5%),
-  # deposited to nobody - a straightforward money sink.
+  # Fraction of the sale price (buy-now) or final bid amount (bid auction) deducted as a fee
+  # on a successful settlement (0.05 = 5%), deposited to nobody - a straightforward money sink.
   fee-rate: 0.05
   # A seller can't have more than this many ACTIVE or not-yet-collected EXPIRED listings
-  # occupying a slot at once.
+  # occupying a slot at once (buy-now and bid listings share this same cap).
   max-listings-per-seller: 10
-  # Default listing duration for /ol auction sell.
+  # Default listing duration for /ol auction sell and /ol auction start.
   default-duration-hours: 72
+  # How often (in ticks) the sweep that both closes expired listings and settles finished bid
+  # auctions runs. 1200 = 1 minute.
+  expiry-check-period-ticks: 1200
+  bid:
+    # A new bid must exceed the current highest bid (or the starting price, if none yet) by at
+    # least this fraction (0.05 = 5%) - rate-based like fee-rate, not a flat currency amount
+    # that ages badly as listing prices vary.
+    min-increment-rate: 0.05
 
 trade:
   # A trade request auto-expires (both sides notified) if not accepted within this many seconds.

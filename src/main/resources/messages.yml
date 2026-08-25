@@ -4,7 +4,7 @@
 # NPC dialogue lines / quest descriptions / story text stay in their own content yml files
 # (npc.yml, quests.yml, story.yml, ...) since those are per-entry authored content, not
 # fixed UI copy.
-config-version: 13
+config-version: 14
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -34,7 +34,9 @@ usage:
   trade: "&%e使い方: /trade &%7<&%eplayer&%7>&%e&%7|&%eaccept&%7|&%eadd&%7|&%eremove &%7<&%eindex&%7>&%e&%7|&%econfirm&%7|&%ecancel&%7|&%eview"
   trade-remove: "&%e使い方: /trade remove &%7<&%eindex&%7>&%e"
   auction-sell: "&%e使い方: /ol auction sell &%7<&%eprice&%7>&%e"
-  auction: "&%e使い方: /ol auction [list&%7|&%esell &%7<&%eprice&%7>&%e&%7|&%ecollect]"
+  auction-start: "&%e使い方: /ol auction start &%7<&%estartPrice&%7>&%e [hours]"
+  auction-bid: "&%e使い方: /ol auction bid &%7<&%eid&%7>&%e &%7<&%eamount&%7>&%e"
+  auction: "&%e使い方: /ol auction [list&%7|&%esell &%7<&%eprice&%7>&%e&%7|&%estart &%7<&%estartPrice&%7>&%e [hours]&%7|&%ebid &%7<&%eid&%7>&%e &%7<&%eamount&%7>&%e&%7|&%ecollect]"
   house: "&%e使い方: /ol house [list&%7|&%ebuy &%7<&%eplotId&%7>&%e&%7|&%ehome]"
   house-buy: "&%e使い方: /ol house buy &%7<&%eplotId&%7>&%e"
   pet: "&%e使い方: /ol pet [list&%7|&%ebuy &%7<&%eid&%7>&%e&%7|&%esummon [id]&%7|&%edismiss]"
@@ -419,10 +421,18 @@ auction:
   nothing-to-collect: "&%e受け取れるものはありません。"
   collected: "&%a{count}件の未売却アイテムを回収しました。"
   no-listings: "&%7出品がありません。"
+  started: "&%a入札形式で出品しました。"
+  start-failed: "&%c出品に失敗しました: {reason}"
+  bid-placed: "&%a{price}Gで入札しました。"
+  bid-failed: "&%c入札に失敗しました: {reason}"
   sold-mail-subject: "{item}が売れました"
   sold-mail-body: "&%f{item} &%7が &%e{price}G &%7で売れました（購入者: {buyer}）。手数料 &%c{fee}G &%7を差し引いた &%a{net}G &%7が所持金へ振り込まれています。"
   expired-mail-subject: "{item}の出品期限が切れました"
   expired-mail-body: "&%f{item} &%7の出品期間が終了しました。&%eオークション画面から回収してください。"
+  won-mail-subject: "{item}の入札に落札しました"
+  won-mail-body: "&%f{item} &%7を &%e{price}G &%7で落札しました。添付物を受け取ってください。"
+  outbid-mail-subject: "{item}の入札で上回られました"
+  outbid-mail-body: "&%f{item} &%7への入札が &%e{amount}G &%7で上回られたため、入札額を返金しました。"
   reason:
     not-found: "出品が見つかりません"
     already-resolved: "既に処理済みです"
@@ -433,6 +443,11 @@ auction:
     empty-hand: "手に何も持っていません"
     inventory-full: "インベントリに空きがありません"
     max-listings-reached: "出品数の上限に達しています"
+    not-a-bid-listing: "これは入札形式の出品ではありません"
+    is-a-bid-listing: "入札形式の出品は即時購入できません"
+    cannot-bid-own: "自分の出品には入札できません"
+    bid-too-low: "入札額が最低額を下回っています"
+    cannot-cancel-has-bids: "入札が入っているためキャンセルできません"
 
 housing:
   no-plots-available: "&%e購入可能な土地はありません。"
