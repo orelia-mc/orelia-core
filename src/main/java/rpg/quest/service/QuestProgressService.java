@@ -186,7 +186,8 @@ public final class QuestProgressService {
         progressMatchingObjectives(playerId, ObjectiveType.TALK_NPC, npcId, 1);
     }
 
-    /** Hook for the dungeon module to call once integrated; not yet wired automatically. */
+    /** Called by {@code rpg.dungeon.service.DungeonEncounterService#forceEnd} for every party
+     *  member when a dungeon run clears, feeding {@link ObjectiveType#CLEAR_DUNGEON} objectives. */
     public void onDungeonCleared(UUID playerId, String dungeonId) {
         progressMatchingObjectives(playerId, ObjectiveType.CLEAR_DUNGEON, dungeonId, 1);
     }
