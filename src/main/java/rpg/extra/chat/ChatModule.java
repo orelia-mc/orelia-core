@@ -25,6 +25,8 @@ import rpg.gui.framework.GuiManager;
 public final class ChatModule implements RpgModule {
 
     private ChatChannelService channelService;
+    private ChatGuiScreen chatGuiScreen;
+    private GuiManager guiManager;
 
     @Override
     public String getName() {
@@ -43,10 +45,10 @@ public final class ChatModule implements RpgModule {
                         plugin.getMessageManager(), plugin.getChatMuteService()),
                 plugin);
 
-        GuiManager chatGuiManager = new GuiManager();
-        ChatGuiScreen chatGuiScreen = new ChatGuiScreen(channelService, plugin.getChatMuteService(), chatGuiManager);
+        this.guiManager = new GuiManager();
+        this.chatGuiScreen = new ChatGuiScreen(channelService, plugin.getChatMuteService(), guiManager);
         ChatChannelCommand chatChannelCommand = new ChatChannelCommand(channelService, plugin.getChatMuteService(),
-                plugin.getMessageManager(), chatGuiScreen, chatGuiManager);
+                plugin.getMessageManager(), chatGuiScreen, guiManager);
         String description = "チャットチャンネルを切り替えます。";
         String usage = "chat <public|party|guild|admin|mute [category]|gui>";
         plugin.getPlayerCommandRegistry().register("chat", chatChannelCommand, description, usage);
@@ -71,6 +73,14 @@ public final class ChatModule implements RpgModule {
 
     public ChatChannelService getChannelService() {
         return channelService;
+    }
+
+    public ChatGuiScreen getChatGuiScreen() {
+        return chatGuiScreen;
+    }
+
+    public GuiManager getGuiManager() {
+        return guiManager;
     }
 
     private <T extends RpgModule> T require(OreliaPlugin plugin, Class<T> type) {
