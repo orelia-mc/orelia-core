@@ -84,3 +84,4 @@ Orelia は以下のプラグイン群で構成されています。
 - Auction/Tradeで、Orelia製の武器・アクセサリー・レリック以外のアイテム(バニラアイテムやプレイヤー情報アイテムのネザースターなどの`player_info_item`メニューアイテムを含む)を取引に出せないようにしました。新規`rpg.item.service.TradeableItemService`(`WeaponIdentityService`/`AccessoryIdentityService`/`RelicIdentityService`3つを横断する薄いファサード)で判定し、拒否リスト方式ではなく正の許可リスト方式(この3カテゴリだけを許可)を採用しています。`AuctionService#createListing`/`TradeService#addHeldItem`それぞれに`ITEM_NOT_TRADEABLE`という結果を新設しました。
 - メールGUIの本文が長いとlore(アイテムの説明欄)からはみ出す問題を修正しました。新規`rpg.util.LoreTextWrap`が、全角文字を幅2・半角文字を幅1として計算し、約14〜16文字相当(既定30幅)で自動改行します。単純な文字数カウントではなく見た目の横幅に近い形で計算しているので、日本語と半角英数が混ざった本文でも偏りなく折り返されます。`&%<文字>`のカラーコードは改行をまたいで分断されず、直前に有効だったコードが次の行の先頭に引き継がれます。
 - `/ol help <サブコマンド名>`・`/oladmin help <サブコマンド名>`で、そのサブコマンドだけのヘルプを表示できるようになりました(該当する名前が見つからない場合は従来通りページ番号として扱われ、全件のページ送りにフォールバックします)。
+- `/oladmin dungeonarena set <dungeon-id> <index>`を追加しました。既存の`add`(末尾に追加)とは別に、指定した1始まりのインデックス番号のアリーナを現在地で上書きできます。`remove`→`add`で入れ替える手間や、1個しかないアリーナを一時的に消せない`remove`の制約を回避できます。
