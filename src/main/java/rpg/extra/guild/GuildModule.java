@@ -16,8 +16,8 @@ import rpg.gui.framework.GuiManager;
 import java.util.logging.Level;
 
 /**
- * Guild module: persistent player organizations with leader/officer/member roles (SOW
- * GuildModule).
+ * Guild module: persistent player organizations with a leader plus the guild's own freely-named,
+ * freely-assignable member roles (SOW GuildModule).
  */
 public final class GuildModule implements RpgModule {
 
@@ -56,10 +56,10 @@ public final class GuildModule implements RpgModule {
         GuildCommand guildCommand = new GuildCommand(guildService, plugin.getMessageManager(), plugin.getChatMuteService(),
                 guildGuiScreen, guiManager, plugin.getConfigManager(), plugin.getLogger());
         String description = "ギルドを管理します。";
-        String usage = "guild <create|invite|accept|leave|kick|promote|demote|disband|transfer|list|info|gui|chat <message>>";
+        String usage = "guild <create|rename|retag|invite|accept|decline|leave|kick|role|addrole|removerole|renamerole|disband|transfer|list|info|gui|chat <message>>";
         plugin.getPlayerCommandRegistry().register("guild", guildCommand, description, usage);
         CommandAliasUtil.registerAlias(plugin, "guild", guildCommand, description,
-                "<create|invite|accept|leave|kick|promote|demote|disband|transfer|list|info|gui|chat <message>>");
+                "<create|rename|retag|invite|accept|decline|leave|kick|role|addrole|removerole|renamerole|disband|transfer|list|info|gui|chat <message>>");
     }
 
     @Override

@@ -3,7 +3,7 @@ package rpg.extra.guild.service;
 import org.bukkit.entity.Player;
 import rpg.extra.guild.manager.GuildManager;
 import rpg.extra.guild.model.Guild;
-import rpg.extra.guild.model.GuildRole;
+import rpg.extra.guild.model.GuildRoleDefinition;
 
 import java.util.Collection;
 import java.util.List;
@@ -11,18 +11,26 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Guild business rules on top of {@link GuildManager}'s plain data operations.
+ * Guild business rules on top of {@link GuildManager}'s plain data operations. Every
+ * member-management/role-management/rename action is leader-only - see {@link Guild}'s own doc
+ * comment for why the OFFICER tier being removed simplified the permission model to just
+ * "is the leader" (a deliberate behavior change from the old leader-or-officer gate on
+ * invite/kick).
  */
 public final class GuildService {
 
     /** Counted by {@code String#length()} (UTF-16 code units) - every character these are meant to bound (kana/kanji included) is one BMP code unit, so this is an accurate character count for the names/tags this is actually validating. */
     public static final int MAX_NAME_LENGTH = 16;
     public static final int MAX_TAG_LENGTH = 5;
+    public static final int MAX_ROLE_NAME_LENGTH = 16;
+    /** Custom roles only - the reserved leader "role" is never counted against this. */
+    public static final int MAX_ROLES_PER_GUILD = 7;
 
     public enum ActionResult {
         OK, ALREADY_IN_GUILD, NOT_IN_GUILD, INSUFFICIENT_ROLE, TARGET_ALREADY_IN_GUILD,
         NO_PENDING_INVITE, CANNOT_TARGET_SELF, CANNOT_TARGET_LEADER, LEADER_MUST_DISBAND,
-        NAME_TAKEN, TAG_TAKEN, NAME_TOO_LONG, TAG_TOO_LONG, TARGET_NOT_MEMBER
+        NAME_TAKEN, TAG_TAKEN, NAME_TOO_LONG, TAG_TOO_LONG, TARGET_NOT_MEMBER,
+        ROLE_NOT_FOUND, ROLE_NAME_TAKEN, ROLE_NAME_TOO_LONG, TOO_MANY_ROLES, ROLE_IN_USE, LAST_ROLE
     }
 
     private final GuildManager manager;
@@ -59,6 +67,44 @@ public final class GuildService {
         return ActionResult.OK;
     }
 
+    /** Renames the leader's own guild. */
+    public ActionResult rename(Player leader, String newName) {
+        Guild guild = requireLeaderOf(leader).orElse(null);
+        if (guild == null) {
+            return leaderGuildFailure(leader);
+        }
+        if (newName.length() > MAX_NAME_LENGTH) {
+            return ActionResult.NAME_TOO_LONG;
+        }
+        for (Guild existing : manager.getAll()) {
+            if (!existing.getId().equals(guild.getId()) && existing.getName().equalsIgnoreCase(newName)) {
+                return ActionResult.NAME_TAKEN;
+            }
+        }
+        guild.setName(newName);
+        manager.persist(guild);
+        return ActionResult.OK;
+    }
+
+    /** Retags the leader's own guild. */
+    public ActionResult retag(Player leader, String newTag) {
+        Guild guild = requireLeaderOf(leader).orElse(null);
+        if (guild == null) {
+            return leaderGuildFailure(leader);
+        }
+        if (newTag.length() > MAX_TAG_LENGTH) {
+            return ActionResult.TAG_TOO_LONG;
+        }
+        for (Guild existing : manager.getAll()) {
+            if (!existing.getId().equals(guild.getId()) && existing.getTag().equalsIgnoreCase(newTag)) {
+                return ActionResult.TAG_TAKEN;
+            }
+        }
+        guild.setTag(newTag);
+        manager.persist(guild);
+        return ActionResult.OK;
+    }
+
     public ActionResult invite(Player inviter, Player invitee) {
         if (inviter.getUniqueId().equals(invitee.getUniqueId())) {
             return ActionResult.CANNOT_TARGET_SELF;
@@ -67,7 +113,7 @@ public final class GuildService {
         if (guild == null) {
             return ActionResult.NOT_IN_GUILD;
         }
-        if (!isOfficerOrAbove(guild, inviter.getUniqueId())) {
+        if (!guild.getLeaderId().equals(inviter.getUniqueId())) {
             return ActionResult.INSUFFICIENT_ROLE;
         }
         if (manager.getByPlayer(invitee.getUniqueId()).isPresent()) {
@@ -91,7 +137,7 @@ public final class GuildService {
         if (guild.isEmpty()) {
             return ActionResult.NO_PENDING_INVITE;
         }
-        manager.addMember(guild.get(), invitee.getUniqueId(), GuildRole.MEMBER);
+        manager.addMember(guild.get(), invitee.getUniqueId(), guild.get().defaultMemberRoleId());
         return ActionResult.OK;
     }
 
@@ -121,14 +167,11 @@ public final class GuildService {
         return ActionResult.OK;
     }
 
-    /** Hands leadership to {@code newLeaderId} (must already be a member), demoting the old leader to officer. */
+    /** Hands leadership to {@code newLeaderId} (must already be a member), demoting the old leader to the guild's default role. */
     public ActionResult transferLeadership(Player currentLeader, UUID newLeaderId) {
-        Guild guild = manager.getByPlayer(currentLeader.getUniqueId()).orElse(null);
+        Guild guild = requireLeaderOf(currentLeader).orElse(null);
         if (guild == null) {
-            return ActionResult.NOT_IN_GUILD;
-        }
-        if (!guild.getLeaderId().equals(currentLeader.getUniqueId())) {
-            return ActionResult.INSUFFICIENT_ROLE;
+            return leaderGuildFailure(currentLeader);
         }
         if (!guild.getMembers().containsKey(newLeaderId)) {
             return ActionResult.TARGET_NOT_MEMBER;
@@ -138,13 +181,10 @@ public final class GuildService {
         return ActionResult.OK;
     }
 
-    public ActionResult kick(Player actor, UUID targetId) {
-        Guild guild = manager.getByPlayer(actor.getUniqueId()).orElse(null);
+    public ActionResult kick(Player leader, UUID targetId) {
+        Guild guild = requireLeaderOf(leader).orElse(null);
         if (guild == null) {
-            return ActionResult.NOT_IN_GUILD;
-        }
-        if (!isOfficerOrAbove(guild, actor.getUniqueId())) {
-            return ActionResult.INSUFFICIENT_ROLE;
+            return leaderGuildFailure(leader);
         }
         if (targetId.equals(guild.getLeaderId())) {
             return ActionResult.CANNOT_TARGET_LEADER;
@@ -153,26 +193,108 @@ public final class GuildService {
         return ActionResult.OK;
     }
 
-    public ActionResult setRole(Player leader, UUID targetId, GuildRole role) {
-        Guild guild = manager.getByPlayer(leader.getUniqueId()).orElse(null);
+    /** Assigns one of the guild's own {@link GuildRoleDefinition}s to a member - replaces the old fixed promote/demote. */
+    public ActionResult assignRole(Player leader, UUID targetId, String roleId) {
+        Guild guild = requireLeaderOf(leader).orElse(null);
         if (guild == null) {
-            return ActionResult.NOT_IN_GUILD;
+            return leaderGuildFailure(leader);
         }
-        if (!guild.getLeaderId().equals(leader.getUniqueId())) {
-            return ActionResult.INSUFFICIENT_ROLE;
+        if (targetId.equals(guild.getLeaderId())) {
+            return ActionResult.CANNOT_TARGET_LEADER;
         }
-        guild.setRole(targetId, role);
+        if (!guild.getMembers().containsKey(targetId)) {
+            return ActionResult.TARGET_NOT_MEMBER;
+        }
+        if (guild.roleDefinition(roleId).isEmpty()) {
+            return ActionResult.ROLE_NOT_FOUND;
+        }
+        guild.setRole(targetId, roleId);
         manager.persist(guild);
         return ActionResult.OK;
     }
 
-    public ActionResult disband(Player leader) {
-        Guild guild = manager.getByPlayer(leader.getUniqueId()).orElse(null);
+    /** Adds a new custom role, capped at {@link #MAX_ROLES_PER_GUILD}. */
+    public ActionResult addRole(Player leader, String name) {
+        Guild guild = requireLeaderOf(leader).orElse(null);
         if (guild == null) {
-            return ActionResult.NOT_IN_GUILD;
+            return leaderGuildFailure(leader);
         }
-        if (!guild.getLeaderId().equals(leader.getUniqueId())) {
-            return ActionResult.INSUFFICIENT_ROLE;
+        if (name.length() > MAX_ROLE_NAME_LENGTH) {
+            return ActionResult.ROLE_NAME_TOO_LONG;
+        }
+        if (guild.getRoles().size() >= MAX_ROLES_PER_GUILD) {
+            return ActionResult.TOO_MANY_ROLES;
+        }
+        if (guild.hasRoleNamed(name)) {
+            return ActionResult.ROLE_NAME_TAKEN;
+        }
+        int sortOrder = guild.getRoles().size();
+        guild.addRole(new GuildRoleDefinition(UUID.randomUUID().toString().substring(0, 8), name, sortOrder));
+        manager.persist(guild);
+        return ActionResult.OK;
+    }
+
+    /** Renames an existing custom role, resolved by its current name (guild-scoped, not global). */
+    public ActionResult renameRole(Player leader, String currentRoleName, String newName) {
+        Guild guild = requireLeaderOf(leader).orElse(null);
+        if (guild == null) {
+            return leaderGuildFailure(leader);
+        }
+        GuildRoleDefinition role = findRoleByName(guild, currentRoleName).orElse(null);
+        if (role == null) {
+            return ActionResult.ROLE_NOT_FOUND;
+        }
+        if (newName.length() > MAX_ROLE_NAME_LENGTH) {
+            return ActionResult.ROLE_NAME_TOO_LONG;
+        }
+        if (!role.name().equalsIgnoreCase(newName) && guild.hasRoleNamed(newName)) {
+            return ActionResult.ROLE_NAME_TAKEN;
+        }
+        guild.renameRole(role.id(), newName);
+        manager.persist(guild);
+        return ActionResult.OK;
+    }
+
+    /** Deletes a custom role, resolved by name. Refuses if it's the guild's last remaining role, or if any member currently holds it. */
+    public ActionResult deleteRole(Player leader, String roleName) {
+        Guild guild = requireLeaderOf(leader).orElse(null);
+        if (guild == null) {
+            return leaderGuildFailure(leader);
+        }
+        GuildRoleDefinition role = findRoleByName(guild, roleName).orElse(null);
+        if (role == null) {
+            return ActionResult.ROLE_NOT_FOUND;
+        }
+        if (guild.getRoles().size() <= 1) {
+            return ActionResult.LAST_ROLE;
+        }
+        boolean inUse = guild.getMembers().values().stream().anyMatch(role.id()::equals);
+        if (inUse) {
+            return ActionResult.ROLE_IN_USE;
+        }
+        guild.removeRole(role.id());
+        manager.persist(guild);
+        return ActionResult.OK;
+    }
+
+    private Optional<GuildRoleDefinition> findRoleByName(Guild guild, String name) {
+        return guild.getRoles().stream().filter(role -> role.name().equalsIgnoreCase(name)).findFirst();
+    }
+
+    /** {@code player}'s own guild, only if they're its leader - the shared gate every leader-only action above uses. */
+    private Optional<Guild> requireLeaderOf(Player player) {
+        return manager.getByPlayer(player.getUniqueId()).filter(guild -> guild.getLeaderId().equals(player.getUniqueId()));
+    }
+
+    /** NOT_IN_GUILD if the player has no guild at all, otherwise INSUFFICIENT_ROLE (they're a member but not the leader). */
+    private ActionResult leaderGuildFailure(Player player) {
+        return manager.getByPlayer(player.getUniqueId()).isEmpty() ? ActionResult.NOT_IN_GUILD : ActionResult.INSUFFICIENT_ROLE;
+    }
+
+    public ActionResult disband(Player leader) {
+        Guild guild = requireLeaderOf(leader).orElse(null);
+        if (guild == null) {
+            return leaderGuildFailure(leader);
         }
         manager.disband(guild);
         return ActionResult.OK;
@@ -199,10 +321,5 @@ public final class GuildService {
 
     public Collection<Guild> getAllGuilds() {
         return manager.getAll();
-    }
-
-    private boolean isOfficerOrAbove(Guild guild, UUID playerId) {
-        GuildRole role = guild.roleOf(playerId);
-        return role == GuildRole.LEADER || role == GuildRole.OFFICER;
     }
 }
