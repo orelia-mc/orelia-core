@@ -40,9 +40,9 @@ Produces `build/libs/orelia-core-<version>.jar` (shadowJar, relocated sqlite/mys
 ```
 
 In-game: `/oladmin reload` reloads every module's config file without a server restart.
-`/oladmin worldreload` and `/oladmin extrareload` are temporary aliases of the same command,
-kept for one release cycle for operator muscle-memory from the pre-merge 3-plugin setup —
-safe to remove in a later cleanup.
+(`/oladmin worldreload`/`extrareload` existed as temporary aliases of the same command for one
+release cycle after the 3-plugin merge, for operator muscle-memory - already removed; `reload`
+is now the only spelling.)
 
 ## Architecture
 

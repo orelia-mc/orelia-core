@@ -24,10 +24,10 @@ import java.util.UUID;
 /**
  * {@code /oladmin <reload|spawn <monsterId>|spawnboss <bossId>|spawnpoint add|remove|list|...>}
  * - the root {@code /oladmin} executor. Handles orelia-core's own admin actions directly;
- * anything it doesn't recognize falls back to {@link AdminCommandRegistry}, which
- * orelia-world/orelia-extra register their own admin subcommands into (e.g.
- * {@code worldreload}) so every plugin's admin tools live under one short command instead
- * of each claiming its own top-level command name.
+ * anything it doesn't recognize falls back to {@link AdminCommandRegistry}, which every
+ * module (e.g. {@code houseplot}, {@code dungeonarena}) and genuinely external plugins like
+ * orelia-debug register their own admin subcommands into, so every admin tool lives under
+ * one short command instead of each claiming its own top-level command name.
  */
 public final class AdminCommand implements CommandExecutor, TabCompleter {
 

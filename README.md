@@ -61,7 +61,8 @@ Orelia は以下のプラグイン群で構成されています。
 - ギルド/パーティー/フレンドGUI(`/guild gui`・`/party gui`・`/friend gui`) — 各コマンドで実行できる操作を一通りGUIから実行できます(作成・招待・承認/拒否・脱退・解散・昇格/降格・リーダー譲渡・追放・チャット送信)。ギルド/パーティーはメンバーの頭をクリックすると管理用のサブ画面(操作対象者に応じて表示ボタンが変わります)が開きます。ギルド名・タグ・招待するプレイヤー名・チャットメッセージのような自由入力は、GUIを閉じてチャットに直接入力させる方式です(`rpg.core.chat.ChatInputService`、コマンド自動入力ではなく)。招待が届いている間は一覧画面に承認/拒否ボタンが表示されます。いずれもGUIのボタンは`GuildService`/`PartyService`/`FriendService`を直接叩かず対応するコマンドを実行する形にしており、通知サウンド等の既存の副作用がチャットから実行した場合と同じように動作します。
 - チャットミュート — `/chat mute <public|party|guild>`で、自分が実際にタイプしたチャット(全体・パーティー・ギルド)だけをチャンネル単位でミュートできます(`ChatMuteService`)。パーティー招待・ギルド招待・取引申込・メール未読通知などのシステム側からの通知(メッセージ本体+サウンド、`config.yml`の各`notify-sound`)はこのミュートの対象外で常に届きます。`config.yml`の`chat.mute.enabled`をfalseにすると`/chat mute`自体を無効化できます(既存のミュート設定も無視されます)。
 - config閲覧コマンド(`/oladmin config <core|world|extra> view <file> [path]`) — `monsters.yml`/`quests.yml`等の設定ファイルをYAML木構造のまま人間可読な形式で表示し、末端値はクリックで編集コマンドをチャット欄に自動入力できます(`DebugApi`/`WorldDebugApi`/`ExtraDebugApi`の`listConfigTree`)。
-- `/oladmin reload`(と`worldreload`/`extrareload`)は、その回のリロードで実際に変更・追加・削除されたconfigの末端キーを一覧表示するようになりました。
+- `/oladmin reload`は、その回のリロードで実際に変更・追加・削除されたconfigの末端キーを一覧表示するようになりました。
+- 統合前3プラグイン時代の互換用エイリアスだった`/oladmin worldreload`/`extrareload`を削除しました。`/oladmin reload`のみが正式なコマンドです。
 - `/ol help`/`/oladmin help`の表示を改善 — コマンド行と説明の間、各エントリの間にそれぞれ改行を追加し、`<a|b|c>`のような選択肢表記は`< a / b / c >`のように整形して区切り文字と選択肢を色分けします。
 - `/oladmin item levelup [amount]` — デバッグモード中はプレイヤーレベルによる上限を無視して武器レベルを上げられ、`[amount]`で複数レベル分を一度に適用できます。
 - スライムの分裂を無効化しました(タグ付きOreliaモンスターのみ対象。分裂した子スライムはOreliaの管理外で報酬やステータススケーリングの対象にならず、実質的な不具合として扱われていたため)。
