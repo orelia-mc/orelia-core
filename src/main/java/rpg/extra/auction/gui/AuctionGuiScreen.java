@@ -65,13 +65,44 @@ public final class AuctionGuiScreen {
                 .lore(listingLore(listing, own, bidListing))
                 .build(), (clicker, clickType) -> {
             if (own) {
+                // Cancelling your own listing isn't a purchase - no money changes hands, so no
+                // confirmation step needed, same as before.
                 AuctionService.ActionResult result = auctionService.cancel(clicker, listing.getId());
                 if (result == AuctionService.ActionResult.OK) {
                     messages.send(clicker, "auction.cancelled");
                 } else {
                     messages.send(clicker, "auction.cancel-failed", "reason", messages.format(result.reasonMessageKey()));
                 }
-            } else if (bidListing) {
+                guiManager.open(clicker, build(clicker, page));
+            } else {
+                // Buying/bidding does charge money - show a confirmation screen instead of
+                // executing on the very first click, so browsing the listing list can't
+                // accidentally spend money (SOW follow-up: clicking a listing used to buy it
+                // instantly with no way to back out).
+                guiManager.open(clicker, buildConfirm(listing, bidListing, page));
+            }
+        });
+    }
+
+    /** One listing's buy-now/bid confirmation screen - "はい"/"いいえ" either executes the purchase or returns to the list without charging anything. */
+    private Gui buildConfirm(AuctionListing listing, boolean bidListing, int page) {
+        Gui gui = new Gui(ColorUtil.colorize("&%8購入確認"), 27);
+        gui.set(11, new GuiButton(new ItemBuilder(listing.getItem().getType())
+                .name("&%f" + listing.getDisplayName())
+                .lore(listingLore(listing, false, bidListing))
+                .build(), (clicker, clickType) -> { }));
+        gui.set(13, confirmButton(listing, bidListing, page));
+        gui.set(15, new GuiButton(new ItemBuilder(Material.BARRIER).name("&%cいいえ - 戻る").build(),
+                (clicker, clickType) -> guiManager.open(clicker, build(clicker, page))));
+        return gui;
+    }
+
+    private GuiButton confirmButton(AuctionListing listing, boolean bidListing, int page) {
+        String label = bidListing
+                ? "&%aはい - &%6" + MoneyFormat.format(auctionService.minimumNextBid(listing)) + "&%aで入札する"
+                : "&%aはい - &%6" + MoneyFormat.format(listing.getPrice()) + "&%aで購入する";
+        return new GuiButton(new ItemBuilder(Material.LIME_WOOL).name(label).build(), (clicker, clickType) -> {
+            if (bidListing) {
                 // GUI click = quick-bid at the computed minimum increment (same formula the
                 // /ol auction bid command validates against, via the one shared
                 // AuctionService#minimumNextBid method) - a custom amount still needs the command.
@@ -89,9 +120,9 @@ public final class AuctionGuiScreen {
                     messages.send(clicker, "auction.buy-failed", "reason", messages.format(result.reasonMessageKey()));
                 }
             }
-            // The listing this button represents may have just sold/been bid on/been
-            // cancelled - the whole screen needs re-laying-out (remaining listings shift
-            // slots), not just this one icon, so reopen rather than patch a single slot.
+            // The listing this button represents may have just sold/been bid on - the whole
+            // list screen needs re-laying-out (remaining listings shift slots), not just this
+            // one icon, so reopen rather than patch a single slot.
             guiManager.open(clicker, build(clicker, page));
         });
     }
