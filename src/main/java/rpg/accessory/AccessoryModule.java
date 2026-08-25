@@ -11,6 +11,7 @@ import rpg.accessory.service.AccessoryFactory;
 import rpg.accessory.service.AccessoryIdentityService;
 import rpg.accessory.service.AccessoryKeys;
 import rpg.core.OreliaPlugin;
+import rpg.core.command.CommandAliasUtil;
 import rpg.core.module.RpgModule;
 import rpg.database.DatabaseModule;
 import rpg.gui.framework.GuiManager;
@@ -100,8 +101,9 @@ public final class AccessoryModule implements RpgModule {
 
         this.relicUpgradeGuiScreen = new RelicUpgradeGuiScreen(relicIdentityService, relicUpgradeService, plugin.getMessageManager());
         RelicCommand relicCommand = new RelicCommand(relicUpgradeGuiScreen, relicGuiManager, plugin.getMessageManager());
-        plugin.getPlayerCommandRegistry().register("relic", relicCommand,
-                "手に持ったレリックの厳選(サブステータス選択アップグレード)を行います。", "relic upgrade");
+        String relicDescription = "手に持ったレリックの厳選(サブステータス選択アップグレード)を行います。";
+        plugin.getPlayerCommandRegistry().register("relic", relicCommand, relicDescription, "relic upgrade");
+        CommandAliasUtil.registerAlias(plugin, "relic", relicCommand, relicDescription, "upgrade");
     }
 
     @Override

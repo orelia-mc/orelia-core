@@ -2,6 +2,7 @@ package rpg.extra.housing;
 
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.configuration.file.YamlConfiguration;
+import rpg.core.command.CommandAliasUtil;
 import rpg.database.manager.DatabaseManager;
 import rpg.core.OreliaPlugin;
 import rpg.core.module.RpgModule;
@@ -58,9 +59,11 @@ public final class HousingModule implements RpgModule {
         housingService.loadAll();
         this.guiScreen = new HousingGuiScreen(housingService, plugin.getMessageManager());
 
-        plugin.getPlayerCommandRegistry().register("house",
-                new HousingCommand(housingService, guiScreen, guiManager, plugin.getMessageManager()),
-                "自宅の購入・移動を行います。", "house [list|gui|buy <plotId>|home]");
+        HousingCommand housingCommand = new HousingCommand(housingService, guiScreen, guiManager, plugin.getMessageManager());
+        String description = "自宅の購入・移動を行います。";
+        String usage = "house [list|gui|buy <plotId>|home]";
+        plugin.getPlayerCommandRegistry().register("house", housingCommand, description, usage);
+        CommandAliasUtil.registerAlias(plugin, "house", housingCommand, description, usage);
 
         HousePlotAdminService plotAdminService = new HousePlotAdminService(plotRepository, housingService, plugin.getConfigManager());
         plugin.getAdminCommandRegistry().register("houseplot",

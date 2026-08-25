@@ -2,6 +2,7 @@ package rpg.job;
 
 import org.bukkit.configuration.file.YamlConfiguration;
 import rpg.core.OreliaPlugin;
+import rpg.core.command.CommandAliasUtil;
 import rpg.core.module.RpgModule;
 import rpg.database.DatabaseModule;
 import rpg.job.command.JobCommand;
@@ -45,8 +46,11 @@ public final class JobModule implements RpgModule {
 
         this.jobService = new JobService(plugin.getPlayerDataManager(), jobManager, statusModule.getStatusService());
 
-        plugin.getPlayerCommandRegistry().register("job", new JobCommand(jobService, jobManager, plugin.getMessageManager()),
-                "現在の職業を確認します。", "job [list]");
+        JobCommand jobCommand = new JobCommand(jobService, jobManager, plugin.getMessageManager());
+        String description = "現在の職業を確認します。";
+        String usage = "job [list]";
+        plugin.getPlayerCommandRegistry().register("job", jobCommand, description, usage);
+        CommandAliasUtil.registerAlias(plugin, "job", jobCommand, description, "[list]");
     }
 
     @Override
