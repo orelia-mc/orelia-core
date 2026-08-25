@@ -23,6 +23,7 @@ import rpg.dungeon.model.DungeonInstance;
 import rpg.dungeon.model.PlayerDungeonComponent;
 import rpg.dungeon.repository.PlayerDungeonRepository;
 import rpg.extra.api.PartyApi;
+import rpg.extra.chat.NotificationSoundPlayer;
 import rpg.quest.service.QuestProgressService;
 import rpg.util.ColorUtil;
 import rpg.util.MoneyFormat;
@@ -36,6 +37,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Logger;
 
 /**
  * Drives a dungeon run's live encounter on top of {@link DungeonService}'s bare
@@ -78,6 +80,7 @@ public final class DungeonEncounterService {
     private final ServicesManager services;
     private final QuestProgressService questProgressService;
     private final MessageManager messages;
+    private final Logger logger;
     private final Random random = new Random();
 
     /** The party a challenge is resolved against: who must have the dungeon unlocked, and who actually enters. */
@@ -88,7 +91,7 @@ public final class DungeonEncounterService {
                                     CombatApi combatApi, RelicApi relicApi, StatusApi statusApi, SchedulerService schedulerService,
                                     ConfigManager configManager, PlayerDungeonRepository playerDungeonRepository,
                                     PlayerDataManager playerDataManager, ServicesManager services,
-                                    QuestProgressService questProgressService, MessageManager messages) {
+                                    QuestProgressService questProgressService, MessageManager messages, Logger logger) {
         this.dungeonService = dungeonService;
         this.instanceManager = instanceManager;
         this.combatApi = combatApi;
@@ -101,6 +104,7 @@ public final class DungeonEncounterService {
         this.services = services;
         this.questProgressService = questProgressService;
         this.messages = messages;
+        this.logger = logger;
     }
 
     /** {@code difficulty}-less challenge (unscaled enemies) - see {@link #challenge(Player, String, Integer)}. */
@@ -172,10 +176,15 @@ public final class DungeonEncounterService {
                 ColorUtil.component(messages.format("dungeon.entry-countdown-title", "seconds", secondsRemaining)),
                 ColorUtil.component(messages.raw("dungeon.entry-countdown-subtitle")),
                 COUNTDOWN_TITLE_TIMES);
+        var config = configManager.get("config.yml").get();
         for (UUID memberId : instance.getMembers().keySet()) {
             Player member = Bukkit.getPlayer(memberId);
             if (member != null) {
                 member.showTitle(title);
+                NotificationSoundPlayer.play(member, config.getBoolean("dungeon.entry-countdown-sound.enabled", true),
+                        config.getString("dungeon.entry-countdown-sound.name", "BLOCK_NOTE_BLOCK_HAT"),
+                        config.getDouble("dungeon.entry-countdown-sound.volume", 1.0),
+                        config.getDouble("dungeon.entry-countdown-sound.pitch", 1.0), logger);
             }
         }
     }
@@ -192,8 +201,23 @@ public final class DungeonEncounterService {
             return;
         }
         dungeonService.teleportIn(instance);
+        playEntryStartSound(instance);
         spawnEncounter(instance, difficulty);
         scheduleTimeout(instance);
+    }
+
+    /** Plays once, right as the party is teleported in and enemies spawn - a distinct cue from the per-second {@link #announceCountdown} tick sound. */
+    private void playEntryStartSound(DungeonInstance instance) {
+        var config = configManager.get("config.yml").get();
+        for (UUID memberId : instance.getMembers().keySet()) {
+            Player member = Bukkit.getPlayer(memberId);
+            if (member != null) {
+                NotificationSoundPlayer.play(member, config.getBoolean("dungeon.entry-start-sound.enabled", true),
+                        config.getString("dungeon.entry-start-sound.name", "ENTITY_ENDER_DRAGON_GROWL"),
+                        config.getDouble("dungeon.entry-start-sound.volume", 1.0),
+                        config.getDouble("dungeon.entry-start-sound.pitch", 1.0), logger);
+            }
+        }
     }
 
     /** Manually ends the run the given player is currently in. Returns false if they aren't in one. */
