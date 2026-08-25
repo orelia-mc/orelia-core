@@ -214,6 +214,7 @@ public final class TradeCommand implements CommandExecutor, TabCompleter {
             case NO_PENDING_REQUEST -> "trade.no-pending-request";
             case CANNOT_TARGET_SELF -> "trade.cannot-target-self";
             case EMPTY_HAND -> "trade.empty-hand";
+            case ITEM_NOT_TRADEABLE -> "trade.item-not-tradeable";
             case INVALID_SLOT -> "trade.invalid-slot";
             case WAITING_FOR_OTHER -> "trade.confirmed-waiting";
             case INSUFFICIENT_FUNDS -> "trade.insufficient-funds";

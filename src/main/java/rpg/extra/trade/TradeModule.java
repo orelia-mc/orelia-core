@@ -2,6 +2,7 @@ package rpg.extra.trade;
 
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.configuration.file.YamlConfiguration;
+import rpg.accessory.AccessoryModule;
 import rpg.core.command.CommandAliasUtil;
 import rpg.database.manager.DatabaseManager;
 import rpg.core.OreliaPlugin;
@@ -12,6 +13,8 @@ import rpg.extra.trade.listener.TradeQuitListener;
 import rpg.extra.trade.manager.TradeManager;
 import rpg.extra.trade.repository.TradeLogRepository;
 import rpg.extra.trade.service.TradeService;
+import rpg.item.ItemModule;
+import rpg.item.service.TradeableItemService;
 
 import java.util.logging.Level;
 
@@ -42,6 +45,12 @@ public final class TradeModule implements RpgModule {
         // Vault isn't installed, same as Auction's own hard requirement is not appropriate
         // here since item-only trading is still fully useful without it.
         Economy economy = plugin.getServer().getServicesManager().load(Economy.class);
+        ItemModule itemModule = plugin.getModuleManager().get(ItemModule.class)
+                .orElseThrow(() -> new IllegalStateException("trade module requires item module"));
+        AccessoryModule accessoryModule = plugin.getModuleManager().get(AccessoryModule.class)
+                .orElseThrow(() -> new IllegalStateException("trade module requires accessory module"));
+        TradeableItemService tradeableItemService = new TradeableItemService(itemModule.getItemManager().getIdentityService(),
+                accessoryModule.getIdentityService(), accessoryModule.getRelicIdentityService());
 
         TradeLogRepository logRepository = new TradeLogRepository(databaseManager);
         try {
@@ -52,7 +61,7 @@ public final class TradeModule implements RpgModule {
 
         reloadTradeConfig();
         this.tradeService = new TradeService(manager, economy, plugin.getSchedulerService(), tradeConfig,
-                plugin.getMessageManager(), logRepository);
+                plugin.getMessageManager(), logRepository, tradeableItemService);
         plugin.getServer().getPluginManager().registerEvents(new TradeQuitListener(tradeService, plugin.getMessageManager()), plugin);
         TradeCommand tradeCommand = new TradeCommand(tradeService, plugin.getMessageManager(), tradeConfig, plugin.getLogger());
         String description = "他プレイヤーとアイテムを取引します。";
