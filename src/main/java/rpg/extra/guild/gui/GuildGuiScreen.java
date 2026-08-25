@@ -142,12 +142,18 @@ public final class GuildGuiScreen {
         });
     }
 
+    /**
+     * Switches the clicker's currently-selected chat channel to guild (via
+     * {@code rpg.extra.chat.command.ChatChannelCommand}/{@code ChatChannelService#switchChannel})
+     * rather than prompting for a one-off message the way this button used to - every ordinary
+     * chat line the player types afterward routes to guild chat until they switch again, so
+     * there's nothing left to prompt for.
+     */
     private GuiButton chatButton(UUID guildId) {
-        return new GuiButton(new ItemBuilder(Material.WRITABLE_BOOK).name("&%bギルドチャットを送信")
-                .lore(List.of("&%7クリックしてメッセージをチャットで入力")).build(), (clicker, clickType) -> {
-            clicker.closeInventory();
-            messages.send(clicker, "guild.chat-prompt-message");
-            chatInput.request(clicker, message -> clicker.performCommand("guild chat " + message));
+        return new GuiButton(new ItemBuilder(Material.WRITABLE_BOOK).name("&%bギルドチャットに切り替え")
+                .lore(List.of("&%7クリックしてチャットの送信先をギルドに切り替える")).build(), (clicker, clickType) -> {
+            clicker.performCommand("chat guild");
+            guiManager.open(clicker, buildDetail(clicker, guildId, 0));
         });
     }
 
