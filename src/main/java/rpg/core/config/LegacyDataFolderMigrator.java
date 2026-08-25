@@ -23,9 +23,10 @@ import java.util.logging.Logger;
  * orelia-core's would drop every core setting. Their new sections reach an existing file
  * through {@link ConfigMigrator} instead, which splices in only the missing keys.
  *
- * <p>Temporary, same as the {@code worldreload}/{@code extrareload} command aliases: once every
- * server has started at least once on a merged jar, this class and its call in
- * {@code OreliaPlugin#onEnable} can be deleted.
+ * <p>Temporary: once every server has started at least once on a merged jar, this class and
+ * its call in {@code OreliaPlugin#onEnable} can be deleted. (The equivalent temporary aliases
+ * for this same merge, {@code /oladmin worldreload}/{@code extrareload}, have already been
+ * removed - see git history - now that every server has had a release cycle to adjust.)
  */
 public final class LegacyDataFolderMigrator {
 

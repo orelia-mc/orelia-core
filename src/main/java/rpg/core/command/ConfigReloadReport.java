@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * Renders the leaf-key changes {@link rpg.core.OreliaPlugin#reload()} reports, right after
- * {@code /oladmin reload}/{@code worldreload}/{@code extrareload}'s plain "reloaded" message.
+ * {@code /oladmin reload}'s plain "reloaded" message.
  * Reload previously gave no feedback about whether an on-disk yml edit actually took effect -
  * an admin had to either trust it silently worked or go re-check the value by hand. Capped at
  * {@link #MAX_LINES_SHOWN} total changed lines across every file so a reload that touches a

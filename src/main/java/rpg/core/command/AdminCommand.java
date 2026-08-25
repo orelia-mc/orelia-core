@@ -24,10 +24,10 @@ import java.util.UUID;
 /**
  * {@code /oladmin <reload|spawn <monsterId>|spawnboss <bossId>|spawnpoint add|remove|list|...>}
  * - the root {@code /oladmin} executor. Handles orelia-core's own admin actions directly;
- * anything it doesn't recognize falls back to {@link AdminCommandRegistry}, which
- * orelia-world/orelia-extra register their own admin subcommands into (e.g.
- * {@code worldreload}) so every plugin's admin tools live under one short command instead
- * of each claiming its own top-level command name.
+ * anything it doesn't recognize falls back to {@link AdminCommandRegistry}, which every
+ * module (e.g. {@code houseplot}, {@code dungeonarena}) and genuinely external plugins like
+ * orelia-debug register their own admin subcommands into, so every admin tool lives under
+ * one short command instead of each claiming its own top-level command name.
  */
 public final class AdminCommand implements CommandExecutor, TabCompleter {
 
@@ -101,14 +101,47 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             options.addAll(registry.getNames());
             return TabCompletions.matching(options, args.length == 0 ? "" : args[0]);
         }
-        if (args.length == 2 && args[0].equalsIgnoreCase("spawnpoint")) {
-            return TabCompletions.matching(List.of("add", "remove", "list"), args[1]);
+        if (args.length == 2 && args[0].equalsIgnoreCase("spawn")) {
+            return TabCompletions.matching(monsterIds(), args[1]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("spawnboss")) {
+            return TabCompletions.matching(bossIds(), args[1]);
+        }
+        if (args[0].equalsIgnoreCase("spawnpoint")) {
+            if (args.length == 2) {
+                return TabCompletions.matching(List.of("add", "remove", "list"), args[1]);
+            }
+            if (args.length == 3 && args[1].equalsIgnoreCase("add")) {
+                return TabCompletions.matching(monsterIds(), args[2]);
+            }
+            if (args.length == 3 && args[1].equalsIgnoreCase("remove")) {
+                return TabCompletions.matching(spawnPointIds(), args[2]);
+            }
+            return List.of();
         }
         CommandExecutor delegate = registry.get(args[0]).orElse(null);
         if (delegate instanceof TabCompleter completer) {
             return completer.onTabComplete(sender, command, alias + " " + args[0], Arrays.copyOfRange(args, 1, args.length));
         }
         return List.of();
+    }
+
+    private List<String> monsterIds() {
+        return plugin.getModuleManager().get(MonsterModule.class)
+                .map(module -> List.copyOf(module.getRepository().getAll().keySet()))
+                .orElse(List.of());
+    }
+
+    private List<String> bossIds() {
+        return plugin.getModuleManager().get(BossModule.class)
+                .map(module -> List.copyOf(module.getRepository().getAll().keySet()))
+                .orElse(List.of());
+    }
+
+    private List<String> spawnPointIds() {
+        return plugin.getModuleManager().get(MonsterModule.class)
+                .map(module -> module.getSpawnPointService().getAll().keySet().stream().map(UUID::toString).toList())
+                .orElse(List.of());
     }
 
     private void spawnMonster(CommandSender sender, String[] args) {

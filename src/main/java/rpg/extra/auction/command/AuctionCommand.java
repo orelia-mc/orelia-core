@@ -3,7 +3,9 @@ package rpg.extra.auction.command;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import rpg.core.command.TabCompletions;
 import rpg.core.message.MessageManager;
 import rpg.extra.auction.gui.AuctionGuiScreen;
 import rpg.extra.auction.model.AuctionListing;
@@ -18,7 +20,7 @@ import java.util.UUID;
  * {@code /ol auction [list|sell <price>|start <startPrice> [hours]|bid <id> <amount>|collect]}
  * (SOW AuctionModule). Plain {@code /ol auction} opens the browse/buy GUI.
  */
-public final class AuctionCommand implements CommandExecutor {
+public final class AuctionCommand implements CommandExecutor, TabCompleter {
 
     private final AuctionService auctionService;
     private final AuctionGuiScreen guiScreen;
@@ -118,5 +120,18 @@ public final class AuctionCommand implements CommandExecutor {
             default -> messages.send(sender, "usage.auction");
         }
         return true;
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length <= 1) {
+            return TabCompletions.matching(List.of("list", "sell", "start", "bid", "collect"), args.length == 0 ? "" : args[0]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("bid")) {
+            // The bid <id> argument is a listing UUID - painful to type by hand, so complete it
+            // from every currently-active listing rather than leaving it to guesswork/copy-paste.
+            return TabCompletions.matching(auctionService.getActiveListings().stream().map(l -> l.getId().toString()).toList(), args[1]);
+        }
+        return List.of();
     }
 }

@@ -4,8 +4,10 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import rpg.core.command.Pagination;
+import rpg.core.command.TabCompletions;
 import rpg.core.message.MessageManager;
 import rpg.extra.achievement.gui.AchievementGuiScreen;
 import rpg.extra.achievement.model.AchievementDefinition;
@@ -24,7 +26,7 @@ import java.util.Set;
  * {@code /ol achievement gui} opens {@link AchievementGuiScreen} instead - a category-grouped
  * GUI drill-down, for players who'd rather browse than read a wall of chat text.
  */
-public final class AchievementCommand implements CommandExecutor {
+public final class AchievementCommand implements CommandExecutor, TabCompleter {
 
     private static final int PAGE_SIZE = 15;
 
@@ -76,5 +78,14 @@ public final class AchievementCommand implements CommandExecutor {
         } catch (NumberFormatException e) {
             return 1;
         }
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length <= 1) {
+            // Page numbers aren't worth enumerating - "gui" is the only non-numeric option.
+            return TabCompletions.matching(List.of("gui"), args.length == 0 ? "" : args[0]);
+        }
+        return List.of();
     }
 }

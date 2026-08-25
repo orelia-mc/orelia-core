@@ -3,7 +3,9 @@ package rpg.extra.housing.command;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import rpg.core.command.TabCompletions;
 import rpg.core.message.MessageManager;
 import rpg.extra.housing.gui.HousingGuiScreen;
 import rpg.extra.housing.model.HousePlot;
@@ -11,12 +13,13 @@ import rpg.extra.housing.service.HousingService;
 import rpg.gui.framework.GuiManager;
 import rpg.util.MoneyFormat;
 
+import java.util.List;
 import java.util.Map;
 
 /**
  * {@code /ol house [list|gui|buy <plotId>|home]} (SOW HousingModule).
  */
-public final class HousingCommand implements CommandExecutor {
+public final class HousingCommand implements CommandExecutor, TabCompleter {
 
     private final HousingService housingService;
     private final HousingGuiScreen guiScreen;
@@ -96,5 +99,16 @@ public final class HousingCommand implements CommandExecutor {
             case OK -> "command.ok";
         };
         messages.send(sender, key);
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length <= 1) {
+            return TabCompletions.matching(List.of("list", "gui", "buy", "home"), args.length == 0 ? "" : args[0]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("buy")) {
+            return TabCompletions.matching(housingService.getAvailablePlots().keySet(), args[1]);
+        }
+        return List.of();
     }
 }

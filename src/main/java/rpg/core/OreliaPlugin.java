@@ -42,7 +42,6 @@ import rpg.dungeon.DungeonModule;
 import rpg.npc.NpcModule;
 import rpg.world.playerinfo.PlayerInfoModule;
 import rpg.world.api.WorldApiModule;
-import rpg.world.core.command.WorldAdminCommand;
 import rpg.extra.party.PartyModule;
 import rpg.extra.friend.FriendModule;
 import rpg.extra.guild.GuildModule;
@@ -56,7 +55,6 @@ import rpg.extra.mount.MountModule;
 import rpg.extra.ranking.RankingModule;
 import rpg.extra.achievement.AchievementModule;
 import rpg.extra.api.ExtraApiModule;
-import rpg.extra.core.command.ExtraAdminCommand;
 import rpg.extra.chat.service.ChatMuteService;
 
 /**
@@ -127,13 +125,6 @@ public final class OreliaPlugin extends JavaPlugin {
         AdminCommand adminCommand = new AdminCommand(this, adminCommandRegistry);
         getCommand("oladmin").setExecutor(adminCommand);
         getCommand("oladmin").setTabCompleter(adminCommand);
-
-        // worldreload/extrareload are aliases of reload, kept for one release cycle so
-        // admin muscle-memory/scripts from the pre-merge 3-plugin setup keep working.
-        adminCommandRegistry.register("worldreload", new WorldAdminCommand(this),
-                "reload の別名です（互換性のため一時的に維持）。", "worldreload");
-        adminCommandRegistry.register("extrareload", new ExtraAdminCommand(this),
-                "reload の別名です（互換性のため一時的に維持）。", "extrareload");
 
         // Registration order doubles as dependency order: later modules may look up
         // earlier ones via ModuleManager#get, never the reverse. Api/WorldApi/ExtraApi are
