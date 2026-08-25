@@ -43,7 +43,7 @@ public final class PlayerInfoModule implements RpgModule {
         // module in the merged registration order, so a lookup at this point always finds null.
         PlayerInfoGuiScreen guiScreen = new PlayerInfoGuiScreen(
                 questModule.getQuestRepository(), plugin.getPlayerDataManager(), jobApi, guiApi,
-                services, guiManager);
+                services, plugin.getModuleManager(), guiManager);
 
         plugin.getServer().getPluginManager().registerEvents(
                 new PlayerInfoItemListener(itemService, guiScreen, guiManager), plugin);
