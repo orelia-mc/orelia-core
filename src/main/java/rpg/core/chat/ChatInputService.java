@@ -53,14 +53,27 @@ public final class ChatInputService {
         pending.put(playerId, new Pending(onInput, timeoutTask));
     }
 
-    /** Called by {@link ChatInputListener}; returns true (and consumes the pending request) if {@code playerId} had one waiting. */
+    /**
+     * Called by {@link ChatInputListener}; returns true (and consumes the pending request) if
+     * {@code playerId} had one waiting. {@code onInput} is dispatched via
+     * {@link SchedulerService#runSync} rather than invoked directly here - this method runs on
+     * whatever thread {@code AsyncChatEvent} fires on (async by design), but every registered
+     * callback in this codebase ends up calling {@code Player#performCommand(...)}, a main-thread-
+     * only API. Running it off-thread let an exception from deep inside command dispatch escape
+     * before {@link ChatInputListener#onChat} reached {@code event.setCancelled(true)} - Bukkit's
+     * plugin manager just logs and swallows the exception, so the chat line fell through to
+     * normal (public) chat AND the caller's callback silently never ran (the pending entry was
+     * already removed above). Cancelling the event no longer depends on the callback succeeding -
+     * {@link ChatInputListener} cancels as soon as this method returns {@code true}, regardless
+     * of whether the scheduled callback has run yet.
+     */
     boolean tryConsume(UUID playerId, String message) {
         Pending request = pending.remove(playerId);
         if (request == null) {
             return false;
         }
         request.timeoutTask().cancel();
-        request.onInput().accept(message);
+        schedulerService.runSync(() -> request.onInput().accept(message));
         return true;
     }
 
