@@ -6,6 +6,7 @@ import rpg.extra.guild.model.Guild;
 import rpg.extra.guild.model.GuildRole;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -76,13 +77,36 @@ public final class GuildService {
         return ActionResult.OK;
     }
 
+    /** Accepts the oldest (first-received) pending invite. */
     public ActionResult accept(Player invitee) {
-        Optional<Guild> guild = manager.consumeInvite(invitee.getUniqueId());
+        return accept(invitee, manager.peekInvite(invitee.getUniqueId()).map(Guild::getId).orElse(null));
+    }
+
+    /** Accepts a specific guild's invite (not necessarily the oldest) - {@code guildId} null-safe. */
+    public ActionResult accept(Player invitee, UUID guildId) {
+        if (guildId == null) {
+            return ActionResult.NO_PENDING_INVITE;
+        }
+        Optional<Guild> guild = manager.consumeInvite(invitee.getUniqueId(), guildId);
         if (guild.isEmpty()) {
             return ActionResult.NO_PENDING_INVITE;
         }
         manager.addMember(guild.get(), invitee.getUniqueId(), GuildRole.MEMBER);
         return ActionResult.OK;
+    }
+
+    /** Declines the oldest (first-received) pending invite. */
+    public ActionResult decline(Player invitee) {
+        return decline(invitee, manager.peekInvite(invitee.getUniqueId()).map(Guild::getId).orElse(null));
+    }
+
+    /** Declines a specific guild's invite (not necessarily the oldest). */
+    public ActionResult decline(Player invitee, UUID guildId) {
+        if (guildId == null) {
+            return ActionResult.NO_PENDING_INVITE;
+        }
+        return manager.consumeInvite(invitee.getUniqueId(), guildId).isPresent()
+                ? ActionResult.OK : ActionResult.NO_PENDING_INVITE;
     }
 
     public ActionResult leave(Player player) {
@@ -158,9 +182,14 @@ public final class GuildService {
         return manager.getByPlayer(playerId);
     }
 
-    /** The guild {@code playerId} has a pending invite to, if any - for the GUI's accept/decline prompt. */
+    /** The oldest guild {@code playerId} has a pending invite to, if any - for the GUI's accept/decline prompt. */
     public Optional<Guild> peekPendingInvite(UUID playerId) {
         return manager.peekInvite(playerId);
+    }
+
+    /** Every guild currently inviting {@code playerId}, oldest first - for the GUI's ordered pending-invites list. */
+    public List<Guild> peekAllPendingInvites(UUID playerId) {
+        return manager.peekAllInvites(playerId);
     }
 
     /** Looks up a guild by its own id rather than a member's - for the GUI browser, which drills from a list into one guild's detail. */

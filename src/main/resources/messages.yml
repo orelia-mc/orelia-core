@@ -4,7 +4,7 @@
 # NPC dialogue lines / quest descriptions / story text stay in their own content yml files
 # (npc.yml, quests.yml, story.yml, ...) since those are per-entry authored content, not
 # fixed UI copy.
-config-version: 14
+config-version: 15
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -338,6 +338,7 @@ guild:
   invited: "&%a招待を送りました。"
   invite-received: "&%a{player}からギルド招待が届きました。/guild accept で参加できます。"
   accepted: "&%aギルドに参加しました。"
+  declined: "&%e招待を拒否しました。"
   left: "&%aギルドを抜けました。"
   kicked: "&%a追放しました。"
   promoted: "&%a昇格させました。"

@@ -78,10 +78,10 @@ public final class FriendCommand implements CommandExecutor, TabCompleter {
                 }
             }
             case "accept" -> {
-                UUID requesterId = friendService.peekPendingRequester(player.getUniqueId()).orElse(null);
-                FriendService.ActionResult result = friendService.accept(player);
+                UUID requesterId = resolveRequester(player, args);
+                FriendService.ActionResult result = friendService.accept(player, requesterId);
                 report(sender, result, "friend.accepted");
-                if (result == FriendService.ActionResult.OK && requesterId != null) {
+                if (result == FriendService.ActionResult.OK) {
                     Player requester = Bukkit.getPlayer(requesterId);
                     if (requester != null) {
                         messages.send(requester, "friend.accepted-notice", "player", player.getName());
@@ -89,10 +89,10 @@ public final class FriendCommand implements CommandExecutor, TabCompleter {
                 }
             }
             case "decline" -> {
-                UUID requesterId = friendService.peekPendingRequester(player.getUniqueId()).orElse(null);
-                FriendService.ActionResult result = friendService.decline(player);
+                UUID requesterId = resolveRequester(player, args);
+                FriendService.ActionResult result = friendService.decline(player, requesterId);
                 report(sender, result, "friend.declined");
-                if (result == FriendService.ActionResult.OK && requesterId != null) {
+                if (result == FriendService.ActionResult.OK) {
                     Player requester = Bukkit.getPlayer(requesterId);
                     if (requester != null) {
                         messages.send(requester, "friend.declined-notice", "player", player.getName());
@@ -171,7 +171,40 @@ public final class FriendCommand implements CommandExecutor, TabCompleter {
         if (args[0].equalsIgnoreCase("remove") && sender instanceof Player player) {
             return TabCompletions.matching(friendNames(player), args[1]);
         }
+        if ((args[0].equalsIgnoreCase("accept") || args[0].equalsIgnoreCase("decline")) && sender instanceof Player player) {
+            return TabCompletions.matching(pendingRequesterNames(player), args[1]);
+        }
         return List.of();
+    }
+
+    private List<String> pendingRequesterNames(Player viewer) {
+        List<String> names = new ArrayList<>();
+        for (UUID requesterId : friendService.peekAllPendingRequesters(viewer.getUniqueId())) {
+            String name = Bukkit.getOfflinePlayer(requesterId).getName();
+            if (name != null) {
+                names.add(name);
+            }
+        }
+        return names;
+    }
+
+    /**
+     * {@code /friend accept|decline [name]} - with a name, resolves it among the target's
+     * currently-*pending* requesters specifically (not all players, not friends), so multiple
+     * requests queued at once can be answered in any order, not just oldest-first. With no name,
+     * falls back to the oldest pending requester (unchanged single-request behavior).
+     */
+    private UUID resolveRequester(Player target, String[] args) {
+        if (args.length < 2) {
+            return friendService.peekPendingRequester(target.getUniqueId()).orElse(null);
+        }
+        for (UUID requesterId : friendService.peekAllPendingRequesters(target.getUniqueId())) {
+            String requesterName = Bukkit.getOfflinePlayer(requesterId).getName();
+            if (args[1].equalsIgnoreCase(requesterName)) {
+                return requesterId;
+            }
+        }
+        return null;
     }
 
     /** Resolves {@code name} to a UUID only among {@code viewer}'s current friends - avoids the deprecated by-name offline-player lookup, and rejects a typo'd name that isn't actually a friend. */

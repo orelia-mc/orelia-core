@@ -19,6 +19,7 @@ import rpg.util.ItemBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 /**
  * GUI counterpart of every {@code /party} subcommand - a party has no browsable "list of all
@@ -33,9 +34,9 @@ public final class PartyGuiScreen {
 
     private static final GuiPageLayout MEMBER_LAYOUT =
             new GuiPageLayout(new int[]{10, 11, 12, 13, 14, 15, 16}, 18, 26);
+    private static final GuiPageLayout PENDING_LAYOUT = new GuiPageLayout(IntStream.range(0, 18).toArray(), 18, 26);
     private static final int CREATE_SLOT = 13;
-    private static final int INVITE_ACCEPT_SLOT = 11;
-    private static final int INVITE_DECLINE_SLOT = 15;
+    private static final int PENDING_INVITES_SLOT = 13;
     private static final int INVITE_SLOT = 19;
     private static final int CHAT_SLOT = 20;
     private static final int LEAVE_SLOT = 24;
@@ -60,10 +61,12 @@ public final class PartyGuiScreen {
 
     private Gui buildNoParty(Player player) {
         Gui gui = new Gui("&%8パーティー", 27);
-        Party pendingInvite = partyService.peekPendingInvite(player.getUniqueId()).orElse(null);
-        if (pendingInvite != null) {
-            gui.set(INVITE_ACCEPT_SLOT, inviteResponseButton(true));
-            gui.set(INVITE_DECLINE_SLOT, inviteResponseButton(false));
+        int pendingCount = partyService.peekAllPendingInvites(player.getUniqueId()).size();
+        if (pendingCount > 0) {
+            gui.set(PENDING_INVITES_SLOT, new GuiButton(new ItemBuilder(Material.WRITTEN_BOOK)
+                    .name("&%e招待が" + pendingCount + "件届いています")
+                    .lore(List.of("&%7クリックして一覧を開く")).build(),
+                    (clicker, clickType) -> guiManager.open(clicker, buildPendingInvites(clicker, 0))));
         } else {
             gui.set(CREATE_SLOT, new GuiButton(new ItemBuilder(Material.EMERALD).name("&%aパーティーを作成")
                     .lore(List.of("&%7クリックして作成")).build(), (clicker, clickType) -> {
@@ -74,11 +77,29 @@ public final class PartyGuiScreen {
         return gui;
     }
 
-    private GuiButton inviteResponseButton(boolean accept) {
-        Material material = accept ? Material.LIME_DYE : Material.RED_DYE;
-        String label = accept ? "&%a招待を承認" : "&%c招待を拒否";
-        return new GuiButton(new ItemBuilder(material).name(label).build(), (clicker, clickType) -> {
-            clicker.performCommand(accept ? "party accept" : "party decline");
+    /** Every party currently inviting the viewer, oldest first - each entry answered independently, not just the single oldest one. */
+    private Gui buildPendingInvites(Player player, int page) {
+        Gui gui = new Gui("&%8届いているパーティー招待", 27);
+        gui.set(BACK_SLOT, new GuiButton(new ItemBuilder(Material.ARROW).name("&%c« 戻る").build(),
+                (clicker, clickType) -> guiManager.open(clicker, build(clicker))));
+
+        List<Party> invites = partyService.peekAllPendingInvites(player.getUniqueId());
+        GuiPaginator.placePage(guiManager, gui, PENDING_LAYOUT, invites, page,
+                this::pendingInviteButton, p -> buildPendingInvites(player, p));
+        return gui;
+    }
+
+    private GuiButton pendingInviteButton(Party party) {
+        OfflinePlayer leader = Bukkit.getOfflinePlayer(party.getLeaderId());
+        String leaderName = leader.getName();
+        String displayName = "&%e" + (leaderName != null ? leaderName : party.getLeaderId()) + " のパーティー";
+        List<String> lore = List.of("&%a左クリックで承認", "&%c右クリックで拒否");
+        return new GuiButton(GuiPlayerHead.build(leader, displayName, lore), (clicker, clickType) -> {
+            if (leaderName == null) {
+                return;
+            }
+            boolean decline = clickType != null && clickType.contains("RIGHT");
+            clicker.performCommand("party " + (decline ? "decline " : "accept ") + leaderName);
             guiManager.open(clicker, build(clicker));
         });
     }

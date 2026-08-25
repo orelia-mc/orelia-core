@@ -1,30 +1,46 @@
 package rpg.extra.friend.manager;
 
-import java.util.Map;
+import rpg.core.util.PendingQueue;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
-/** Tracks pending (unaccepted) friend requests. One pending request per target at a time. */
+/** Tracks pending (unaccepted) friend requests - multiple requesters can be queued per target at once, oldest first. */
 public final class FriendRequestManager {
 
-    /** target -> requester. */
-    private final Map<UUID, UUID> pendingRequests = new ConcurrentHashMap<>();
+    /** target -> ordered requester ids. */
+    private final PendingQueue<UUID> pendingRequests = new PendingQueue<>();
 
     public void requestFriend(UUID requesterId, UUID targetId) {
-        pendingRequests.put(targetId, requesterId);
+        pendingRequests.add(targetId, requesterId);
     }
 
-    /** Looks at the pending request without consuming it - used to detect a duplicate request from the same requester. */
+    /** Looks at the target's oldest pending request without consuming it - used for the no-argument "/friend accept". */
     public Optional<UUID> peekRequester(UUID targetId) {
-        return Optional.ofNullable(pendingRequests.get(targetId));
+        return pendingRequests.peekOldest(targetId);
+    }
+
+    /** Every requester currently queued for {@code targetId}, oldest first - for the GUI's ordered list. */
+    public List<UUID> peekAllRequesters(UUID targetId) {
+        return pendingRequests.peekAll(targetId);
+    }
+
+    /** Whether {@code requesterId} specifically already has a request queued to {@code targetId} - used to reject a duplicate re-request rather than queuing it twice. */
+    public boolean hasPendingFrom(UUID targetId, UUID requesterId) {
+        return pendingRequests.peekAll(targetId).contains(requesterId);
     }
 
     public Optional<UUID> consumeFriendRequest(UUID targetId) {
-        return Optional.ofNullable(pendingRequests.remove(targetId));
+        return pendingRequests.consumeOldest(targetId);
+    }
+
+    /** Consumes one specific requester's pending request (not necessarily the oldest) - for "/friend accept &lt;name&gt;" and the GUI's per-entry buttons. */
+    public Optional<UUID> consumeFriendRequest(UUID targetId, UUID requesterId) {
+        return pendingRequests.consume(targetId, requesterId);
     }
 
     public void clearFriendRequest(UUID targetId) {
-        pendingRequests.remove(targetId);
+        pendingRequests.clear(targetId);
     }
 }

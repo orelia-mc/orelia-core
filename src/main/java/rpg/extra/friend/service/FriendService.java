@@ -36,7 +36,7 @@ public final class FriendService {
         if (repository.areFriends(requester.getUniqueId(), target.getUniqueId())) {
             return ActionResult.ALREADY_FRIENDS;
         }
-        if (requestManager.peekRequester(target.getUniqueId()).map(requester.getUniqueId()::equals).orElse(false)) {
+        if (requestManager.hasPendingFrom(target.getUniqueId(), requester.getUniqueId())) {
             return ActionResult.ALREADY_PENDING;
         }
         if (repository.findFriends(requester.getUniqueId()).size() >= maxFriends) {
@@ -46,9 +46,14 @@ public final class FriendService {
         return ActionResult.OK;
     }
 
+    /** Accepts the oldest (first-received) pending request. */
     public ActionResult accept(Player target) {
-        UUID requesterId = requestManager.consumeFriendRequest(target.getUniqueId()).orElse(null);
-        if (requesterId == null) {
+        return accept(target, requestManager.peekRequester(target.getUniqueId()).orElse(null));
+    }
+
+    /** Accepts a specific requester's pending request (not necessarily the oldest) - {@code requesterId} null-safe (a stale/unmatched target just reports {@code NO_PENDING_REQUEST}). */
+    public ActionResult accept(Player target, UUID requesterId) {
+        if (requesterId == null || requestManager.consumeFriendRequest(target.getUniqueId(), requesterId).isEmpty()) {
             return ActionResult.NO_PENDING_REQUEST;
         }
         if (repository.findFriends(target.getUniqueId()).size() >= maxFriends) {
@@ -58,18 +63,29 @@ public final class FriendService {
         return ActionResult.OK;
     }
 
+    /** Declines the oldest (first-received) pending request. */
     public ActionResult decline(Player target) {
-        return requestManager.consumeFriendRequest(target.getUniqueId()).isPresent()
+        return decline(target, requestManager.peekRequester(target.getUniqueId()).orElse(null));
+    }
+
+    /** Declines a specific requester's pending request (not necessarily the oldest). */
+    public ActionResult decline(Player target, UUID requesterId) {
+        return requesterId != null && requestManager.consumeFriendRequest(target.getUniqueId(), requesterId).isPresent()
                 ? ActionResult.OK : ActionResult.NO_PENDING_REQUEST;
     }
 
     /**
-     * Looks at {@code targetId}'s pending incoming request without consuming it - callers use
-     * this to learn who to notify once {@link #accept}/{@link #decline} (which do consume it)
+     * Looks at {@code targetId}'s oldest pending incoming request without consuming it - callers
+     * use this to learn who to notify once {@link #accept}/{@link #decline} (which do consume it)
      * report success, since those two don't hand the requester id back themselves.
      */
     public Optional<UUID> peekPendingRequester(UUID targetId) {
         return requestManager.peekRequester(targetId);
+    }
+
+    /** Every requester currently queued for {@code targetId}, oldest first - for the GUI's ordered pending-requests list. */
+    public List<UUID> peekAllPendingRequesters(UUID targetId) {
+        return requestManager.peekAllRequesters(targetId);
     }
 
     public ActionResult remove(Player player, UUID friendId) {
