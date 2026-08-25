@@ -3,3 +3,6 @@ build/
 out/
 *.iml
 .idea/
+
+# orelia-for-agent skills (local junction/symlink, see ../orelia-for-agent/README.md)
+.claude/skills/
