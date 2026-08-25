@@ -5,7 +5,7 @@
 # added - on next startup, ConfigManager appends the new section (with its comments) to any
 # existing config.yml that's missing it, without touching anything you've already customized.
 # Never bump this for a value-only change (e.g. tweaking a default), only for new/removed keys.
-config-version: 12
+config-version: 13
 
 chat:
   mute:
@@ -214,6 +214,21 @@ dungeon:
   # cleared - boss-less dungeons never drop relics regardless of these values.
   relic-drop-min: 1
   relic-drop-max: 3
+  # Plays for every online member alongside each second of the entry countdown Title
+  # (dungeon.entry-countdown-title). Same fail-open Sound.valueOf pattern as party/guild's own
+  # notify-sound above.
+  entry-countdown-sound:
+    enabled: true
+    name: BLOCK_NOTE_BLOCK_HAT
+    volume: 1.0
+    pitch: 1.0
+  # Plays once, right as the party is teleported in and enemies spawn - a distinct cue from the
+  # per-second entry-countdown-sound tick above.
+  entry-start-sound:
+    enabled: true
+    name: ENTITY_ENDER_DRAGON_GROWL
+    volume: 1.0
+    pitch: 1.0
 
 party:
   max-size: 6

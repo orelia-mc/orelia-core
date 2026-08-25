@@ -93,7 +93,8 @@ public final class DungeonModule implements RpgModule {
         // inside DungeonEncounterService rather than resolved here - see its own doc comment.
         this.encounterService = new DungeonEncounterService(dungeonService, instanceManager, combatApi, relicApi, statusApi,
                 plugin.getSchedulerService(), plugin.getConfigManager(), playerDungeonRepository,
-                plugin.getPlayerDataManager(), plugin.getServer().getServicesManager(), questProgressService, plugin.getMessageManager());
+                plugin.getPlayerDataManager(), plugin.getServer().getServicesManager(), questProgressService,
+                plugin.getMessageManager(), plugin.getLogger());
 
         GuiManager guiManager = new GuiManager();
         this.guiScreen = new DungeonGuiScreen(repository, encounterService, plugin.getPlayerDataManager(),
