@@ -7,34 +7,43 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import rpg.core.command.TabCompletions;
 import rpg.core.message.MessageManager;
+import rpg.extra.chat.gui.ChatGuiScreen;
 import rpg.extra.chat.model.ChatBadge;
 import rpg.extra.chat.model.ChatChannel;
 import rpg.extra.chat.service.ChatChannelService;
 import rpg.extra.chat.service.ChatMuteService;
+import rpg.gui.framework.GuiManager;
 
 import java.util.List;
 import java.util.Set;
 
 /**
  * {@code /ol chat [public|party|guild|admin]} - switches the sender's default chat channel;
- * with no argument, reports the currently-selected one instead. Also handles the sibling
- * {@code /ol chat mute [category]} subcommand (toggle a {@link ChatBadge} category's mute state,
- * or list currently-muted categories with no argument) - folded into this command rather than
- * registered separately since it's the same {@code /ol chat ...} entry point.
+ * with no argument, reports the currently-selected one instead (unchanged - a new {@code gui}
+ * subcommand is the GUI entry point rather than replacing the no-argument text response, so
+ * existing muscle-memory/macros around "no argument = current channel" keep working). Also
+ * handles the sibling {@code /ol chat mute [category]} subcommand (toggle a {@link ChatBadge}
+ * category's mute state, or list currently-muted categories with no argument) - folded into this
+ * command rather than registered separately since it's the same {@code /ol chat ...} entry point.
  */
 public final class ChatChannelCommand implements CommandExecutor, TabCompleter {
 
-    private static final List<String> FIRST_ARG_OPTIONS = List.of("public", "party", "guild", "admin", "mute");
+    private static final List<String> FIRST_ARG_OPTIONS = List.of("public", "party", "guild", "admin", "mute", "gui");
     private static final List<String> CATEGORY_NAMES = List.of("public", "party", "guild");
 
     private final ChatChannelService channelService;
     private final ChatMuteService muteService;
     private final MessageManager messages;
+    private final ChatGuiScreen guiScreen;
+    private final GuiManager guiManager;
 
-    public ChatChannelCommand(ChatChannelService channelService, ChatMuteService muteService, MessageManager messages) {
+    public ChatChannelCommand(ChatChannelService channelService, ChatMuteService muteService, MessageManager messages,
+                               ChatGuiScreen guiScreen, GuiManager guiManager) {
         this.channelService = channelService;
         this.muteService = muteService;
         this.messages = messages;
+        this.guiScreen = guiScreen;
+        this.guiManager = guiManager;
     }
 
     @Override
@@ -45,6 +54,10 @@ public final class ChatChannelCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length >= 1 && args[0].equalsIgnoreCase("mute")) {
             handleMute(player, args);
+            return true;
+        }
+        if (args.length >= 1 && args[0].equalsIgnoreCase("gui")) {
+            guiManager.open(player, guiScreen.build(player));
             return true;
         }
         if (args.length < 1) {

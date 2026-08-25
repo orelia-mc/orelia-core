@@ -71,7 +71,7 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length == 0) {
-            messages.send(sender, "usage.guild");
+            openGui(player);
             return true;
         }
 

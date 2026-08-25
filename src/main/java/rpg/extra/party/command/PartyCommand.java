@@ -64,7 +64,7 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length == 0) {
-            messages.send(sender, "usage.party");
+            guiManager.open(player, guiScreen.build(player));
             return true;
         }
 

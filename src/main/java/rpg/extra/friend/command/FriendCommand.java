@@ -56,7 +56,7 @@ public final class FriendCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length == 0) {
-            messages.send(sender, "usage.friend");
+            guiManager.open(player, guiScreen.build(player));
             return true;
         }
 

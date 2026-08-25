@@ -60,6 +60,8 @@ public final class GuildModule implements RpgModule {
         plugin.getPlayerCommandRegistry().register("guild", guildCommand, description, usage);
         CommandAliasUtil.registerAlias(plugin, "guild", guildCommand, description,
                 "<create|rename|retag|invite|accept|decline|leave|kick|role|addrole|removerole|renamerole|disband|transfer|list|info|gui|chat <message>>");
+        CommandAliasUtil.registerAlias(plugin, "g", guildCommand, description,
+                "<create|rename|retag|invite|accept|decline|leave|kick|role|addrole|removerole|renamerole|disband|transfer|list|info|gui|chat <message>>");
     }
 
     @Override

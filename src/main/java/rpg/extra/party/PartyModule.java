@@ -42,6 +42,8 @@ public final class PartyModule implements RpgModule {
         plugin.getPlayerCommandRegistry().register("party", partyCommand, description, usage);
         CommandAliasUtil.registerAlias(plugin, "party", partyCommand, description,
                 "<create|invite|accept|decline|leave|kick|disband|transfer|list|gui|chat <message>>");
+        CommandAliasUtil.registerAlias(plugin, "p", partyCommand, description,
+                "<create|invite|accept|decline|leave|kick|disband|transfer|list|gui|chat <message>>");
     }
 
     @Override

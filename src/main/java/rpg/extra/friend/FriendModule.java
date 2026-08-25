@@ -65,6 +65,8 @@ public final class FriendModule implements RpgModule {
         plugin.getPlayerCommandRegistry().register("friend", friendCommand, description, usage);
         CommandAliasUtil.registerAlias(plugin, "friend", friendCommand, description,
                 "<add|accept|decline|remove|list|gui|tpa|tpaccept|tpdecline>");
+        CommandAliasUtil.registerAlias(plugin, "f", friendCommand, description,
+                "<add|accept|decline|remove|list|gui|tpa|tpaccept|tpdecline>");
     }
 
     @Override
