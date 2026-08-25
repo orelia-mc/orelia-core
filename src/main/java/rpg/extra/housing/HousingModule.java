@@ -5,10 +5,12 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import rpg.database.manager.DatabaseManager;
 import rpg.core.OreliaPlugin;
 import rpg.core.module.RpgModule;
+import rpg.extra.housing.command.HousingAdminCommand;
 import rpg.extra.housing.command.HousingCommand;
 import rpg.extra.housing.gui.HousingGuiScreen;
 import rpg.extra.housing.repository.HouseOwnershipRepository;
 import rpg.extra.housing.repository.HousePlotRepository;
+import rpg.extra.housing.service.HousePlotAdminService;
 import rpg.extra.housing.service.HousingService;
 import rpg.gui.framework.GuiManager;
 
@@ -59,6 +61,11 @@ public final class HousingModule implements RpgModule {
         plugin.getPlayerCommandRegistry().register("house",
                 new HousingCommand(housingService, guiScreen, guiManager, plugin.getMessageManager()),
                 "自宅の購入・移動を行います。", "house [list|gui|buy <plotId>|home]");
+
+        HousePlotAdminService plotAdminService = new HousePlotAdminService(plotRepository, housingService, plugin.getConfigManager());
+        plugin.getAdminCommandRegistry().register("houseplot",
+                new HousingAdminCommand(plotAdminService, plugin.getMessageManager()),
+                "住宅区画の設置・移動・削除を行います。", "houseplot register <id> <price> [name...]|move <id>|remove <id>|list [page]");
     }
 
     @Override
