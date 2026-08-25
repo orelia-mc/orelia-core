@@ -14,16 +14,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * {@code /oladmin dungeonarena add <dungeon-id>|remove <dungeon-id> <index>|list <dungeon-id>}
- * - registers/removes a dungeon's physical entry point(s) from where the admin is standing.
- * Named "dungeonarena" (not "dungeon") to avoid colliding with orelia-debug's own
- * {@code /oladmin dungeon} testplay command set, and distinct from the existing
- * {@code /oladmin dungeonblock} (which places the physical unlock-trigger block, a different
- * concept from registering the dungeon's own arena/entry location).
+ * {@code /oladmin dungeonarena add <dungeon-id>|set <dungeon-id> <index>|remove <dungeon-id>
+ * <index>|list <dungeon-id>} - registers/relocates/removes a dungeon's physical entry point(s)
+ * from where the admin is standing. Named "dungeonarena" (not "dungeon") to avoid colliding with
+ * orelia-debug's own {@code /oladmin dungeon} testplay command set, and distinct from the
+ * existing {@code /oladmin dungeonblock} (which places the physical unlock-trigger block, a
+ * different concept from registering the dungeon's own arena/entry location).
  */
 public final class DungeonArenaAdminCommand implements CommandExecutor, TabCompleter {
 
-    private static final List<String> SUBCOMMANDS = List.of("add", "remove", "list");
+    private static final List<String> SUBCOMMANDS = List.of("add", "set", "remove", "list");
 
     private final DungeonArenaAdminService adminService;
     private final DungeonRepository dungeonRepository;
@@ -43,6 +43,7 @@ public final class DungeonArenaAdminCommand implements CommandExecutor, TabCompl
         }
         switch (args[0].toLowerCase()) {
             case "add" -> add(sender, args);
+            case "set" -> set(sender, args);
             case "remove" -> remove(sender, args);
             case "list" -> list(sender, args);
             default -> messages.send(sender, "dungeon.admin.arena-usage");
@@ -66,6 +67,31 @@ public final class DungeonArenaAdminCommand implements CommandExecutor, TabCompl
             return;
         }
         messages.send(sender, "dungeon.admin.arena-added", "dungeon", dungeonId);
+    }
+
+    private void set(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            messages.send(sender, "command.player-only");
+            return;
+        }
+        if (args.length < 3) {
+            messages.send(sender, "dungeon.admin.arena-usage");
+            return;
+        }
+        String dungeonId = args[1];
+        int index;
+        try {
+            index = Integer.parseInt(args[2]);
+        } catch (NumberFormatException e) {
+            messages.send(sender, "dungeon.admin.arena-usage");
+            return;
+        }
+        DungeonArenaAdminService.SetResult result = adminService.setArena(dungeonId, index, player.getLocation());
+        switch (result) {
+            case OK -> messages.send(sender, "dungeon.admin.arena-set", "dungeon", dungeonId, "index", index);
+            case DUNGEON_NOT_FOUND -> messages.send(sender, "dungeon.admin.unknown-dungeon", "id", dungeonId);
+            case INDEX_OUT_OF_RANGE -> messages.send(sender, "dungeon.admin.arena-index-out-of-range");
+        }
     }
 
     private void remove(CommandSender sender, String[] args) {
@@ -115,7 +141,8 @@ public final class DungeonArenaAdminCommand implements CommandExecutor, TabCompl
         if (args.length <= 1) {
             return matching(SUBCOMMANDS, args.length == 0 ? "" : args[0]);
         }
-        if (args.length == 2 && (args[0].equalsIgnoreCase("add") || args[0].equalsIgnoreCase("remove") || args[0].equalsIgnoreCase("list"))) {
+        if (args.length == 2 && (args[0].equalsIgnoreCase("add") || args[0].equalsIgnoreCase("set")
+                || args[0].equalsIgnoreCase("remove") || args[0].equalsIgnoreCase("list"))) {
             return matching(dungeonRepository.getAll().keySet(), args[1]);
         }
         return List.of();

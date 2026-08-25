@@ -4,7 +4,7 @@
 # NPC dialogue lines / quest descriptions / story text stay in their own content yml files
 # (npc.yml, quests.yml, story.yml, ...) since those are per-entry authored content, not
 # fixed UI copy.
-config-version: 17
+config-version: 18
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -251,8 +251,9 @@ dungeon:
     list-empty: "&%e登録されているダンジョントリガーブロックはありません。"
     list-header: "&%aダンジョントリガーブロック一覧 &%7({page}/{total}ページ)"
     list-entry: "&%7- {dungeon} @ {world} {x},{y},{z}"
-    arena-usage: "&%e使い方: /oladmin dungeonarena &%7<&%eadd &%7<&%edungeon-id&%7>&%e&%7|&%eremove &%7<&%edungeon-id&%7>&%e &%7<&%eindex&%7>&%e&%7|&%elist &%7<&%edungeon-id&%7>&%e&%7>&%e"
+    arena-usage: "&%e使い方: /oladmin dungeonarena &%7<&%eadd &%7<&%edungeon-id&%7>&%e&%7|&%eset &%7<&%edungeon-id&%7>&%e &%7<&%eindex&%7>&%e&%7|&%eremove &%7<&%edungeon-id&%7>&%e &%7<&%eindex&%7>&%e&%7|&%elist &%7<&%edungeon-id&%7>&%e&%7>&%e"
     arena-added: "&%aダンジョン「{dungeon}」にアリーナを追加しました。"
+    arena-set: "&%aダンジョン「{dungeon}」のアリーナ#{index}を現在地に上書きしました。"
     arena-removed: "&%aダンジョン「{dungeon}」のアリーナ#{index}を削除しました。"
     arena-index-out-of-range: "&%c指定したアリーナ番号は存在しません。"
     arena-last-one: "&%c最後のアリーナは削除できません。少なくとも1つは必要です。"
