@@ -2,6 +2,7 @@ package rpg.extra.auction;
 
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.configuration.file.YamlConfiguration;
+import rpg.accessory.AccessoryModule;
 import rpg.core.command.CommandAliasUtil;
 import rpg.database.manager.DatabaseManager;
 import rpg.extra.auction.command.AuctionCommand;
@@ -13,6 +14,8 @@ import rpg.core.OreliaPlugin;
 import rpg.core.module.RpgModule;
 import rpg.extra.mail.MailModule;
 import rpg.gui.framework.GuiManager;
+import rpg.item.ItemModule;
+import rpg.item.service.TradeableItemService;
 
 import java.util.logging.Level;
 
@@ -45,6 +48,12 @@ public final class AuctionModule implements RpgModule {
         }
         MailModule mailModule = plugin.getModuleManager().get(MailModule.class)
                 .orElseThrow(() -> new IllegalStateException("auction module requires mail module"));
+        ItemModule itemModule = plugin.getModuleManager().get(ItemModule.class)
+                .orElseThrow(() -> new IllegalStateException("auction module requires item module"));
+        AccessoryModule accessoryModule = plugin.getModuleManager().get(AccessoryModule.class)
+                .orElseThrow(() -> new IllegalStateException("auction module requires accessory module"));
+        TradeableItemService tradeableItemService = new TradeableItemService(itemModule.getItemManager().getIdentityService(),
+                accessoryModule.getIdentityService(), accessoryModule.getRelicIdentityService());
 
         AuctionRepository repository = new AuctionRepository(databaseManager);
         try {
@@ -55,7 +64,7 @@ public final class AuctionModule implements RpgModule {
 
         reloadAuctionConfig();
         this.auctionService = new AuctionService(repository, economy, mailModule.getMailService(),
-                plugin.getMessageManager(), auctionConfig);
+                plugin.getMessageManager(), auctionConfig, tradeableItemService);
         auctionService.loadAll();
 
         GuiManager guiManager = new GuiManager();

@@ -9,6 +9,7 @@ import rpg.extra.auction.config.AuctionConfig;
 import rpg.extra.auction.model.AuctionListing;
 import rpg.extra.auction.repository.AuctionRepository;
 import rpg.extra.mail.service.MailService;
+import rpg.item.service.TradeableItemService;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -26,7 +27,7 @@ public final class AuctionService {
 
     public enum ActionResult {
         OK, NOT_FOUND, ALREADY_RESOLVED, NOT_OWNER, CANNOT_BUY_OWN, INSUFFICIENT_FUNDS, INVALID_PRICE, EMPTY_HAND,
-        INVENTORY_FULL, MAX_LISTINGS_REACHED,
+        INVENTORY_FULL, MAX_LISTINGS_REACHED, ITEM_NOT_TRADEABLE,
         NOT_A_BID_LISTING, IS_A_BID_LISTING, CANNOT_BID_OWN, BID_TOO_LOW, CANNOT_CANCEL_HAS_BIDS;
 
         /** {@code messages.yml} key for this result's human-readable reason (see {@code auction.reason.*}) - never show the raw enum name to a player. */
@@ -40,15 +41,17 @@ public final class AuctionService {
     private final MailService mailService;
     private final MessageManager messages;
     private final AuctionConfig config;
+    private final TradeableItemService tradeableItemService;
     private final Map<UUID, AuctionListing> listingsById = new ConcurrentHashMap<>();
 
     public AuctionService(AuctionRepository repository, Economy economy, MailService mailService,
-                           MessageManager messages, AuctionConfig config) {
+                           MessageManager messages, AuctionConfig config, TradeableItemService tradeableItemService) {
         this.repository = repository;
         this.economy = economy;
         this.mailService = mailService;
         this.messages = messages;
         this.config = config;
+        this.tradeableItemService = tradeableItemService;
     }
 
     public void loadAll() {
@@ -108,6 +111,9 @@ public final class AuctionService {
         ItemStack held = seller.getInventory().getItemInMainHand();
         if (held.getType().isAir() || held.getAmount() <= 0) {
             return ActionResult.EMPTY_HAND;
+        }
+        if (!tradeableItemService.isTradeable(held)) {
+            return ActionResult.ITEM_NOT_TRADEABLE;
         }
         ItemStack toList = held.clone();
         seller.getInventory().setItemInMainHand(null);

@@ -11,6 +11,7 @@ import rpg.extra.trade.manager.TradeManager;
 import rpg.extra.trade.model.TradeOffer;
 import rpg.extra.trade.model.TradeSession;
 import rpg.extra.trade.repository.TradeLogRepository;
+import rpg.item.service.TradeableItemService;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -26,7 +27,7 @@ public final class TradeService {
 
     public enum ActionResult {
         OK, ALREADY_TRADING, NOT_TRADING, NO_PENDING_REQUEST, CANNOT_TARGET_SELF, EMPTY_HAND, INVALID_SLOT,
-        WAITING_FOR_OTHER, INSUFFICIENT_FUNDS, MONEY_UNSUPPORTED, INVALID_AMOUNT, TOO_MANY_ITEMS
+        WAITING_FOR_OTHER, INSUFFICIENT_FUNDS, MONEY_UNSUPPORTED, INVALID_AMOUNT, TOO_MANY_ITEMS, ITEM_NOT_TRADEABLE
     }
 
     private final TradeManager manager;
@@ -35,16 +36,18 @@ public final class TradeService {
     private final TradeConfig config;
     private final MessageManager messages;
     private final TradeLogRepository logRepository;
+    private final TradeableItemService tradeableItemService;
 
     /** {@code economy} is nullable - Vault may not be installed, in which case offering money is rejected with {@link ActionResult#MONEY_UNSUPPORTED}. */
     public TradeService(TradeManager manager, Economy economy, SchedulerService schedulerService, TradeConfig config,
-                         MessageManager messages, TradeLogRepository logRepository) {
+                         MessageManager messages, TradeLogRepository logRepository, TradeableItemService tradeableItemService) {
         this.manager = manager;
         this.economy = economy;
         this.schedulerService = schedulerService;
         this.config = config;
         this.messages = messages;
         this.logRepository = logRepository;
+        this.tradeableItemService = tradeableItemService;
     }
 
     public ActionResult request(Player requester, Player target) {
@@ -108,6 +111,9 @@ public final class TradeService {
         ItemStack held = player.getInventory().getItemInMainHand();
         if (held.getType().isAir()) {
             return ActionResult.EMPTY_HAND;
+        }
+        if (!tradeableItemService.isTradeable(held)) {
+            return ActionResult.ITEM_NOT_TRADEABLE;
         }
         offer.addItem(held.clone());
         player.getInventory().setItemInMainHand(null);

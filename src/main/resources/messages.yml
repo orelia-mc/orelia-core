@@ -4,7 +4,7 @@
 # NPC dialogue lines / quest descriptions / story text stay in their own content yml files
 # (npc.yml, quests.yml, story.yml, ...) since those are per-entry authored content, not
 # fixed UI copy.
-config-version: 16
+config-version: 17
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -409,6 +409,7 @@ trade:
   no-pending-request: "&%c取引の申し込みが届いていません。"
   cannot-target-self: "&%c自分自身とは取引できません。"
   empty-hand: "&%c手にアイテムを持っていません。"
+  item-not-tradeable: "&%cそのアイテムは取引できません。武器・アクセサリー・レリック以外のアイテムは取引に出せません。"
   invalid-slot: "&%c指定した番号のアイテムはありません。"
   cancelled-by-quit: "&%c{player}が切断したため取引はキャンセルされました。"
   request-timed-out: "&%c取引の申し込みが時間切れになりました。"
@@ -463,6 +464,7 @@ auction:
     empty-hand: "手に何も持っていません"
     inventory-full: "インベントリに空きがありません"
     max-listings-reached: "出品数の上限に達しています"
+    item-not-tradeable: "そのアイテムは取引できません(武器・アクセサリー・レリックのみ出品可能です)"
     not-a-bid-listing: "これは入札形式の出品ではありません"
     is-a-bid-listing: "入札形式の出品は即時購入できません"
     cannot-bid-own: "自分の出品には入札できません"
