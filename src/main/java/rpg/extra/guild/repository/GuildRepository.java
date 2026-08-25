@@ -3,7 +3,7 @@ package rpg.extra.guild.repository;
 import rpg.database.manager.DatabaseManager;
 import rpg.database.repository.SchemaOwner;
 import rpg.extra.guild.model.Guild;
-import rpg.extra.guild.model.GuildRole;
+import rpg.extra.guild.model.GuildRoleDefinition;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -17,7 +17,10 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Persists guilds and their member/role rows via orelia-core's shared {@link DatabaseManager}.
+ * Persists guilds, their member/role assignments, and each guild's own custom role definitions
+ * via orelia-core's shared {@link DatabaseManager}. Development-phase DB reset is acceptable per
+ * project instruction, so this only ever creates fresh tables - no {@code ALTER TABLE} migration
+ * path from the previous fixed-enum {@code guild_member.role} values.
  */
 public final class GuildRepository implements SchemaOwner {
 
@@ -43,22 +46,39 @@ public final class GuildRepository implements SchemaOwner {
                     CREATE TABLE IF NOT EXISTS guild_member (
                         guild_id VARCHAR(36) NOT NULL,
                         uuid VARCHAR(36) NOT NULL,
-                        role VARCHAR(16) NOT NULL,
+                        role VARCHAR(32) NOT NULL,
                         PRIMARY KEY (guild_id, uuid)
+                    )
+                    """);
+            statement.execute("""
+                    CREATE TABLE IF NOT EXISTS guild_role (
+                        guild_id VARCHAR(36) NOT NULL,
+                        role_id VARCHAR(32) NOT NULL,
+                        name VARCHAR(32) NOT NULL,
+                        sort_order INT NOT NULL,
+                        PRIMARY KEY (guild_id, role_id)
                     )
                     """);
         }
     }
 
     public List<Guild> loadAll() {
-        Map<UUID, Guild> guilds = new LinkedHashMap<>();
+        Map<UUID, String> names = new LinkedHashMap<>();
+        Map<UUID, String> tags = new LinkedHashMap<>();
+        Map<UUID, UUID> leaders = new LinkedHashMap<>();
+        Map<UUID, Map<UUID, String>> membersByGuild = new LinkedHashMap<>();
+        Map<UUID, List<GuildRoleDefinition>> rolesByGuild = new LinkedHashMap<>();
+
         try (Connection connection = databaseManager.getConnection();
              Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery("SELECT id, name, tag, leader_id FROM guild")) {
             while (resultSet.next()) {
                 UUID id = UUID.fromString(resultSet.getString("id"));
-                guilds.put(id, new Guild(id, resultSet.getString("name"), resultSet.getString("tag"),
-                        UUID.fromString(resultSet.getString("leader_id")), new LinkedHashMap<>()));
+                names.put(id, resultSet.getString("name"));
+                tags.put(id, resultSet.getString("tag"));
+                leaders.put(id, UUID.fromString(resultSet.getString("leader_id")));
+                membersByGuild.put(id, new LinkedHashMap<>());
+                rolesByGuild.put(id, new ArrayList<>());
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to load guilds", e);
@@ -68,16 +88,33 @@ public final class GuildRepository implements SchemaOwner {
              Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery("SELECT guild_id, uuid, role FROM guild_member")) {
             while (resultSet.next()) {
-                Guild guild = guilds.get(UUID.fromString(resultSet.getString("guild_id")));
-                if (guild != null) {
-                    guild.addMember(UUID.fromString(resultSet.getString("uuid")), GuildRole.valueOf(resultSet.getString("role")));
+                Map<UUID, String> members = membersByGuild.get(UUID.fromString(resultSet.getString("guild_id")));
+                if (members != null) {
+                    members.put(UUID.fromString(resultSet.getString("uuid")), resultSet.getString("role"));
                 }
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to load guild members", e);
         }
 
-        return new ArrayList<>(guilds.values());
+        try (Connection connection = databaseManager.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery("SELECT guild_id, role_id, name, sort_order FROM guild_role")) {
+            while (resultSet.next()) {
+                List<GuildRoleDefinition> roles = rolesByGuild.get(UUID.fromString(resultSet.getString("guild_id")));
+                if (roles != null) {
+                    roles.add(new GuildRoleDefinition(resultSet.getString("role_id"), resultSet.getString("name"), resultSet.getInt("sort_order")));
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to load guild roles", e);
+        }
+
+        List<Guild> guilds = new ArrayList<>();
+        for (UUID id : names.keySet()) {
+            guilds.add(new Guild(id, names.get(id), tags.get(id), leaders.get(id), membersByGuild.get(id), rolesByGuild.get(id)));
+        }
+        return guilds;
     }
 
     public void save(Guild guild) {
@@ -108,8 +145,22 @@ public final class GuildRepository implements SchemaOwner {
                 for (var entry : guild.getMembers().entrySet()) {
                     insertMember.setString(1, guild.getId().toString());
                     insertMember.setString(2, entry.getKey().toString());
-                    insertMember.setString(3, entry.getValue().name());
+                    insertMember.setString(3, entry.getValue());
                     insertMember.executeUpdate();
+                }
+            }
+            try (PreparedStatement delete = connection.prepareStatement("DELETE FROM guild_role WHERE guild_id = ?")) {
+                delete.setString(1, guild.getId().toString());
+                delete.executeUpdate();
+            }
+            try (PreparedStatement insertRole = connection.prepareStatement(
+                    "INSERT INTO guild_role (guild_id, role_id, name, sort_order) VALUES (?, ?, ?, ?)")) {
+                for (GuildRoleDefinition role : guild.getRoles()) {
+                    insertRole.setString(1, guild.getId().toString());
+                    insertRole.setString(2, role.id());
+                    insertRole.setString(3, role.name());
+                    insertRole.setInt(4, role.sortOrder());
+                    insertRole.executeUpdate();
                 }
             }
         } catch (SQLException e) {
@@ -124,6 +175,10 @@ public final class GuildRepository implements SchemaOwner {
                 statement.executeUpdate();
             }
             try (PreparedStatement statement = connection.prepareStatement("DELETE FROM guild_member WHERE guild_id = ?")) {
+                statement.setString(1, guildId.toString());
+                statement.executeUpdate();
+            }
+            try (PreparedStatement statement = connection.prepareStatement("DELETE FROM guild_role WHERE guild_id = ?")) {
                 statement.setString(1, guildId.toString());
                 statement.executeUpdate();
             }

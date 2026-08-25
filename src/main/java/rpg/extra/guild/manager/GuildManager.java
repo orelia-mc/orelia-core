@@ -2,7 +2,6 @@ package rpg.extra.guild.manager;
 
 import rpg.core.util.PendingQueue;
 import rpg.extra.guild.model.Guild;
-import rpg.extra.guild.model.GuildRole;
 import rpg.extra.guild.repository.GuildRepository;
 
 import java.util.ArrayList;
@@ -97,8 +96,8 @@ public final class GuildManager {
         repository.save(guild);
     }
 
-    public void addMember(Guild guild, UUID playerId, GuildRole role) {
-        guild.addMember(playerId, role);
+    public void addMember(Guild guild, UUID playerId, String roleId) {
+        guild.addMember(playerId, roleId);
         playerToGuild.put(playerId, guild.getId());
         repository.save(guild);
     }

@@ -21,7 +21,7 @@ import rpg.extra.chat.model.ChatBadge;
 import rpg.extra.chat.service.ChatMuteService;
 import rpg.extra.guild.gui.GuildGuiScreen;
 import rpg.extra.guild.model.Guild;
-import rpg.extra.guild.model.GuildRole;
+import rpg.extra.guild.model.GuildRoleDefinition;
 import rpg.extra.guild.service.GuildService;
 import rpg.gui.framework.GuiManager;
 
@@ -32,15 +32,18 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 /**
- * {@code /ol guild create|invite|accept|decline|leave|kick|promote|demote|disband|transfer|list|info|chat}
- * (SOW GuildModule).
+ * {@code /ol guild create|invite|accept|decline|leave|kick|role|addrole|removerole|renamerole|
+ * rename|retag|disband|transfer|list|info|chat} (SOW GuildModule). {@code promote}/{@code demote}
+ * were removed with the fixed OFFICER tier - see {@link GuildService}'s own doc comment;
+ * {@code role} assigns one of the guild's own freely-named roles instead.
  */
 public final class GuildCommand implements CommandExecutor, TabCompleter {
 
     private static final int LIST_PAGE_SIZE = 15;
     private static final List<String> SUBCOMMANDS = List.of(
-            "create", "invite", "accept", "decline", "leave", "kick", "promote", "demote", "disband", "transfer", "list", "info", "gui", "chat");
-    private static final List<String> MEMBER_TARGET_ACTIONS = List.of("kick", "promote", "demote", "transfer");
+            "create", "invite", "accept", "decline", "leave", "kick", "role", "addrole", "removerole",
+            "renamerole", "rename", "retag", "disband", "transfer", "list", "info", "gui", "chat");
+    private static final List<String> MEMBER_TARGET_ACTIONS = List.of("kick", "role", "transfer");
 
     private final GuildService guildService;
     private final MessageManager messages;
@@ -79,6 +82,20 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 report(sender, guildService.create(player, args[1], args[2]), "guild.created");
+            }
+            case "rename" -> {
+                if (args.length < 2) {
+                    messages.send(sender, "usage.guild-rename");
+                    return true;
+                }
+                report(sender, guildService.rename(player, String.join(" ", Arrays.copyOfRange(args, 1, args.length))), "guild.renamed");
+            }
+            case "retag" -> {
+                if (args.length < 2) {
+                    messages.send(sender, "usage.guild-retag");
+                    return true;
+                }
+                report(sender, guildService.retag(player, args[1]), "guild.retagged");
             }
             case "invite" -> withTarget(sender, player, args, target -> {
                 GuildService.ActionResult result = guildService.invite(player, target);
@@ -123,22 +140,44 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
                             .ifPresent(guild -> broadcastToGuild(guild, player.getUniqueId(), "guild.member-left", "player", target.getName()));
                 }
             });
-            case "promote" -> withTarget(sender, player, args, target -> {
-                GuildService.ActionResult result = guildService.setRole(player, target.getUniqueId(), GuildRole.OFFICER);
-                report(sender, result, "guild.promoted");
+            case "role" -> {
+                if (args.length < 3) {
+                    messages.send(sender, "usage.guild-role");
+                    return true;
+                }
+                Player target = Bukkit.getPlayerExact(args[1]);
+                if (target == null) {
+                    messages.send(sender, "command.player-not-found", "player", args[1]);
+                    return true;
+                }
+                GuildService.ActionResult result = guildService.assignRole(player, target.getUniqueId(), resolveRoleId(player, args[2]));
+                report(sender, result, "guild.role-assigned");
                 if (result == GuildService.ActionResult.OK) {
                     guildService.getGuild(player.getUniqueId())
-                            .ifPresent(guild -> broadcastToGuild(guild, player.getUniqueId(), "guild.member-promoted", "player", target.getName()));
+                            .ifPresent(guild -> broadcastToGuild(guild, player.getUniqueId(), "guild.member-role-changed", "player", target.getName()));
                 }
-            });
-            case "demote" -> withTarget(sender, player, args, target -> {
-                GuildService.ActionResult result = guildService.setRole(player, target.getUniqueId(), GuildRole.MEMBER);
-                report(sender, result, "guild.demoted");
-                if (result == GuildService.ActionResult.OK) {
-                    guildService.getGuild(player.getUniqueId())
-                            .ifPresent(guild -> broadcastToGuild(guild, player.getUniqueId(), "guild.member-demoted", "player", target.getName()));
+            }
+            case "addrole" -> {
+                if (args.length < 2) {
+                    messages.send(sender, "usage.guild-addrole");
+                    return true;
                 }
-            });
+                report(sender, guildService.addRole(player, args[1]), "guild.role-added");
+            }
+            case "removerole" -> {
+                if (args.length < 2) {
+                    messages.send(sender, "usage.guild-removerole");
+                    return true;
+                }
+                report(sender, guildService.deleteRole(player, args[1]), "guild.role-removed");
+            }
+            case "renamerole" -> {
+                if (args.length < 3) {
+                    messages.send(sender, "usage.guild-renamerole");
+                    return true;
+                }
+                report(sender, guildService.renameRole(player, args[1], args[2]), "guild.role-renamed");
+            }
             case "disband" -> {
                 Guild guild = guildService.getGuild(player.getUniqueId()).orElse(null);
                 GuildService.ActionResult result = guildService.disband(player);
@@ -174,17 +213,25 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
         if (args.length <= 1) {
             return TabCompletions.matching(SUBCOMMANDS, args.length == 0 ? "" : args[0]);
         }
-        if (args.length != 2 || !(sender instanceof Player player)) {
+        if (!(sender instanceof Player player)) {
             return List.of();
         }
-        if (args[0].equalsIgnoreCase("invite")) {
-            return TabCompletions.onlinePlayerNames(args[1]);
+        if (args.length == 2) {
+            if (args[0].equalsIgnoreCase("invite")) {
+                return TabCompletions.onlinePlayerNames(args[1]);
+            }
+            if (MEMBER_TARGET_ACTIONS.stream().anyMatch(args[0]::equalsIgnoreCase)) {
+                return TabCompletions.matching(onlineMemberNames(player), args[1]);
+            }
+            if (args[0].equalsIgnoreCase("accept") || args[0].equalsIgnoreCase("decline")) {
+                return TabCompletions.matching(pendingInviteGuildNames(player), args[1]);
+            }
+            if (args[0].equalsIgnoreCase("removerole") || args[0].equalsIgnoreCase("renamerole")) {
+                return TabCompletions.matching(ownGuildRoleNames(player), args[1]);
+            }
         }
-        if (MEMBER_TARGET_ACTIONS.stream().anyMatch(args[0]::equalsIgnoreCase)) {
-            return TabCompletions.matching(onlineMemberNames(player), args[1]);
-        }
-        if (args[0].equalsIgnoreCase("accept") || args[0].equalsIgnoreCase("decline")) {
-            return TabCompletions.matching(pendingInviteGuildNames(player), args[1]);
+        if (args.length == 3 && args[0].equalsIgnoreCase("role")) {
+            return TabCompletions.matching(ownGuildRoleNames(player), args[2]);
         }
         return List.of();
     }
@@ -207,6 +254,32 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
         return null;
     }
 
+    /** Resolves a role name typed on the command line to its internal id, within the actor's own guild - returns the raw text unresolved if no match (so {@code assignRole} reports {@code ROLE_NOT_FOUND} rather than this method masking a typo as "no role"). */
+    private String resolveRoleId(Player actor, String roleName) {
+        Guild guild = guildService.getGuild(actor.getUniqueId()).orElse(null);
+        if (guild == null) {
+            return roleName;
+        }
+        for (GuildRoleDefinition role : guild.getRoles()) {
+            if (role.name().equalsIgnoreCase(roleName)) {
+                return role.id();
+            }
+        }
+        return roleName;
+    }
+
+    private List<String> ownGuildRoleNames(Player player) {
+        Guild guild = guildService.getGuild(player.getUniqueId()).orElse(null);
+        if (guild == null) {
+            return List.of();
+        }
+        List<String> names = new ArrayList<>();
+        for (GuildRoleDefinition role : guild.getRoles()) {
+            names.add(role.name());
+        }
+        return names;
+    }
+
     private List<String> pendingInviteGuildNames(Player invitee) {
         List<String> names = new ArrayList<>();
         for (Guild guild : guildService.peekAllPendingInvites(invitee.getUniqueId())) {
@@ -215,7 +288,7 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
         return names;
     }
 
-    /** Online guild members' names, excluding {@code viewer} themselves - used for kick/promote/demote/transfer tab completion. */
+    /** Online guild members' names, excluding {@code viewer} themselves - used for kick/role/transfer tab completion. */
     private List<String> onlineMemberNames(Player viewer) {
         Guild guild = guildService.getGuild(viewer.getUniqueId()).orElse(null);
         if (guild == null) {
@@ -256,7 +329,7 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
         messages.sendRaw(sender, "guild.info-header", "tag", guild.getTag(), "name", guild.getName());
         for (var entry : guild.getMembers().entrySet()) {
             String name = Bukkit.getOfflinePlayer(entry.getKey()).getName();
-            messages.sendRaw(sender, "guild.member-entry", "name", name, "role", entry.getValue().getDisplayName());
+            messages.sendRaw(sender, "guild.member-entry", "name", name, "role", guild.roleDisplayName(entry.getValue()));
         }
     }
 
@@ -352,6 +425,12 @@ public final class GuildCommand implements CommandExecutor, TabCompleter {
             case NAME_TOO_LONG -> "guild.name-too-long";
             case TAG_TOO_LONG -> "guild.tag-too-long";
             case TARGET_NOT_MEMBER -> "guild.target-not-member";
+            case ROLE_NOT_FOUND -> "guild.role-not-found";
+            case ROLE_NAME_TAKEN -> "guild.role-name-taken";
+            case ROLE_NAME_TOO_LONG -> "guild.role-name-too-long";
+            case TOO_MANY_ROLES -> "guild.too-many-roles";
+            case ROLE_IN_USE -> "guild.role-in-use";
+            case LAST_ROLE -> "guild.last-role";
             case OK -> successKey;
         };
         messages.send(sender, key);

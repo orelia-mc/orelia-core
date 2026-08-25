@@ -35,7 +35,7 @@ public final class NpcGuildInteractListener implements Listener {
             return;
         }
         messages.send(player, "guild.npc-summary", "name", truncate(guild.getName(), 24), "tag", truncate(guild.getTag(), 8),
-                "role", guild.roleOf(player.getUniqueId()).getDisplayName(), "members", guild.getMembers().size());
+                "role", guild.roleDisplayName(guild.roleOf(player.getUniqueId())), "members", guild.getMembers().size());
     }
 
     /** Guild name/tag have no length limit at creation time - cap them here so this one-line summary can't run on forever. */
