@@ -10,11 +10,13 @@ import rpg.extra.auction.model.AuctionListing;
 import rpg.extra.auction.service.AuctionService;
 import rpg.gui.framework.GuiManager;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 
 /**
- * {@code /ol auction [list|sell <price>|collect]} (SOW AuctionModule). Plain {@code /ol auction}
- * opens the browse/buy GUI.
+ * {@code /ol auction [list|sell <price>|start <startPrice> [hours]|bid <id> <amount>|collect]}
+ * (SOW AuctionModule). Plain {@code /ol auction} opens the browse/buy GUI.
  */
 public final class AuctionCommand implements CommandExecutor {
 
@@ -58,6 +60,45 @@ public final class AuctionCommand implements CommandExecutor {
                     }
                 } catch (NumberFormatException e) {
                     messages.send(sender, "auction.invalid-price");
+                }
+            }
+            case "start" -> {
+                if (args.length < 2) {
+                    messages.send(sender, "usage.auction-start");
+                    return true;
+                }
+                try {
+                    double startPrice = Double.parseDouble(args[1]);
+                    AuctionService.ActionResult result = args.length >= 3
+                            ? auctionService.startAuction(player, startPrice, Duration.ofHours(Long.parseLong(args[2])).toMillis())
+                            : auctionService.startAuction(player, startPrice);
+                    if (result == AuctionService.ActionResult.OK) {
+                        messages.send(sender, "auction.started");
+                    } else {
+                        messages.send(sender, "auction.start-failed", "reason", messages.format(result.reasonMessageKey()));
+                    }
+                } catch (NumberFormatException e) {
+                    messages.send(sender, "auction.invalid-price");
+                }
+            }
+            case "bid" -> {
+                if (args.length < 3) {
+                    messages.send(sender, "usage.auction-bid");
+                    return true;
+                }
+                try {
+                    UUID listingId = UUID.fromString(args[1]);
+                    double amount = Double.parseDouble(args[2]);
+                    AuctionService.ActionResult result = auctionService.bid(player, listingId, amount);
+                    if (result == AuctionService.ActionResult.OK) {
+                        messages.send(sender, "auction.bid-placed", "price", amount);
+                    } else {
+                        messages.send(sender, "auction.bid-failed", "reason", messages.format(result.reasonMessageKey()));
+                    }
+                } catch (IllegalArgumentException e) {
+                    // Covers both a malformed UUID (IllegalArgumentException) and a malformed
+                    // amount (NumberFormatException, a subclass of IllegalArgumentException).
+                    messages.send(sender, "usage.auction-bid");
                 }
             }
             case "collect" -> {
