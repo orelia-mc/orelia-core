@@ -4,7 +4,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import rpg.core.command.TabCompletions;
 import rpg.core.message.MessageManager;
 import rpg.extra.mail.gui.MailGuiScreen;
 import rpg.extra.mail.model.MailMessage;
@@ -20,7 +22,7 @@ import java.util.List;
  * work that would need). {@code /ol mail delete <index>} removes an entry from the sender's
  * own inbox by its position in {@code /ol mail unread}'s ordering.
  */
-public final class MailCommand implements CommandExecutor {
+public final class MailCommand implements CommandExecutor, TabCompleter {
 
     private final MailService mailService;
     private final MailGuiScreen guiScreen;
@@ -95,5 +97,16 @@ public final class MailCommand implements CommandExecutor {
         }
         mailService.delete(inbox.get(index));
         messages.send(player, "mail.deleted");
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length <= 1) {
+            return TabCompletions.matching(List.of("unread", "send", "delete"), args.length == 0 ? "" : args[0]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("send")) {
+            return TabCompletions.onlinePlayerNames(args[1]);
+        }
+        return List.of();
     }
 }

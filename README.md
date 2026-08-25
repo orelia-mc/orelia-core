@@ -63,6 +63,7 @@ Orelia は以下のプラグイン群で構成されています。
 - config閲覧コマンド(`/oladmin config <core|world|extra> view <file> [path]`) — `monsters.yml`/`quests.yml`等の設定ファイルをYAML木構造のまま人間可読な形式で表示し、末端値はクリックで編集コマンドをチャット欄に自動入力できます(`DebugApi`/`WorldDebugApi`/`ExtraDebugApi`の`listConfigTree`)。
 - `/oladmin reload`は、その回のリロードで実際に変更・追加・削除されたconfigの末端キーを一覧表示するようになりました。
 - 統合前3プラグイン時代の互換用エイリアスだった`/oladmin worldreload`/`extrareload`を削除しました。`/oladmin reload`のみが正式なコマンドです。
+- タブ補完が未実装だった箇所を追加しました — `/oladmin spawn`/`spawnboss`/`spawnpoint add`のモンスターID/ボスID、`spawnpoint remove`のスポーンポイントID、`/ol auction`のサブコマンドと`bid <id>`（出品中のリスティングID）、`/ol mail`のサブコマンドと`send <player>`、`/ol house`のサブコマンドと`buy <plotId>`（購入可能な区画のみ）、`/ol achievement gui`。IDを手打ちさせる箇所が多かったので、既存のTab補完ヘルパー（`TabCompletions`）に揃える形で足しています。
 - `/ol help`/`/oladmin help`の表示を改善 — コマンド行と説明の間、各エントリの間にそれぞれ改行を追加し、`<a|b|c>`のような選択肢表記は`< a / b / c >`のように整形して区切り文字と選択肢を色分けします。
 - `/oladmin item levelup [amount]` — デバッグモード中はプレイヤーレベルによる上限を無視して武器レベルを上げられ、`[amount]`で複数レベル分を一度に適用できます。
 - スライムの分裂を無効化しました(タグ付きOreliaモンスターのみ対象。分裂した子スライムはOreliaの管理外で報酬やステータススケーリングの対象にならず、実質的な不具合として扱われていたため)。
