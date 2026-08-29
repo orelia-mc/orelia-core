@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "rpg"
-version = "1.0.70"
+version = "2.0.0"
 
 java {
     toolchain {
