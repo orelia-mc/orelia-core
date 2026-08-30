@@ -36,4 +36,14 @@ public final class RelicShopService {
             return relicFactory.build(instance);
         });
     }
+
+    /**
+     * Plain-text label for messages/GUI icon names - same "[レリック] &lt;slot&gt;" shape
+     * {@link RelicFactory#build} gives the physical item, minus the color code (this is meant
+     * for chat/lore text, not the item's own {@code ItemMeta} name). Empty for the same reason
+     * {@link #build} is - no matching {@code shop-relics:} entry.
+     */
+    public Optional<String> displayNameOf(String shopRelicId) {
+        return relicConfig.shopRelicFor(shopRelicId).map(def -> "[レリック] " + def.part().getDisplayName());
+    }
 }

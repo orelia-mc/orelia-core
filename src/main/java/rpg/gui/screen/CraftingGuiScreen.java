@@ -13,6 +13,7 @@ import rpg.item.model.CraftingIngredient;
 import rpg.item.model.CraftingRecipe;
 import rpg.item.repository.CraftingConfigRepository;
 import rpg.item.service.CraftingService;
+import rpg.util.ColorUtil;
 import rpg.util.ItemBuilder;
 
 import java.util.ArrayList;
@@ -62,18 +63,27 @@ public final class CraftingGuiScreen {
 
     private ItemStack icon(Player player, CraftingRecipe recipe) {
         ItemStack preview = itemManager.createWeapon(recipe.getResultWeaponId()).orElse(null);
-        List<String> lore = new ArrayList<>(recipe.getDescription());
+        List<Component> lore = new ArrayList<>();
+        for (String line : recipe.getDescription()) {
+            lore.add(ColorUtil.component(line));
+        }
         if (!lore.isEmpty()) {
-            lore.add("");
+            lore.add(Component.empty());
         }
         for (CraftingIngredient ingredient : recipe.getIngredients()) {
-            boolean has = materialOf(ingredient)
-                    .map(material -> player.getInventory().containsAtLeast(new ItemStack(material), ingredient.getAmount()))
-                    .orElse(false);
-            lore.add((has ? "&%a✓ " : "&%c✗ ") + ingredient.getAmount() + "x " + ingredient.getMaterialId());
+            Optional<Material> material = materialOf(ingredient);
+            boolean has = material.map(m -> player.getInventory().containsAtLeast(new ItemStack(m), ingredient.getAmount())).orElse(false);
+            // Material's own name shown via a translatable component - resolved client-side to
+            // the viewing player's own game language, same as ShopGuiScreen's VANILLA icons.
+            // Falls back to the raw configured id only if it isn't a valid Material at all
+            // (misconfigured crafting.yml entry) - a rare case worth surfacing loudly rather
+            // than silently prettifying into something that looks intentional.
+            Component ingredientLabel = material.<Component>map(m -> Component.translatable(m.translationKey()))
+                    .orElseGet(() -> Component.text(ingredient.getMaterialId()));
+            lore.add(ColorUtil.component((has ? "&%a✓ " : "&%c✗ ") + ingredient.getAmount() + "x ").append(ingredientLabel));
         }
         ItemBuilder builder = new ItemBuilder(preview != null ? preview.getType() : Material.BARRIER);
-        return builder.name(Component.text(recipe.getName())).lore(lore).build();
+        return builder.name(Component.text(recipe.getName())).loreComponents(lore).build();
     }
 
     private Optional<Material> materialOf(CraftingIngredient ingredient) {

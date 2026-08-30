@@ -46,6 +46,19 @@ public final class ItemBuilder {
         return lore(Arrays.asList(lines));
     }
 
+    /**
+     * Component-based overload for a lore line that needs to mix a colored prefix with a
+     * translatable part (e.g. a vanilla material name resolved client-side to the viewing
+     * player's own game language) - {@link #lore(List)} only accepts pre-colorized strings, so
+     * a caller building a translatable line assembles the full {@link Component} itself
+     * (typically {@code ColorUtil.component(prefix).append(Component.translatable(key))}) and
+     * passes it here instead.
+     */
+    public ItemBuilder loreComponents(List<Component> lines) {
+        meta.lore(lines);
+        return this;
+    }
+
     public ItemBuilder customModelData(int customModelData) {
         if (customModelData > 0) {
             meta.setCustomModelData(customModelData);

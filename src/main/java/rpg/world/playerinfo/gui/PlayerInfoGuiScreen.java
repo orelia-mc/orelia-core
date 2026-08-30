@@ -17,6 +17,7 @@ import rpg.gui.framework.Gui;
 import rpg.gui.framework.GuiButton;
 import rpg.gui.framework.GuiManager;
 import rpg.quest.repository.QuestRepository;
+import rpg.quest.service.QuestObjectiveDescriber;
 import rpg.util.ItemBuilder;
 
 /**
@@ -44,8 +45,11 @@ import rpg.util.ItemBuilder;
  */
 public final class PlayerInfoGuiScreen {
 
+    // Row 2 (categories) and row 4 (social), leaving rows 1/3/5 as empty spacing - vertically
+    // centers the two button groups inside the 5-row frame instead of clustering them together
+    // near the top with two bare rows sitting unused underneath.
     private static final int[] CATEGORY_SLOTS = {10, 12, 13, 14, 16};
-    private static final int[] SOCIAL_SLOTS = {19, 21, 23, 25};
+    private static final int[] SOCIAL_SLOTS = {28, 30, 32, 34};
 
     private final GuiManager guiManager;
     private final GuiApi guiApi;
@@ -61,7 +65,8 @@ public final class PlayerInfoGuiScreen {
         this.guiApi = guiApi;
         this.services = services;
         this.moduleManager = moduleManager;
-        this.questScreen = new PlayerInfoQuestGuiScreen(questRepository, playerDataManager);
+        this.questScreen = new PlayerInfoQuestGuiScreen(questRepository, playerDataManager,
+                new QuestObjectiveDescriber(moduleManager));
         this.jobScreen = new PlayerInfoJobGuiScreen(jobApi);
     }
 

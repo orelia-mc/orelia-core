@@ -24,4 +24,17 @@ public enum ElementType {
             case DARK -> "&%5";
         };
     }
+
+    /** Japanese label for player-facing display (weapon lore, relic line description, ...) - never show a raw enum constant name to a player. */
+    public String getDisplayLabel() {
+        return switch (this) {
+            case NONE -> "無";
+            case FIRE -> "火";
+            case WATER -> "水";
+            case EARTH -> "土";
+            case WIND -> "風";
+            case LIGHT -> "光";
+            case DARK -> "闇";
+        };
+    }
 }
