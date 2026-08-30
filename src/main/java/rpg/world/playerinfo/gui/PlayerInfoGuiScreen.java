@@ -21,19 +21,33 @@ import rpg.quest.service.QuestObjectiveDescriber;
 import rpg.util.ItemBuilder;
 
 /**
- * The nether-star "プレイヤー情報" root menu: evenly spaced category buttons on row 1
+ * The nether-star "プレイヤー情報" root menu: category buttons on row 2
  * (クエスト・ジョブ・ステータス・スキル・実績), each opening its own dedicated sub-screen
  * (ステータス/スキルはorelia-coreの{@code /ol status}/{@code /ol skill}画面をそのまま開く),
- * plus a row 3 of social-feature shortcut buttons (ギルド・パーティー・フレンド・チャット) that
- * open each module's own top-level GUI screen directly. Every sub-screen carries a "戻る" button
- * in its bottom-right slot that reopens this menu.
+ * plus a row 4 of social-feature shortcut buttons (ギルド・パーティー・フレンド・チャット) that
+ * open each module's own top-level GUI screen directly. Rows 2/4 (not 2/3) deliberately leave a
+ * blank row between and around them, vertically centering both groups inside the 5-row frame
+ * instead of clustering everything near the top with two bare rows sitting unused underneath.
+ *
+ * <p>Every sub-screen this menu can actually reach carries a "戻る" button that reopens this
+ * menu - quest/job (via a {@link GuiButton} passed straight into their {@code build}), and
+ * guild/party/friend/chat (via each screen's own optional {@code backButton} overload, placed
+ * wherever that screen's layout has a free slot - not necessarily the same slot every screen's
+ * own internal "back" buttons use, see each one's own {@code PARENT_BACK_SLOT}/{@code BACK_SLOT}
+ * comment). Three exceptions, each left as the plain top-level screen with no added back button:
+ * ステータス/スキル (already independently reachable, not really "sub-screens" of this menu),
+ * 実績 (routes through the published {@link AchievementApi} facade rather than a same-jar class -
+ * threading a back button through that published interface wasn't worth the API-surface change
+ * for this), and a guild the viewer already belongs to (opens {@code GuildGuiScreen#buildDetail}
+ * directly, whose own "« ギルド一覧に戻る" button is the more natural next step for someone
+ * already inside their guild's own screen).
  *
  * <p>実績 opens orelia-extra's real achievement GUI directly via {@link AchievementApi}
  * (soft dependency - see {@code plugin.yml}) instead of relaying through the {@code /ol
  * achievement gui} command. The icon is omitted entirely when {@code achievementApi} is
  * {@code null} (OreliaExtra not installed), rather than showing a button that can't do anything.
  *
- * <p>The social buttons (row 3) resolve {@link GuildModule}/{@link PartyModule}/
+ * <p>The social buttons (row 4) resolve {@link GuildModule}/{@link PartyModule}/
  * {@link FriendModule}/{@link ChatModule} via {@link ModuleManager#get} lazily inside each
  * button's click handler rather than once at construction time - {@code PlayerInfoModule}
  * enables well before any of those four modules in this jar's single fixed module order (content
@@ -93,23 +107,29 @@ public final class PlayerInfoGuiScreen {
                 (p, clickType) -> moduleManager.get(GuildModule.class).ifPresent(guildModule -> openGuild(guildModule, p))));
         gui.set(SOCIAL_SLOTS[1], new GuiButton(new ItemBuilder(Material.CYAN_BANNER).name("&%aパーティー").build(),
                 (p, clickType) -> moduleManager.get(PartyModule.class).ifPresent(partyModule ->
-                        partyModule.getGuiManager().open(p, partyModule.getPartyGuiScreen().build(p)))));
+                        partyModule.getGuiManager().open(p, partyModule.getPartyGuiScreen().build(p, backButton(p))))));
         gui.set(SOCIAL_SLOTS[2], new GuiButton(new ItemBuilder(Material.PLAYER_HEAD).name("&%aフレンド").build(),
                 (p, clickType) -> moduleManager.get(FriendModule.class).ifPresent(friendModule ->
-                        friendModule.getGuiManager().open(p, friendModule.getFriendGuiScreen().build(p)))));
+                        friendModule.getGuiManager().open(p, friendModule.getFriendGuiScreen().build(p, backButton(p))))));
         gui.set(SOCIAL_SLOTS[3], new GuiButton(new ItemBuilder(Material.WRITABLE_BOOK).name("&%aチャット設定").build(),
                 (p, clickType) -> moduleManager.get(ChatModule.class).ifPresent(chatModule ->
-                        chatModule.getGuiManager().open(p, chatModule.getChatGuiScreen().build(p)))));
+                        chatModule.getGuiManager().open(p, chatModule.getChatGuiScreen().build(p, backButton(p))))));
         return gui;
     }
 
-    /** Opens the viewer's own guild's detail screen if they're in one, otherwise the guild list - same fallback {@code GuildCommand}'s own no-argument/{@code gui} handling uses. */
+    /**
+     * Opens the viewer's own guild's detail screen if they're in one, otherwise the guild list -
+     * same fallback {@code GuildCommand}'s own no-argument/{@code gui} handling uses. Only the
+     * list gets a "戻る" back to this menu - {@code buildDetail} has no such overload, since a
+     * player already inside their own guild's detail screen has {@code GuildGuiScreen}'s own
+     * "« ギルド一覧に戻る" button as the more natural next step, not straight back to player info.
+     */
     private void openGuild(GuildModule guildModule, Player player) {
         Guild guild = guildModule.getGuildService().getGuild(player.getUniqueId()).orElse(null);
         if (guild != null) {
             guildModule.getGuiManager().open(player, guildModule.getGuildGuiScreen().buildDetail(player, guild.getId()));
         } else {
-            guildModule.getGuiManager().open(player, guildModule.getGuildGuiScreen().build(player));
+            guildModule.getGuiManager().open(player, guildModule.getGuildGuiScreen().build(player, backButton(player)));
         }
     }
 

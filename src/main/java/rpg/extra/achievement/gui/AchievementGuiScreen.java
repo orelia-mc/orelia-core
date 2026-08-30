@@ -44,7 +44,15 @@ public final class AchievementGuiScreen {
     }
 
     public Gui build(Player player) {
+        return build(player, null);
+    }
+
+    /** {@code backButton} - non-null when opened from a parent menu (e.g. the nether-star player-info item) that this screen should return to; placed in {@link #BACK_SLOT}, otherwise left empty (this screen's own top-level entry point, e.g. {@code /ol achievement gui}, has no parent to return to). */
+    public Gui build(Player player, GuiButton backButton) {
         Gui gui = new Gui("&%8実績一覧", 27);
+        if (backButton != null) {
+            gui.set(BACK_SLOT, backButton);
+        }
         Map<String, AchievementDefinition> all = achievementService.getAllAchievements();
         Set<String> unlocked = achievementService.getUnlocked(player.getUniqueId());
 

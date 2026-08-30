@@ -33,6 +33,8 @@ public final class ChatGuiScreen {
     private static final int MUTE_PUBLIC_SLOT = 21;
     private static final int MUTE_PARTY_SLOT = 22;
     private static final int MUTE_GUILD_SLOT = 23;
+    /** Unlike most sibling screens' BACK_SLOT=22, this screen's own mute row already occupies 22 - picked a different free slot rather than relocating a button players already know. */
+    private static final int PARENT_BACK_SLOT = 26;
 
     private final ChatChannelService channelService;
     private final ChatMuteService muteService;
@@ -45,40 +47,48 @@ public final class ChatGuiScreen {
     }
 
     public Gui build(Player player) {
+        return build(player, null);
+    }
+
+    /** {@code backButton} - non-null when opened from a parent menu (e.g. the nether-star player-info item) that this screen should return to; placed in {@link #PARENT_BACK_SLOT}, otherwise left empty. */
+    public Gui build(Player player, GuiButton backButton) {
         Gui gui = new Gui("&%8チャット設定", 27);
+        if (backButton != null) {
+            gui.set(PARENT_BACK_SLOT, backButton);
+        }
         ChatChannel current = channelService.getChannel(player.getUniqueId());
 
-        gui.set(CHANNEL_PUBLIC_SLOT, channelButton(ChatChannel.PUBLIC, Material.PAPER, current));
-        gui.set(CHANNEL_PARTY_SLOT, channelButton(ChatChannel.PARTY, Material.MAGENTA_DYE, current));
-        gui.set(CHANNEL_GUILD_SLOT, channelButton(ChatChannel.GUILD, Material.LIME_DYE, current));
-        gui.set(CHANNEL_ADMIN_SLOT, channelButton(ChatChannel.ADMIN, Material.REDSTONE, current));
+        gui.set(CHANNEL_PUBLIC_SLOT, channelButton(ChatChannel.PUBLIC, Material.PAPER, current, backButton));
+        gui.set(CHANNEL_PARTY_SLOT, channelButton(ChatChannel.PARTY, Material.MAGENTA_DYE, current, backButton));
+        gui.set(CHANNEL_GUILD_SLOT, channelButton(ChatChannel.GUILD, Material.LIME_DYE, current, backButton));
+        gui.set(CHANNEL_ADMIN_SLOT, channelButton(ChatChannel.ADMIN, Material.REDSTONE, current, backButton));
 
         if (muteService.isEnabled()) {
             var muted = muteService.getMuted(player.getUniqueId());
-            gui.set(MUTE_PUBLIC_SLOT, muteButton(ChatBadge.PUBLIC, muted.contains(ChatBadge.PUBLIC)));
-            gui.set(MUTE_PARTY_SLOT, muteButton(ChatBadge.PARTY, muted.contains(ChatBadge.PARTY)));
-            gui.set(MUTE_GUILD_SLOT, muteButton(ChatBadge.GUILD, muted.contains(ChatBadge.GUILD)));
+            gui.set(MUTE_PUBLIC_SLOT, muteButton(ChatBadge.PUBLIC, muted.contains(ChatBadge.PUBLIC), backButton));
+            gui.set(MUTE_PARTY_SLOT, muteButton(ChatBadge.PARTY, muted.contains(ChatBadge.PARTY), backButton));
+            gui.set(MUTE_GUILD_SLOT, muteButton(ChatBadge.GUILD, muted.contains(ChatBadge.GUILD), backButton));
         }
         return gui;
     }
 
-    private GuiButton channelButton(ChatChannel channel, Material material, ChatChannel current) {
+    private GuiButton channelButton(ChatChannel channel, Material material, ChatChannel current, GuiButton backButton) {
         boolean selected = channel == current;
         List<String> lore = selected ? List.of("&%a現在選択中") : List.of("&%7クリックして切り替え");
         String name = (selected ? "&%a" : "&%e") + channel.getDisplayName();
         return new GuiButton(new ItemBuilder(material).name(name).lore(lore).build(), (clicker, clickType) -> {
             clicker.performCommand("chat " + channel.name().toLowerCase());
-            guiManager.open(clicker, build(clicker));
+            guiManager.open(clicker, build(clicker, backButton));
         });
     }
 
-    private GuiButton muteButton(ChatBadge category, boolean muted) {
+    private GuiButton muteButton(ChatBadge category, boolean muted, GuiButton backButton) {
         Material material = muted ? Material.BARRIER : Material.NOTE_BLOCK;
         String name = (muted ? "&%c" : "&%a") + category.getDisplayName() + " " + (muted ? "ミュート中" : "ミュート解除中");
         List<String> lore = List.of("&%7クリックして切り替え");
         return new GuiButton(new ItemBuilder(material).name(name).lore(lore).build(), (clicker, clickType) -> {
             clicker.performCommand("chat mute " + category.name().toLowerCase());
-            guiManager.open(clicker, build(clicker));
+            guiManager.open(clicker, build(clicker, backButton));
         });
     }
 }

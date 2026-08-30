@@ -76,11 +76,19 @@ public final class GuildGuiScreen {
     }
 
     public Gui build(Player player) {
-        return build(player, 0);
+        return build(player, 0, null);
     }
 
-    private Gui build(Player player, int page) {
+    /** {@code backButton} - non-null when opened from a parent menu (e.g. the nether-star player-info item) that this screen should return to; placed in {@link #BACK_SLOT}, otherwise left empty. */
+    public Gui build(Player player, GuiButton backButton) {
+        return build(player, 0, backButton);
+    }
+
+    private Gui build(Player player, int page, GuiButton backButton) {
         Gui gui = new Gui("&%8ギルド一覧", 27);
+        if (backButton != null) {
+            gui.set(BACK_SLOT, backButton);
+        }
         int pendingCount = guildService.peekAllPendingInvites(player.getUniqueId()).size();
         if (pendingCount > 0) {
             gui.set(PENDING_INVITES_SLOT, new GuiButton(new ItemBuilder(Material.WRITTEN_BOOK)
@@ -92,7 +100,7 @@ public final class GuildGuiScreen {
         }
         List<Guild> guilds = List.copyOf(guildService.getAllGuilds());
         GuiPaginator.placePage(guiManager, gui, LIST_LAYOUT, guilds, page,
-                this::guildButton, p -> build(player, p));
+                this::guildButton, p -> build(player, p, backButton));
         return gui;
     }
 
@@ -100,7 +108,7 @@ public final class GuildGuiScreen {
     private Gui buildPendingInvites(Player player, int page) {
         Gui gui = new Gui("&%8届いているギルド招待", 27);
         gui.set(BACK_SLOT, new GuiButton(new ItemBuilder(Material.ARROW).name("&%c« 戻る").build(),
-                (clicker, clickType) -> guiManager.open(clicker, build(clicker, 0))));
+                (clicker, clickType) -> guiManager.open(clicker, build(clicker, 0, null))));
 
         List<Guild> invites = guildService.peekAllPendingInvites(player.getUniqueId());
         GuiPaginator.placePage(guiManager, gui, PENDING_LAYOUT, invites, page,
@@ -114,7 +122,7 @@ public final class GuildGuiScreen {
                 .lore(lore).build(), (clicker, clickType) -> {
             boolean decline = clickType != null && clickType.contains("RIGHT");
             clicker.performCommand("guild " + (decline ? "decline " : "accept ") + guild.getName());
-            guiManager.open(clicker, build(clicker, 0));
+            guiManager.open(clicker, build(clicker, 0, null));
         });
     }
 
@@ -126,11 +134,11 @@ public final class GuildGuiScreen {
     private Gui buildDetail(Player player, UUID guildId, int page) {
         Guild guild = guildService.getGuildById(guildId).orElse(null);
         if (guild == null) {
-            return build(player, 0);
+            return build(player, 0, null);
         }
         Gui gui = new Gui("&%8[" + guild.getTag() + "] " + guild.getName(), 27);
         gui.set(BACK_SLOT, new GuiButton(new ItemBuilder(Material.ARROW).name("&%c« ギルド一覧に戻る").build(),
-                (clicker, clickType) -> guiManager.open(clicker, build(clicker, 0))));
+                (clicker, clickType) -> guiManager.open(clicker, build(clicker, 0, null))));
 
         String viewerRoleId = guild.roleOf(player.getUniqueId());
         boolean isLeader = guild.getLeaderId().equals(player.getUniqueId());
@@ -224,7 +232,7 @@ public final class GuildGuiScreen {
         String label = isLeader ? "&%c解散" : "&%c脱退";
         return new GuiButton(new ItemBuilder(Material.BARRIER).name(label).build(), (clicker, clickType) -> {
             clicker.performCommand(isLeader ? "guild disband" : "guild leave");
-            guiManager.open(clicker, build(clicker, 0));
+            guiManager.open(clicker, build(clicker, 0, null));
         });
     }
 
