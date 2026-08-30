@@ -4,6 +4,7 @@
 
 ## 更新履歴
 
+- 非推奨だった `GuiApi#openEquipment` を削除(下流の `orelia-debug` 参照を `openStatus` 直呼びに移行済み)。
 - `/auction` のGUIで、自分以外の出品を購入/入札する際に確認画面を挟むように変更。
 - `/oladmin dungeonarena set <dungeon-id> <index>` を追加(既存インデックスのアリーナを現在地で上書き)。
 - `/ol help <サブコマンド名>` でサブコマンド単体のヘルプを表示できるように。
