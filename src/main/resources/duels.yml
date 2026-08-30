@@ -1,0 +1,6 @@
+# duels.yml
+# arenas: flat, 0-indexed list of physical duel locations, managed via
+# /oladmin duelarena add|set|remove|list - do not hand-edit unless you know what you're doing.
+config-version: 1
+
+arenas: {}
