@@ -4,15 +4,15 @@
 
 ## About
 
-`orelia-core` は Minecraft RPG プラグイン群 **Orelia** のメインプラグイン(Paper 1.21.x / Java 21)です。旧 orelia-core(戦闘・プレイヤー・ステータス基盤)・orelia-world(クエスト等のコンテンツ層)・orelia-extra(パーティ等のソーシャル/経済層)の3リポジトリは単一プラグインへ統合され、現在は本リポジトリ1つですべての機能を提供します。[orelia-world](https://github.com/orelia-mc/orelia-world)・[orelia-extra](https://github.com/orelia-mc/orelia-extra)の2リポジトリはこの統合に伴いアーカイブ済みで、以後の開発はすべて本リポジトリで行われます。
+`orelia-core` は Minecraft RPG プラグイン群 **Orelia** のメインプラグイン(Paper 1.21.x / Java 21)です。旧`orelia-core`/`orelia-world`/`orelia-extra` の3リポジトリは本リポジトリへ統合されており、以後の開発はすべてここで行われます(旧2リポジトリはアーカイブ済み)。
 
 Orelia は以下のプラグイン群で構成されています。
 
-- **orelia-core**(本リポジトリ) — Core, Item, Skill, Job, Status, Accessory, Relic, Monster, Boss, Effect, Economy, GUI, Gathering, Region, Town, Database, API, Util(旧orelia-core)、Quest, NPC, Dialogue, Story, Dungeon, CutScene, Event, PlayerInfo(旧orelia-world)、Party, Friend, Guild, Chat, Trade, Mail, Auction, Housing, Pet, Mount, Ranking, Achievement(旧orelia-extra)
-- [orelia-debug](https://github.com/orelia-mc/orelia-debug) — orelia-core のテストプレイを助ける管理者向けデバッグツール(独立したプラグインとして残存)
+- **orelia-core**(本リポジトリ) — RPGのコアゲームプレイ全般(戦闘・アイテム・スキル・職業・クエスト・ダンジョン・ギルド・オークション等)
+- [orelia-debug](https://github.com/orelia-mc/orelia-debug) — orelia-core のテストプレイを助ける管理者向けデバッグツール(独立したプラグイン)
 - [orelia-serverutil](https://github.com/orelia-mc/orelia-serverutil) — RPG機能非依存のサーバー運用・UXプラグイン(ハブ転送、スコアボード/タブリストAPI、joinメッセージ等)
 
-旧 `orelia-world`/`orelia-extra` リポジトリの `rpg.world.api`/`rpg.extra.api` インターフェースは内部のモジュール境界として引き続き存在し、`ServicesManager` にも公開され続けます(`orelia-debug` が実行時にこれらへ依存しているため)。ただし本リポジトリ内のモジュール同士は、もはや「相手のプラグインが読み込まれているか」を気にする必要はありません — 全モジュールが単一の決定的な順序で1つのプラグインとして起動します。
+統合の経緯や名前空間互換などの技術的な移行詳細は [CHANGELOG.md](CHANGELOG.md) を参照してください。
 
 ## Setup
 
@@ -22,67 +22,54 @@ Orelia は以下のプラグイン群で構成されています。
 
 `build/libs/orelia-core-1.0.0.jar` が生成されます。ビルドには `repo.papermc.io`(Paper API)と `jitpack.io`(Vault API)へのネットワークアクセスが必要です。
 
+## Features
+
+### 戦闘・成長
+
+- ダメージ計算はDEF軽減→会心→属性弱点の固定パイプラインで解決(詳細は [DAMAGE_FORMULA.md](DAMAGE_FORMULA.md))。
+- HP/SP/ATK/DEFはレベルに対して指数成長、レベル上限は80(データ上は300まで対応)。
+- モンスター/ボスはスポーンポイントの目安レベル(`targetLevel`)に応じてHP/ATK/DEF・名札表示が自動スケール。ボスにはボスバーも表示。
+- バニラ防具は装備不可 — 防御力はDEFステータス一本で決まります。
+
+### 職業・アイテム
+
+- 職業ごとに使える武器種が異なります(釣り人=釣りざお、魔法使い=専用武器`WAND`など)。
+- 武器の強化値(強化屋NPC)とレベル(`/ol item levelup`)は独立した2つの成長要素として合成されます。
+- `/ol craft` でレシピから素材を消費して武器を合成できます。
+- 武器スキルGUI(`/ol skill`)— ホットバー1〜3番目に入れた武器にスキルを装着できます。
+
+### レリック・アクセサリー
+
+- レリック(`/ol relic upgrade`)— ダンジョンボス討伐で個体差ありのアクセサリーを入手し、レベルごとに好きなステータスへ強化できます。同ダンジョン産を複数装備するとセットボーナスも発生。
+- ステータスGUI(`/ol status`)— 基礎/会心/属性ダメージを1画面で確認でき、アクセサリー/レリックの装備枠6つもここから管理します。
+
+### ワールド・エリア
+
+- WorldGuard連携(ソフト依存)で、町判定・採取ノードの再生成除外エリアを設定できます。
+- 釣りはWorldGuardリージョン/ワールド単位でドロップの抽選テーブルを切り替えられます。
+
+### ソーシャル・経済
+
+- ギルド/パーティー/フレンドはコマンドとGUIの両方から操作できます(招待・承認・追放・ロール管理等)。
+- チャットはチャンネル単位でミュートできます。
+- オークションは即売り・入札の両形式に対応。
+- 住宅区画の購入や、ペット/乗り物の育成要素もあります。
+
+### 管理者向け
+
+- デバッグモード(`orelia-debug`から切替)— 武器/スキルの各種要件チェックを一時的にバイパスできます。
+- `/oladmin config view` でconfigをYAML木構造のまま閲覧・クリック編集の補助ができます。
+- 住宅区画・ダンジョンアリーナはコマンドで現地登録できます。
+
 ## Structure
 
-- 公開 API — `orelia-debug` のような独立した他プラグインは `rpg.api` / `rpg.world.api` / `rpg.extra.api` 経由(Bukkit の `ServicesManager` で公開)でのみ本プラグインと連携します。内部モジュールクラスへ直接アクセスすることはありません。`rpg.api.OreliaApi` と、より narrow な `StatusApi` / `JobApi` / `ItemApi` / `AccessoryApi` / `SkillApi` / `GuiApi` / `EffectApi` / `CombatApi` / `RelicApi` / `TownApi` / `EconomyApi` / `DebugApi`、および `rpg.world.api.QuestApi` / `WorldDebugApi`、`rpg.extra.api.GuildApi` / `PartyApi` / `AchievementApi` / `ExtraDebugApi` を参照してください。
-- 設定ファイル — 各モジュールが `src/main/resources/` 配下の専用ファイル(`items.yml`, `skills.yml`, `jobs.yml`, `accessories.yml`, `relics.yml`, `monsters.yml`, `bosses.yml`, `effects.yml`, `gui.yml`, `crafting.yml`, `gathering.yml`, `fishing.yml`, `messages.yml`, `config.yml`)を読み込みます。`/oladmin reload` で一括リロードできます。全ファイルが先頭の `config-version` で管理されており、新しいjarで起動すると新規追加されたキー(ネストした階層のキーも含む)は既存ファイルの正しい位置へ自動で追記されます(`rpg.core.config.ConfigMigrator`)。新しいトップレベルセクション・キーを追加したら、そのファイルの `config-version` を1つ上げてください。
-- 3プラグイン統合時のNPC・ネザースターの互換性 — `NamespacedKey` の名前空間はプラグイン名に由来するため、統合により `npc_id`(NPC)と `player_info_item`(プレイヤー情報のネザースター)のタグが `oreliaworld:` から `oreliacore:` へ変わります。統合前に設置したNPCや配布済みのネザースターは古い名前空間のままなので、旧キーも読むフォールバックを入れてあります(`rpg.npc.service.NpcKeys` / `rpg.world.playerinfo.service.PlayerInfoItemKeys`)。これが無いと、既存NPCは反応しなくなった上に `/oladmin npc spawnall` で重複して湧き、既存のネザースターはメニューが開かず・ドロップ保護も外れ・次回参加時にホットバーから押し出されて(持ち物が満杯なら地面に落ちて)新品が配られる、という状態になります。NPCは読み取り時に新しい名前空間へ自動的に貼り直されるため1体につき1回で移行が完了します。統合前のワールド・アイテムが無くなれば、このフォールバックは削除できます。
-- 3プラグイン統合時の設定移行 — 統合前に `plugins/OreliaWorld/`・`plugins/OreliaExtra/` でカスタマイズしていた `*.yml`(`quests.yml`, `npc.yml`, `dungeons.yml`, `achievements.yml` 等)は、統合後の初回起動時に `plugins/OreliaCore/` へ自動でコピーされます(`rpg.core.config.LegacyDataFolderMigrator`)。コピー先に同名ファイルが既にある場合は上書きしません。ただし `config.yml` と `messages.yml` の2つだけは対象外です — この2ファイルは「移動」ではなく「内容をマージ」したため、旧プラグイン版で上書きすると orelia-core 側の設定が失われます。この2つに追加された新セクションは、上記 `ConfigMigrator` が既存ファイルへ差分追記します。DBは統合前から orelia-core の `DatabaseManager` を共有していたため、移行作業は不要です。
-- レリック(厳選アクセサリー) — `accessories.yml`の完全固定ステータスとは別に、ダンジョンのボス討伐でランダムな部位・メインステータスを1本持って生成される個体差ありのアクセサリー(`rpg.api.RelicApi#generateRelic`、orelia-worldから利用)。アクセサリー枠は4→6種(お守り/指輪/ネックリス/羽根/耳飾り/ベルト)に拡張。メインステータスは部位ごとの固定プール(`relics.yml`)からランダムに1本、サブステータス(最大4本)は生成時点で`initial-substat-count-min/max`(既定3〜4本)だけ既に付いた状態で出現します。`/ol relic upgrade`(タブ補完対応)で3レベル毎(最大15、計5回)にプレイヤー自身が「新規追加するステータス」または「既存ステータスを強化」のどちらかを自由に選んで伸ばせます(4本目までは両方の選択肢が同時に提示されます)。1回の増加量は`relics.yml`の`substat-upgrade-min/max`(既定1〜2)からランダム — 完全ランダム厳選との差別化です。同じダンジョン産のレリックを2つ以上装備すると、そのダンジョン専用のセットボーナスが自動で付与されます(`relics.yml`の`dungeon-set-bonuses`)。ボスドロップとは別に、`relics.yml`の`shop-relics:`セクションで固定ステータス・最大レベル(だが控えめな数値)のレリックをNPCショップに並べることもできます(`npc.yml`のshop-stockで`kind: RELIC`)。厳選(`/ol relic upgrade`)はNPC経由でも開けます(`npc.yml`の`type: RELIC_UPGRADE`、`rpg.api.RelicApi#openUpgradeGui`)。
-- ボスバー — ボスをスポーンさせると、7ブロック以内にいるプレイヤーにバニラのボスバー(HP進捗)が表示されます。名札のHPバーと同じスケール済みHPを参照するため数値は一致します。
-- モンスターの名札には、スポーンポイントの`targetLevel`で目安レベルが設定されている場合、名前の横にレベルが表示されます(未設定の個体には表示されません)。プレイヤーがモンスターに倒された際の死亡メッセージも、名札のHPバー装飾が混入しないよう専用のメッセージ(`messages.yml`の`monster.death-message`)に差し替えられます — 近接攻撃・モンスターのスキルで放たれた矢などの遠距離攻撃に加え、範囲斬撃(AOE_SLAM)・火球連射(FIREBALL_BARRAGE)のようなダメージ元エンティティを持たないモンスター/ボスのアビリティ攻撃で倒された場合も対象です。
-- 弓スキル(パワーショット/マルチショット)で放たれた矢は拾えず、着弾から一定時間(`config.yml`の`skill.arrow-despawn-ticks`、既定5秒)で自動的に消えます。
-- バージョン管理 — `main` への push(=PRマージ)ごとに `.github/workflows/version-bump.yml` が `build.gradle.kts` の `version` を自動でPATCHインクリメントし、タグを打ちます。互換性が壊れる変更は `bump:minor`、大規模な改修は `bump:major` ラベルをPRに付けてからマージしてください。同じワークフロー内でビルドしたjarをGitHub Releaseとしても自動公開します(タグごと=マージごとに1つ。デフォルトの`GITHUB_TOKEN`によるtag pushは他のワークフローの起動トリガーにならないため、別ファイルではなくこの中で完結させています)。
-- モンスターの強さ — `/oladmin spawnpoint add <monsterId> <intervalSeconds> <maxAlive> <targetLevel>` でスポーンポイントごとに目安レベルを設定します(`targetLevel`は必須 — `monsters.yml`自体にはレベルという概念が無く、HP・攻撃力・防御力はあくまでテンプレート値で、実際のレベルは必ずスポーンポイント側から与えられる設計のため)。指定したレベルに応じて `monsters.yml` の HP・攻撃力・防御力が `config.yml: monster-level-scaling` の係数でスケールされ、名札にもレベルが表示されます。この仕組みが導入される前に登録済みのスポーンポイントはレベル未設定のまま残るため、再登録するまで従来通りレベル無しで湧きます。ダンジョン産のモンスター/ボスは選択した難易度がそのままレベルとして使われるため常にレベルが付き、`/oladmin spawn <monsterId> [targetLevel]`(GM用の単発スポーン)は引き続きレベル省略可です。
-- 合成 — `/ol craft` で `crafting.yml` に定義されたレシピの一覧を開き、素材を消費して武器を1個作成できます。
-- デバッグモード — プレイヤーごとにon/offできる管理者用フラグ(`rpg.api.DebugApi#isDebugMode`/`setDebugMode`、`orelia-debug`の`/oladmin debugmode`から操作)。有効な間は武器の職業/レベル要件と、スキルの武器種一致・ソケット・習得済み・クールダウン・SP消費、釣りざおの職業要件の各チェックを全てバイパスして自由に使用できます(武器レベルアップやスキル習得ポイントの上限などの成長系ゲートは対象外)。インメモリのみで再ログインするとリセットされます。
-- 職業「釣り人」— 釣りざおは他の職業の武器種制限と同様、職業が釣り人でないと使用できません(`rpg.gathering.listener.FishingListener`、ヴァニラの釣りざおは`items.yml`の武器データを持たないため`WeaponRequirementService`ではなく`PlayerFishEvent`ベースで判定)。釣り人レベル(採掘師/木こり/農民と同じ仕組みで独立してレベルが上がります。`/ol gathering`で確認可能)が上がるほど、浮きが沈むまでの待ち時間(`fishing.yml: catch-time`)が少しずつ短くなります。釣れるアイテムは`fishing.yml: towns`の下で重み付き抽選テーブルとして定義でき、浮きの位置にあるWorldGuardリージョンID(最優先、親子リージョンが重なっている場合は子リージョンのIDが常に親より優先されます)→プレイヤーがいるワールド名→`default`の順で一致するキーが使われます。エリアの追加や釣れるアイテムの変更は`fishing.yml`編集と`/oladmin reload`だけで反映され、コード変更は不要です。
-- 職業「魔法使い」と魔法の杖 — 木こりの`HATCHET`とウォーリアーの`AXE`が同じ斧素材を共有しつつ完全に別カテゴリなのと同じ考え方で、`WeaponType.WAND`は農民の`HOE`と同じクワ素材を使いながら完全に別カテゴリとして扱われ、魔法使い以外は装備できません(`items.yml`の`magic_wand`)。杖は汎用のスキルソケットを持たず(`skill-slot-count: 0`)、代わりに3つの固定アクションを持ちます — 右クリックで雪玉ベースの氷弾を発射(命中した単体にダメージ、SP消費・クールタイムとも低めで連射が効く速射オプション)、左クリックで自分を中心とした半径5ブロックにエヴォーカーの牙のAOE攻撃、そして**杖をオフハンドに持ち替えた瞬間**(デフォルトFキー)に足元へ魔法陣を展開し、水平全方位8方向へのレーザーを1秒間隔で3連射します。いずれも自分自身には当たりません。レーザーは壁を貫通せず(通過できないブロックに当たったビームはそこで停止)、各連射(ウェーブ)ごとに命中判定を独立して持つため、同じ敵でも複数のビームが重なった分は1回、3連射なら最大3回ダメージを受けます。魔法陣とレーザーの原点は発動した瞬間の位置に固定されるため、発動後に移動しても演出・3連射ともその場に残ります。クールタイム中やSP不足で発動しなかった場合でも持ち替え自体は通常どおり成立します(杖がオフハンドから出せなくなるのを防ぐため)。3アクションとも武器の基礎攻撃力とATK%からダメージを計算し、DEF・会心・属性弱点は通常の近接ダメージと同じ経路(`rpg.monster.listener.CombatDamageListener`)で解決されます。召喚されるエヴォーカーの牙自体は演出専用で、ネイティブのダメージは適用されません。SP消費とクールタイムは`MagicWandAbilityListener`が専用に管理します。素材がクワと共通のため、`rpg.gathering.listener.FarmingListener`のしゃがみ収穫判定も武器種で識別しており、魔法の杖を持っていても農民の一括収穫は誤発動しません。同じ理由で、杖を持った右クリックはメインハンド・オフハンドのどちらでもバニラの耕作に落ちないよう抑止されます。
-- 町判定・WorldGuard連携(`rpg.region` / `rpg.town`) — WorldGuardを導入している場合(ソフト依存、`plugin.yml: softdepend`、リフレクションのみでコンパイル時依存なし)、`config.yml: town-detection.town-regions`に列挙したWorldGuardリージョンID内を「町」として扱えます。1つの町が離れた複数エリアにまたがる場合は、各エリアを別々のWorldGuardリージョンとして作成し、そのIDを全て`town-regions`に列挙してください(WorldGuardのリージョンIDはワールド内で一意なため、1つのIDを複数の離れた形状に使い回すことはできません)。町判定はOrelia自身のモンスタースポーン(スポーンポイント/`/oladmin spawn`)を町の中では発生させないようにする目的で使われ、`rpg.api.TownApi#isInTown`としてorelia-world/orelia-extraにも公開されます。WorldGuard未導入時は判定処理自体が無効化され、既存の挙動に影響しません。
-- 採取ノードの再生成と建築の共存(`rpg.gathering`) — 天然の採取ノードは伐採/採掘後に`gathering.yml`のクールダウンを経て自動で再生成されますが、`gathering.yml: regen-exclusion.regions`に列挙したWorldGuardリージョン内では採取システムが丸ごと無効になります(再生成なし・経験値なし・レベルゲートなし)。街の装飾木を伐採して木こりレベルを稼ぐこともできません。「どうやって置かれたブロックか」ではなく「どの場所か」で判定するため、建築物の中にそのまま残した自然木も、WorldEdit/スキマティックで配置した木(これらは`BlockPlaceEvent`を発火しません)も同じ扱いになります。野外の拠点も、その範囲にリージョンを作れば同様に保護されます。町判定(`config.yml: town-detection`)とは別リストです — 再生成させたくない森が必ずしも町とは限らないため。加えてWorldGuardに依存しない保険として、再生成は「その座標が再生成待ちブロックのまま(または空気)である間」だけ実行されます — 待機中の座標に誰かが別のブロックを建てていた場合はタスクを破棄し、建築物を上書きしません。管理者用に`/oladmin gathering resetregen confirm`(再生成待ちタスクの一括取り消し)があります。除外範囲の変更自体は`gathering.yml`編集と`/oladmin reload`だけで反映され、既に予約済みのタスクも復元時に再判定されます。
-- ステータスGUI(`/ol status`) — 全ステータスを1アイテムのloreに詰め込むのではなく、基礎(HP/SP/ATK/DEF/移動速度/SP回復効率、手持ち武器を加味した「現在攻撃力」も表示)・会心(会心率/会心ダメージ)・属性ダメージ増加(6属性)の3アイテムに分けて表示。日本語ラベル表示、頭アイコンは自分のスキンで表示されます。所持金と、アクセサリー/レリックの装備枠6つ(お守り/指輪/ネックレス/羽根/耳飾り/ベルト)も同じ画面に表示されます。装備の付け外しはこのGUIの装備枠を直接クリックして行います(空き枠は赤色ステンドグラスのプレースホルダーで、部位が一致しないアイテムは入りません)。装備枠は27スロット中の2段目に6つ並びますが、9列を6等分できないため中央(3+3の真ん中)に説明用アイテムを1つ配置し、左右対称に見えるレイアウトにしています。装備状態はプレイヤーの実インベントリとは独立した仮想スロットとしてDBに保存されるため、再ログインやサーバー再起動後も保持されます。
-- 武器スキルGUI(`/ol skill`) — 対象となる武器はメインハンドではなく**ホットバーの1〜3番目のいずれかのスロット**に入っている武器で判定・装着します(ネザースターのプレイヤー情報メニューからこの画面を開くにはネザースターをメインハンドに持つ必要があり、その時点でメインハンドは武器ではなくなるため)。武器をホットバー左端から動かせなくする制限はなく、あくまでプレイヤー側がそこに武器を入れておく前提の設計です。画面を開くと武器が入っている最初の枠が自動選択され、左上のプレビューアイコン(実際の武器の複製)の左右に並ぶ矢印ボタンで他の枠に切り替えられます(`GuiPaginator`は可変長リストのページング前提のため使わず、3枠固定の簡易ナビを専用実装)。右クリックで装着、**Shift+右クリックで装着解除**。装着中のスキルは何番目のソケットに入っているかloreに表示され、発動キーの説明もヘッダーに表示されます。スキルソケットは武器ごとに`items.yml`の`skill-slot-count`で決まり(現状は最大2枠)。SWORD/AXE/PICKAXE/HATCHETは1番目が右クリック、2番目が持ち替え(デフォルトFキー、バニラの利き手切り替えをキャンセルして発動)。BOW(弓・クロスボウ)/SPEAR(トライデント)/HOE(クワ)は右クリックがそれぞれ弓を構える・投擲する・耕すという固有動作を持つため右クリックでは発動せず、代わりに1番目は持ち替え(Fキー)、2番目はShift+持ち替えで発動します。スキル発動時のフィードバック(発動成功・クールダウン中・SP不足等)はチャットではなくアクションバー(HP/SP/ATK表示の隣)に一時表示されます。
-- 遠距離武器(弓・クロスボウ)を近接で振った場合、そのアイテムの遠距離用攻撃力ではなく素手扱いのダメージになります。また属性弓の弱点属性ボーナス(×1.5)は、近接で振った時だけでなく実際に矢を放った時にも正しく適用されます。
-- 近接スキル(突進・範囲斬り等)のノックバックは、ワールドのPvP設定がオフの場合は他プレイヤーに対して発生しなくなりました(モンスターへのノックバックは変わりません)。
-- バニラ防具は装備禁止です — 防御力はステータスのDEF一本で決まります(バニラの防具ポイント/耐久力による軽減とDEFが二重に効くのを防ぐため)。ヘルメット/チェストプレート/レギンス/ブーツを装備しようとすると、右クリックによる装備そのものがキャンセルされ(`rpg.status.listener.ArmorBanListener#onInteract`)、それ以外の経路(GUIクリック・ドラッグ・ディスペンサー等)で防具が乗った場合も即座に外されて持ち物に戻されます。エリトラやカボチャ・モブの頭などは防御力を持たないため対象外です。この仕組みを利用し、弓/クロスボウの矢インフィニティは`minecraft:equippable`コンポーネントを付与した矢をレギンス枠に直接装備させることで実現しています(バニラの弾薬探索は防具枠も含めた全41スロットを見るため成立します) — 防具が禁止されている以上、この枠は常に空いています。この矢は`item_model`でバリアブロックの見た目・「&%cNo Slot」という名前に変更してあり(装備中の見た目そのものは非表示のまま)、インベントリ画面でクリックしても取り出せません。
-- GUI基盤(`rpg.gui.framework`) — お金が動く/取り消せない操作(NPCショップ購入など)は`ConfirmGuiScreen`で「本当によろしいですか」の確認画面を別画面として挟んでから実行します。一覧をページ単位で敷き詰める共通ロジックは`GuiPaginator`/`GuiPageLayout`にまとめられており、orelia-world/orelia-extra側の画面も含め、容量超過時に項目が欠落する/範囲外書き込みが起きる画面を段階的にこの上へ載せ替えていく予定です。ボタンをクリックすると既定で`block.bamboo_wood_button.click_on`のクリック音が鳴ります(ページ送りボタンなど軽い操作は`ui.button.click`)。`MessageManager#sendWithSound`を使うと、特に印象づけたい成功/失敗メッセージにだけ任意でサウンドを添えられます(全メッセージへの強制適用はしません)。
-- キャラクター成長の指数関数化(`config.yml: status.growth` / `stat-scaling.growth-rate`) — HP/SP/ATK/DEFは`scaled = base * growthRate^(level-1)`の指数成長になり、モンスターのレベルスケーリング(`stat-scaling.growth-rate.HP/ATK/DEF`)と同じ値を共有します(同じレベルのモンスターとプレイヤーが同じ倍率で伸びる設計)。SPDは従来通り`base + per-level`の線形成長のまま、CRT/CRT_DMGはレベルに関わらず`base`固定です(`StatusGrowthConfig#isFixed`、レリック/アクセサリーのボーナスだけが動かします)。レベル上限のデフォルトは100→80に変更(データ上は300まで対応)。桁が大きくなるため、モンスターの名札HPバー表示も`int`から`long`に変更しています。
-- レベルアップ演出の統一・段階化(`rpg.status.service.LevelUpFeedbackService`) — キャラクターレベルアップ時にタイトル・サウンド・パーティクルの直後、`config.yml: status.level-up-effect`の`chat-delay-ticks`/`stat-delay-ticks`で少し間を置いてから「レベルが上がりました」チャット→伸びたステータス一覧、と段階的に表示します(一続きの演出に見えるよう、全部同一tickで出さない設計)。無効なSound/Particle名は黙ってスキップ。職業/採取レベルのレベルアップ(`GatheringLevelService`)も同じサービス経由になり、演出が統一されました。
-- 経験値の常時可視化 — アクションバー(`config.yml: action-bar.format`の`{level}`/`{exp_bar}`)に現在レベルと次レベルまでの進捗バーを常時表示。バーはモンスター名札のHPバーと同じ「色コード+取り消し線(`&m`)+半角スペース」方式で描画しており(コンパクトなアクションバーのフォントではブロック文字より読みやすいため)、`ActionBarService#expBar`にフィルド/エンプティ色を定数で持っています。ステータスGUI(`/ol status`)の頭アイコンのloreにも経験値(現在値/必要値、上限到達時は`MAX`)を表示します。
-- モンスター専用の追加成長ボーナス(`config.yml: monster.target-level-bonus`) — `targetLevel`が設定されたモンスターにのみ、共有の`stat-scaling.growth-rate`に追加で乗算される倍率(既定`HP:1.02`/`ATK:1.015`/`DEF:1.012`、Lv80でプレイヤー比おおよそHP4.8倍/ATK3.2倍/DEF2.6倍相当)。プレイヤーと全く同じ曲線で伸びるだけだと最終盤で拍子抜けするほど脆くなっていたための調整で、`targetLevel`未設定のモンスターには一切影響しません。
-- 職業変更GUIのページング(`/ol job`相当) — 職業数が7を超えると、共通ページングフレームワーク(`GuiPaginator`/`GuiPageLayout`)で2ページ目に自動で振り分けられます。以前は境界チェックが画面全体の末尾しか無く、8種目以降が本来空けるべきスロットに侵食していました。
-- モンスター/ボスのアビリティ攻撃(AOE_SLAM/FIREBALL_BARRAGE)がscaledステータス計算を正しく経由するようになりました — 以前はdamagerなしの`player.damage(amount)`を直接呼んでいたため、`monsters.yml`/`bosses.yml`の`damage:`固定値がDEF軽減もscaled→vanilla変換も一切経ずにプレイヤーのバニラ体力から直接引かれていました。`damage:`は今後「そのモンスター/ボス自身の(レベルスケール済み)攻撃力に対する倍率」として扱われ、通常攻撃と同じDEF/crit/属性弱点パイプラインを通ります。
-- モンスターを殴った際のバニラ被ダメージ演出(赤黒いハートエフェクト)が過剰だった問題を緩和 — `config.yml: combat.scaled-health.vanilla-cap`のデフォルトを1024→20に変更しました。モンスターの体力表示自体は名札(scaled値を直接参照)が担っており、vanilla側のMAX_HEALTH属性値はゲームプレイ上見えない内部値のため、器を小さくしても体力バーの精度・即死判定には影響しません。
-- 会心倍率の武器別設定を廃止(`items.yml`から`crit-multiplier`を削除) — プレイヤーの会心ダメージ倍率は常に基礎値`DamageFormula.DEFAULT_CRIT_MULTIPLIER`(1.5倍)固定+`CRT_DMG`ステータスのみで決まります。「会心倍率」という武器ごとの値がステータスGUIの「会心ダメージ」と何の関係があるのか分かりにくいという指摘を受けた変更で、モンスター/ボス側の`crit-multiplier`(`monsters.yml`/`bosses.yml`)は今回のスコープ外のため従来通りです。
-- レベルアップ時のステータス上昇メッセージの属性名を日本語化 — 火属性ダメージ増加等の表記が`FIRE_DMG`のような内部enum名のまま表示されていたのを、`LevelUpFeedbackService#STAT_LABELS`に6属性(火/水/土/風/光/闇属性ダメージ)分のラベルを追加して解消しました。
-- プレイヤーのデフォルト会心率/会心ダメージを`config.yml: status.growth.CRT/CRT_DMG.base`でそれぞれ10/50に変更(旧デフォルトは5/5)。CRT/CRT_DMGは前述の通りレベルでは変わらず固定のため、この値がそのままキャラクターの基礎会心率10%・会心ダメージ+50%になります。
-- 経験値バーの色抜けバグを修正 — `ActionBarService#expBar`が`&r`(全リセット)で終わっていたため、続く`] 1234/3000`の部分だけ他のHUD要素と揃わない白色表示になっていました。専用の色定数を`]`以降にも明示的に適用するよう修正しています。
-- クエストログGUI(`/ol quest gui`) — NPCと会話せずともクエストログGUI(`QuestGuiScreen`、`GuiPaginator`採用)を直接開けます。クエスト種別(MAIN/SUB/DAILY/WEEKLY/EVENT)ごとにカテゴリ分けされ、現在受注できないクエストもロック理由(レベル不足・前提未達成等)付きで一覧に表示されます。デフォルトで23個のクエスト(Lv1〜40)を同梱し、前提クエスト解放通知のクエスト名や`quest.newly-unlocked`はクリックでこのGUIを開けます。主要MAINクエストは受注/報告時に`dialogues.yml`のダイアログツリーを再生します(`start-dialogue-id`/`complete-dialogue-id`)。
-- ギルド/パーティー/フレンドGUI(`/guild gui`・`/party gui`・`/friend gui`) — 各コマンドで実行できる操作を一通りGUIから実行できます(作成・招待・承認/拒否・脱退・解散・昇格/降格・リーダー譲渡・追放・チャット送信)。ギルド/パーティーはメンバーの頭をクリックすると管理用のサブ画面(操作対象者に応じて表示ボタンが変わります)が開きます。ギルド名・タグ・招待するプレイヤー名・チャットメッセージのような自由入力は、GUIを閉じてチャットに直接入力させる方式です(`rpg.core.chat.ChatInputService`、コマンド自動入力ではなく)。招待が届いている間は一覧画面に承認/拒否ボタンが表示されます。いずれもGUIのボタンは`GuildService`/`PartyService`/`FriendService`を直接叩かず対応するコマンドを実行する形にしており、通知サウンド等の既存の副作用がチャットから実行した場合と同じように動作します。
-- チャットミュート — `/chat mute <public|party|guild>`で、自分が実際にタイプしたチャット(全体・パーティー・ギルド)だけをチャンネル単位でミュートできます(`ChatMuteService`)。パーティー招待・ギルド招待・取引申込・メール未読通知などのシステム側からの通知(メッセージ本体+サウンド、`config.yml`の各`notify-sound`)はこのミュートの対象外で常に届きます。`config.yml`の`chat.mute.enabled`をfalseにすると`/chat mute`自体を無効化できます(既存のミュート設定も無視されます)。
-- config閲覧コマンド(`/oladmin config <core|world|extra> view <file> [path]`) — `monsters.yml`/`quests.yml`等の設定ファイルをYAML木構造のまま人間可読な形式で表示し、末端値はクリックで編集コマンドをチャット欄に自動入力できます(`DebugApi`/`WorldDebugApi`/`ExtraDebugApi`の`listConfigTree`)。
-- `/oladmin reload`は、その回のリロードで実際に変更・追加・削除されたconfigの末端キーを一覧表示するようになりました。
-- 統合前3プラグイン時代の互換用エイリアスだった`/oladmin worldreload`/`extrareload`を削除しました。`/oladmin reload`のみが正式なコマンドです。
-- タブ補完が未実装だった箇所を追加しました — `/oladmin spawn`/`spawnboss`/`spawnpoint add`のモンスターID/ボスID、`spawnpoint remove`のスポーンポイントID、`/ol auction`のサブコマンドと`bid <id>`（出品中のリスティングID）、`/ol mail`のサブコマンドと`send <player>`、`/ol house`のサブコマンドと`buy <plotId>`（購入可能な区画のみ）、`/ol achievement gui`。IDを手打ちさせる箇所が多かったので、既存のTab補完ヘルパー（`TabCompletions`）に揃える形で足しています。
-- `/ol help`/`/oladmin help`の表示を改善 — コマンド行と説明の間、各エントリの間にそれぞれ改行を追加し、`<a|b|c>`のような選択肢表記は`< a / b / c >`のように整形して区切り文字と選択肢を色分けします。
-- `/oladmin item levelup [amount]` — デバッグモード中はプレイヤーレベルによる上限を無視して武器レベルを上げられ、`[amount]`で複数レベル分を一度に適用できます。
-- スライムの分裂を無効化しました(タグ付きOreliaモンスターのみ対象。分裂した子スライムはOreliaの管理外で報酬やステータススケーリングの対象にならず、実質的な不具合として扱われていたため)。
-- ダンジョン入場前のカウントダウンはチャットの連投ではなくTitleで表示されるようになりました。
-- 戦闘ダメージ計算式の詳細は [DAMAGE_FORMULA.md](DAMAGE_FORMULA.md) を参照してください。
-- 住宅区画・ダンジョンアリーナの現地登録(`/oladmin houseplot register|move|remove|list`、`/oladmin dungeonarena add|remove|list`) — これまで`housing.yml`/`dungeons.yml`を手編集しないと増やせなかった住宅区画・ダンジョン入場地点を、管理者がその場に立って登録できます(`rpg.npc.service.NpcAdminService`と同じ、Locationを`*.yml`へ書き戻す方式)。既にプレイヤーが所有している区画は削除をブロックし、ダンジョンの最後の1つのアリーナは削除できません(空リストになると`dungeons.yml`のレガシーな単一座標フォールバックが再び有効になってしまうため)。`houseplot`/`dungeonarena`という名前は、`orelia-debug`が既に`/oladmin house`/`/oladmin dungeon`をテストプレイ用コマンドとして使っているのを避けるため(`dungeonblock`が既存のトリガーブロック設置コマンドと別概念であるのと同様)。
-- orelia-core/world/extra 3リポジトリを横断した未実装機能一覧は [UNIMPLEMENTED_FEATURES.md](UNIMPLEMENTED_FEATURES.md) を参照してください。
-- ペット/乗り物の育成要素(`pets.yml`/`mounts.yml`の`growth:`セクション、任意設定) — これまで購入・召喚・解除しかできなかったペット/乗り物に、タグ付きOrelia モンスターを倒すたびに種族ごと独立で経験値が貯まるレベル制を追加しました(`config.yml: pet.growth.xp-per-kill`/`mount.growth.xp-per-kill`でキルあたりの経験値量を調整)。レベルに応じたステータスボーナスは、アクセサリーと同じ`StatusApi#setEquipmentContribution`(source key `"pet"`/`"mount"`)経由で「召喚中だけ常在」する形で反映され、解除・落馬・切断など、召喚が終わるあらゆる経路(`PetManager`/`MountManager`の`onDespawn`フックに一元化)で自動的に外れます。`growth:`セクションを持たない種族(デフォルトではオウム・キツネ・ストライダー)はこれまで通り見た目だけで、成長要素は種族単位のopt-inです。
-- オークションの入札形式(`/ol auction start <startPrice> [hours]|bid <id> <amount>`) — これまで定額即売りしかできなかったオークションに、期限付きの入札形式を追加しました。同じ`AuctionListing`/`AuctionService`/画面を`ListingType`で振り分ける形で共存させています。入札は即時エスクロー(入札額をその場で預かり、上回られたら即返金)、落札成立時は出品者へ即入金＋メール通知、落札者へはアイテムをメール添付で送ります(第三者に渡す経路が既存の「出品者本人だけが回収できる」仕組みには無かったため)。入札が入った出品はキャンセルできません。最低入札額は現在の最高額(未入札なら開始価格)に`config.yml: auction.bid.min-increment-rate`(既定5%)を上乗せした額で、GUIクリックでの即入札とコマンドの両方が同じ計算式を共有します。期限切れ判定・落札処理の頻度も`config.yml: auction.expiry-check-period-ticks`で調整可能になりました(従来はコード埋め込みの1分固定)。
-- Guild/Party GUIの「チャットを送信」ボタンを「チャットに切り替え」ボタンに変更 — 従来はクリックのたびにメッセージ1回分をチャットで入力させる一回性の送信でしたが、実際のチャット送信先チャンネル(`/chat`、`rpg.extra.chat.service.ChatChannelService`)自体は切り替わっていませんでした。ボタンを`/chat guild`・`/chat party`を実行するだけに変更し、以降は普通にチャットを打つだけでそのままギルド/パーティーチャットに届くようにしました。
-- フレンド申請・パーティー招待・ギルド招待を複数件同時に受け取れるように修正 — 従来は対象1人につき保留中の申請/招待を1件しか持てず、2件目が来ると1件目が無言で上書きされていました(送信者に通知なし)。「送ったはずの申請が承認されない」という報告の根本原因もこれでした。新設の共有ユーティリティ`rpg.core.util.PendingQueue`（挿入順を保持するキュー）に置き換え、`/friend accept|decline [name]`・`/party accept|decline [leaderName]`・`/guild accept|decline [guildName]`で名前指定して個別に応答できるようになりました（名前省略時は今まで通り一番古い申請/招待に応答）。GUI側も単一のaccept/declineボタンから、届いている申請/招待を一覧表示して個別に左クリック=承認・右クリック=拒否できる専用画面に変更しています。ついでに`GuildManager`の保留招待管理が非スレッドセーフな`HashMap`だったのも修正、`/guild decline`サブコマンド自体が実装されていなかった(GUIの拒否ボタンが常に失敗していた)バグも修正しました。
-- チャット入力待ち(`rpg.core.chat.ChatInputService`、GUIから「チャットに入力してください」で始まる各種フロー)のバグを修正 — 入力受付のコールバックが`AsyncChatEvent`の非同期スレッド上で直接`Player#performCommand`を呼んでいたため、コールバック内で例外が起きるとイベントのキャンセル処理まで届かず、入力内容がそのまま通常チャットに流れる＋GUI側には何も渡らない、という不具合が起きていました。コールバックは`SchedulerService#runSync`経由でメインスレッドにディスパッチするよう修正し、イベントのキャンセル自体はコールバックの成否と切り離しました。
-- ギルドの名前・タグを後から変更できるようになりました(`/guild rename <name>`・`/guild retag <tag>`、GUIのギルド詳細画面にもボタンを追加)。また、固定だったOFFICER/MEMBERの2階級を廃止し、ギルドごとに自由に名前を付けられるカスタムロール(最大7個、`/guild addrole|removerole|renamerole`、GUIのロール管理画面から追加・改名・削除)に置き換えました。ロール自体には権限は無く純粋な表示ラベルで、招待・追放・ロール割り当てなどの管理操作は全てリーダー限定に単純化しています(`promote`/`demote`は廃止、`/guild role <player> <role>`で任意のロールを直接割り当て)。メンバー操作GUIの3ボタン(ロール選択・リーダー権限譲渡・追放)は27スロットGUIの2段目中央(12, 13, 14番)に揃うよう配置し直しました。開発中はDBを気軽にリセットできる前提のため、旧`guild_member.role`列の値からの移行コードは書いていません。
-- `/guild`・`/party`・`/friend`を引数無しで実行すると、使い方メッセージの代わりにそれぞれのGUIが直接開くようになりました(ギルドは所属ギルドがあればその詳細画面、無ければ一覧画面)。エイリアスとして`/g`・`/p`・`/f`も追加しています。`/chat`は既存の「現在のチャンネル表示」という引数無し挙動をそのまま維持しつつ、新しい`/chat gui`サブコマンド(エイリアス`/c`)でチャンネル切り替え・ミュート切り替えができる新規GUI(`rpg.extra.chat.gui.ChatGuiScreen`)を追加しました。
-- プレイヤー情報アイテム(ネザースター)のGUIを3段(27スロット)から5段(45スロット)に拡張し、1段目のクエスト/ジョブ/ステータス/スキル/実績ボタンはそのままに、3段目にギルド・パーティー・フレンド・チャット設定へのショートカットボタンを追加しました。各ボタンはそれぞれのモジュール自身のGUI画面(ギルドは所属していればその詳細画面、無ければ一覧)をそのまま開きます。`PlayerInfoModule`はGuild/Party/Friend/Chatの4モジュールより先に有効化されるため、実績アイコンの`AchievementApi`と同じ理由で、各モジュールは`ModuleManager#get`でクリック時に遅延解決しています。
-- `/ol`経由でしか実行できなかった`auction`・`house`・`gathering`・`job`・`mount`・`pet`・`ranking`・`relic`の8サブコマンドを、`/guild`等と同じ`CommandAliasUtil`の仕組みでトップレベルコマンド化しました(`/auction`・`/house`・`/gathering`・`/job`・`/mount`・`/pet`・`/ranking`・`/relic`がそのまま動きます)。`/ol auction ...`側のサブコマンド体系は変更していません。
-- ダンジョン入場カウントダウンに効果音を追加しました(`config.yml: dungeon.entry-countdown-sound.*` - 毎秒のカウントダウン表示に合わせて再生、`dungeon.entry-start-sound.*` - 実際にテレポート・敵スポーンする瞬間に1回だけ再生)。なお、カウントダウン表示自体は本セッション開始時点で既にTitle表示(`DungeonEncounterService#announceCountdown`が`Player#showTitle`を使用)になっており、チャット連投ではありませんでした。もしチャットで見えている場合は、稼働中のサーバーが最新版のjarで動いていない可能性が高いです(ルートの`CLAUDE.md`に記載されている`dist/`の再収集漏れの既知の落とし穴を参照してください)。
-- Auction/Tradeで、Orelia製の武器・アクセサリー・レリック以外のアイテム(バニラアイテムやプレイヤー情報アイテムのネザースターなどの`player_info_item`メニューアイテムを含む)を取引に出せないようにしました。新規`rpg.item.service.TradeableItemService`(`WeaponIdentityService`/`AccessoryIdentityService`/`RelicIdentityService`3つを横断する薄いファサード)で判定し、拒否リスト方式ではなく正の許可リスト方式(この3カテゴリだけを許可)を採用しています。`AuctionService#createListing`/`TradeService#addHeldItem`それぞれに`ITEM_NOT_TRADEABLE`という結果を新設しました。
-- メールGUIの本文が長いとlore(アイテムの説明欄)からはみ出す問題を修正しました。新規`rpg.util.LoreTextWrap`が、全角文字を幅2・半角文字を幅1として計算し、約14〜16文字相当(既定30幅)で自動改行します。単純な文字数カウントではなく見た目の横幅に近い形で計算しているので、日本語と半角英数が混ざった本文でも偏りなく折り返されます。`&%<文字>`のカラーコードは改行をまたいで分断されず、直前に有効だったコードが次の行の先頭に引き継がれます。
-- `/ol help <サブコマンド名>`・`/oladmin help <サブコマンド名>`で、そのサブコマンドだけのヘルプを表示できるようになりました(該当する名前が見つからない場合は従来通りページ番号として扱われ、全件のページ送りにフォールバックします)。
-- `/oladmin dungeonarena set <dungeon-id> <index>`を追加しました。既存の`add`(末尾に追加)とは別に、指定した1始まりのインデックス番号のアリーナを現在地で上書きできます。`remove`→`add`で入れ替える手間や、1個しかないアリーナを一時的に消せない`remove`の制約を回避できます。
-- `/auction`のGUIで、出品を一覧からクリックすると確認なしにそのまま購入/入札されていた問題を修正しました。自分以外の出品をクリックすると、購入/入札を確定する前に「はい/いいえ」の確認画面を挟むようになります(自分の出品のキャンセルはお金が動かないため従来通り確認なしです)。
+- 公開API — 外部プラグイン(`orelia-debug` 等)は `rpg.api` / `rpg.world.api` / `rpg.extra.api`(Bukkitの `ServicesManager` 経由)でのみ本プラグインと連携します。内部モジュールクラスへの直接依存はサポート対象外です。
+- 設定ファイル — 各モジュールが `src/main/resources/` 配下の専用ファイル(`items.yml`, `skills.yml`, `jobs.yml`, `config.yml` 等)を読み込みます。`/oladmin reload` で一括リロードでき、新しく追加されたキーは `config-version` により既存ファイルへ自動で追記されます。
+- モジュール構成・登録順序・DB管理など、開発者向けの詳細な設計は [CLAUDE.md](CLAUDE.md) を参照してください。
+
+## Documentation
+
+- [CHANGELOG.md](CHANGELOG.md) — 変更履歴
+- [DAMAGE_FORMULA.md](DAMAGE_FORMULA.md) — 戦闘ダメージ計算式の詳細
+- [UNIMPLEMENTED_FEATURES.md](UNIMPLEMENTED_FEATURES.md) — 未実装機能一覧
+- [CLAUDE.md](CLAUDE.md) — アーキテクチャ・開発規約
