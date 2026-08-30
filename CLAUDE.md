@@ -293,4 +293,9 @@ Modules with no persistence (Party, in-memory only) keep state directly in a `ma
 
 ## Committing changes
 
-When committing, also update README.md and README_EN.md accordingly.
+When committing, also update README.md and CHANGELOG.md accordingly. README.md is a concise,
+curated overview (About/Setup/Features/Structure) — it does not grow with every change. New
+user-facing changes go to CHANGELOG.md as a compressed one-line entry (newest first); only
+update README.md's Features section when a change actually shifts what's true about current
+behavior (a new major system, a changed default that affects the feature summary), not for
+every fix. There is no README_EN.md anymore — the English README was retired.
