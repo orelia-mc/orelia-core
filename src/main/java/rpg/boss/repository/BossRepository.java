@@ -74,7 +74,12 @@ public final class BossRepository {
                         abilitySection.getInt("cooldown-seconds", 15),
                         abilitySection.getString("particle", "EXPLOSION_EMITTER"),
                         abilitySection.getString("sound", "ENTITY_WITHER_SHOOT"),
-                        abilitySection.getString("announce-message", "")));
+                        abilitySection.getString("announce-message", ""),
+                        abilitySection.getString("effect-type", "POISON"),
+                        abilitySection.getInt("effect-duration-seconds", 5),
+                        abilitySection.getInt("effect-amplifier", 0),
+                        abilitySection.getString("summon-monster-id", ""),
+                        abilitySection.getInt("summon-count", 2)));
             }
         }
 

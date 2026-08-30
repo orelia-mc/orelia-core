@@ -1,13 +1,17 @@
 package rpg.monster.service;
 
+import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.SmallFireball;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 import rpg.boss.service.BossAbilityCastService;
 import rpg.monster.model.MonsterAbility;
@@ -20,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Periodically casts a currently-tracked regular monster's {@link MonsterAbility}s at nearby
@@ -45,6 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class MonsterAbilityCastService {
 
     private static final double AGGRO_RANGE = 24.0;
+    private static final int SAFE_LOCATION_ATTEMPTS = 8;
 
     private final Plugin plugin;
     private final MonsterSpawnService monsterSpawnService;
@@ -112,6 +118,9 @@ public final class MonsterAbilityCastService {
         switch (ability.getType()) {
             case AOE_SLAM -> castAoeSlam(monster, ability, nearby);
             case FIREBALL_BARRAGE -> castFireballBarrage(monster, ability, nearby);
+            case TELEPORT -> castTeleport(monster, ability, nearby);
+            case DEBUFF -> castDebuff(monster, ability, nearby);
+            case SUMMON -> castSummon(monster, ability);
         }
     }
 
@@ -149,6 +158,111 @@ public final class MonsterAbilityCastService {
             fireball.setMetadata(BossAbilityCastService.FIREBALL_METADATA,
                     new FixedMetadataValue(plugin, new double[] {scaledDamage, ability.getRadius()}));
         }
+    }
+
+    /** Ambush repositioning: teleports next to a random nearby player rather than dealing damage directly. */
+    private void castTeleport(LivingEntity monster, MonsterAbility ability, Collection<Player> nearby) {
+        Player target = randomOf(nearby);
+        if (target == null) {
+            return;
+        }
+        Location destination = findSafeLocationNear(target.getLocation(), Math.max(1.5, ability.getRadius()));
+        if (destination == null) {
+            return; // no passable spot found nearby after SAFE_LOCATION_ATTEMPTS tries - skip this cast
+        }
+        playParticle(monster.getWorld(), monster, ability.getParticle());
+        monster.teleport(destination);
+        playSound(destination.getWorld(), monster, ability.getSound());
+        playParticle(destination.getWorld(), monster, ability.getParticle());
+    }
+
+    /** Status-inflicting attack: applies a potion effect to everyone in range, no direct damage. */
+    private void castDebuff(LivingEntity monster, MonsterAbility ability, Collection<Player> nearby) {
+        PotionEffectType effectType = resolveEffectType(ability.getEffectType());
+        if (effectType == null) {
+            return; // misconfigured monsters.yml entry - fail closed, same as levelUpWeapon's material parse
+        }
+        playParticle(monster.getWorld(), monster, ability.getParticle());
+        playSound(monster.getWorld(), monster, ability.getSound());
+        int durationTicks = Math.max(1, ability.getEffectDurationSeconds()) * 20;
+        for (Player player : nearby) {
+            if (player.getLocation().distance(monster.getLocation()) <= ability.getRadius()) {
+                player.addPotionEffect(new PotionEffect(effectType, durationTicks, ability.getEffectAmplifier()));
+            }
+        }
+    }
+
+    /** Spawns {@link MonsterAbility#getSummonCount()} copies of {@link MonsterAbility#getSummonMonsterId()} as reinforcements, scaled to this monster's own target level. */
+    private void castSummon(LivingEntity monster, MonsterAbility ability) {
+        String summonMonsterId = ability.getSummonMonsterId();
+        if (summonMonsterId == null || summonMonsterId.isBlank()) {
+            return; // misconfigured monsters.yml entry - fail closed
+        }
+        playParticle(monster.getWorld(), monster, ability.getParticle());
+        playSound(monster.getWorld(), monster, ability.getSound());
+        Integer targetLevel = monsterSpawnService.targetLevelOf(monster).orElse(null);
+        for (int i = 0; i < ability.getSummonCount(); i++) {
+            Location spawnLocation = findSafeLocationNear(monster.getLocation(), Math.max(2.0, ability.getRadius()));
+            if (spawnLocation == null) {
+                continue;
+            }
+            monsterSpawnService.spawn(summonMonsterId, spawnLocation, null, targetLevel)
+                    .ifPresent(summoned -> monsterSpawnService.dataOf(summoned).ifPresent(data -> registerIfAble(summoned, data)));
+        }
+    }
+
+    /**
+     * A random passable (non-solid, headroom-clear) location within {@code radius} of
+     * {@code center}, reusing {@code center}'s Y - both callers (teleport, summon) start from a
+     * location a living entity is already standing at, so that Y is already known-walkable and
+     * doesn't need its own ground search. {@code null} if nothing passable turns up within
+     * {@link #SAFE_LOCATION_ATTEMPTS} random tries (e.g. a monster cornered against solid
+     * terrain) - callers skip that single cast rather than teleporting into a wall.
+     */
+    private Location findSafeLocationNear(Location center, double radius) {
+        World world = center.getWorld();
+        if (world == null) {
+            return null;
+        }
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        for (int attempt = 0; attempt < SAFE_LOCATION_ATTEMPTS; attempt++) {
+            double angle = random.nextDouble(0, Math.PI * 2);
+            double distance = random.nextDouble(1.0, radius);
+            Location candidate = center.clone().add(Math.cos(angle) * distance, 0, Math.sin(angle) * distance);
+            Block feet = candidate.getBlock();
+            Block head = feet.getRelative(0, 1, 0);
+            if (feet.isPassable() && head.isPassable()) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private Player randomOf(Collection<Player> players) {
+        if (players.isEmpty()) {
+            return null;
+        }
+        int index = ThreadLocalRandom.current().nextInt(players.size());
+        int i = 0;
+        for (Player player : players) {
+            if (i++ == index) {
+                return player;
+            }
+        }
+        throw new IllegalStateException("unreachable: index within players.size()");
+    }
+
+    // monsters.yml stores the effect as a plain PotionEffectType key name (e.g. POISON) -
+    // getByName is deprecated in favor of Registry-based lookup, but kept here for the same
+    // reason Sound.valueOf is kept in playSound below: the only lossless way to resolve a
+    // legacy-style name without maintaining a separate name-to-key table. A misconfigured name
+    // fails just this one ability (null), not the whole monster load.
+    @SuppressWarnings("deprecation")
+    private PotionEffectType resolveEffectType(String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        return PotionEffectType.getByName(name.trim().toUpperCase());
     }
 
     /**
