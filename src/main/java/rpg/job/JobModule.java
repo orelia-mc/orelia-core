@@ -46,11 +46,12 @@ public final class JobModule implements RpgModule {
 
         this.jobService = new JobService(plugin.getPlayerDataManager(), jobManager, statusModule.getStatusService());
 
-        JobCommand jobCommand = new JobCommand(jobService, jobManager, plugin.getMessageManager());
-        String description = "現在の職業を確認します。";
-        String usage = "job [list]";
+        JobCommand jobCommand = new JobCommand(jobService, jobManager, plugin.getMessageManager(),
+                plugin.getServer().getServicesManager());
+        String description = "転職画面を開きます。";
+        String usage = "job [gui|info|list]";
         plugin.getPlayerCommandRegistry().register("job", jobCommand, description, usage);
-        CommandAliasUtil.registerAlias(plugin, "job", jobCommand, description, "[list]");
+        CommandAliasUtil.registerAlias(plugin, "job", jobCommand, description, "[gui|info|list]");
     }
 
     @Override

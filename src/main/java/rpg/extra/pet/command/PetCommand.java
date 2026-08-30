@@ -18,7 +18,10 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * {@code /ol pet [list|gui|buy <id>|summon [id]|dismiss]} (SOW PetModule).
+ * {@code /ol pet [gui|list|buy <id>|summon [id]|dismiss]} (SOW PetModule). Bare {@code /ol pet}
+ * opens the GUI (same as explicit {@code gui}) rather than the plain-text {@code list} - general
+ * players reach for the icon-and-click screen far more often than the chat listing, which stays
+ * available for anyone who wants it without opening an inventory.
  */
 public final class PetCommand implements CommandExecutor, TabCompleter {
 
@@ -43,12 +46,12 @@ public final class PetCommand implements CommandExecutor, TabCompleter {
             messages.send(sender, "command.player-only");
             return true;
         }
-        if (args.length == 0 || args[0].equalsIgnoreCase("list")) {
-            listPets(sender, player);
+        if (args.length == 0 || args[0].equalsIgnoreCase("gui")) {
+            guiManager.open(player, guiScreen.build(player));
             return true;
         }
-        if (args[0].equalsIgnoreCase("gui")) {
-            guiManager.open(player, guiScreen.build(player));
+        if (args[0].equalsIgnoreCase("list")) {
+            listPets(sender, player);
             return true;
         }
 
