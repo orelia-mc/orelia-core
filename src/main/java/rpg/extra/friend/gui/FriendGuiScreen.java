@@ -39,6 +39,8 @@ public final class FriendGuiScreen {
     private static final GuiPageLayout PENDING_LAYOUT = new GuiPageLayout(IntStream.range(0, 18).toArray(), 18, 26);
     private static final int ADD_SLOT = 22;
     private static final int PENDING_REQUESTS_SLOT = 4;
+    /** Unlike every sibling screen's BACK_SLOT=22, this list's own ADD_SLOT already sits at 22 - picked a different free slot rather than relocating a button players already know. */
+    private static final int PARENT_BACK_SLOT = 25;
 
     private final FriendService friendService;
     private final GuiManager guiManager;
@@ -53,11 +55,19 @@ public final class FriendGuiScreen {
     }
 
     public Gui build(Player player) {
-        return build(player, 0);
+        return build(player, 0, null);
     }
 
-    private Gui build(Player player, int page) {
+    /** {@code backButton} - non-null when opened from a parent menu (e.g. the nether-star player-info item) that this screen should return to; placed in {@link #PARENT_BACK_SLOT}, otherwise left empty. */
+    public Gui build(Player player, GuiButton backButton) {
+        return build(player, 0, backButton);
+    }
+
+    private Gui build(Player player, int page, GuiButton backButton) {
         Gui gui = new Gui("&%8フレンド一覧", 27);
+        if (backButton != null) {
+            gui.set(PARENT_BACK_SLOT, backButton);
+        }
 
         int pendingCount = friendService.peekAllPendingRequesters(player.getUniqueId()).size();
         if (pendingCount > 0) {
@@ -73,7 +83,7 @@ public final class FriendGuiScreen {
 
         List<UUID> friends = List.copyOf(friendService.listFriends(player.getUniqueId()));
         GuiPaginator.placePage(guiManager, gui, LAYOUT, friends, page,
-                this::friendButton, p -> build(player, p));
+                this::friendButton, p -> build(player, p, backButton));
         return gui;
     }
 
@@ -87,7 +97,7 @@ public final class FriendGuiScreen {
     private Gui buildPendingRequests(Player player, int page) {
         Gui gui = new Gui("&%8届いているフレンド申請", 27);
         gui.set(22, new GuiButton(new ItemBuilder(Material.ARROW).name("&%c« 戻る").build(),
-                (clicker, clickType) -> guiManager.open(clicker, build(clicker, 0))));
+                (clicker, clickType) -> guiManager.open(clicker, build(clicker, 0, null))));
 
         List<UUID> requesters = friendService.peekAllPendingRequesters(player.getUniqueId());
         GuiPaginator.placePage(guiManager, gui, PENDING_LAYOUT, requesters, page,
@@ -106,7 +116,7 @@ public final class FriendGuiScreen {
             }
             boolean decline = clickType != null && clickType.contains("RIGHT");
             clicker.performCommand("friend " + (decline ? "decline " : "accept ") + name);
-            guiManager.open(clicker, build(clicker, 0));
+            guiManager.open(clicker, build(clicker, 0, null));
         });
     }
 
@@ -126,7 +136,7 @@ public final class FriendGuiScreen {
             }
             if (clickType != null && clickType.startsWith("SHIFT_")) {
                 clicker.performCommand("friend remove " + name);
-                guiManager.open(clicker, build(clicker, 0));
+                guiManager.open(clicker, build(clicker, 0, null));
             } else if (online) {
                 clicker.performCommand("friend tpa " + name);
             }

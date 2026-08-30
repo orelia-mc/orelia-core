@@ -55,12 +55,20 @@ public final class PartyGuiScreen {
     }
 
     public Gui build(Player player) {
-        Party party = partyService.getParty(player.getUniqueId()).orElse(null);
-        return party != null ? buildRoster(player, party, 0) : buildNoParty(player);
+        return build(player, null);
     }
 
-    private Gui buildNoParty(Player player) {
+    /** {@code backButton} - non-null when opened from a parent menu (e.g. the nether-star player-info item) that this screen should return to; placed in {@link #BACK_SLOT} on whichever of {@link #buildNoParty}/{@link #buildRoster} actually renders, otherwise left empty. */
+    public Gui build(Player player, GuiButton backButton) {
+        Party party = partyService.getParty(player.getUniqueId()).orElse(null);
+        return party != null ? buildRoster(player, party, 0, backButton) : buildNoParty(player, backButton);
+    }
+
+    private Gui buildNoParty(Player player, GuiButton backButton) {
         Gui gui = new Gui("&%8パーティー", 27);
+        if (backButton != null) {
+            gui.set(BACK_SLOT, backButton);
+        }
         int pendingCount = partyService.peekAllPendingInvites(player.getUniqueId()).size();
         if (pendingCount > 0) {
             gui.set(PENDING_INVITES_SLOT, new GuiButton(new ItemBuilder(Material.WRITTEN_BOOK)
@@ -104,14 +112,17 @@ public final class PartyGuiScreen {
         });
     }
 
-    private Gui buildRoster(Player player, Party party, int page) {
+    private Gui buildRoster(Player player, Party party, int page, GuiButton backButton) {
         Gui gui = new Gui("&%8パーティー", 27);
+        if (backButton != null) {
+            gui.set(BACK_SLOT, backButton);
+        }
         boolean viewerIsLeader = party.getLeaderId().equals(player.getUniqueId());
 
         List<UUID> members = List.copyOf(party.getMembers());
         GuiPaginator.placePage(guiManager, gui, MEMBER_LAYOUT, members, page,
                 memberId -> memberButton(party, memberId, viewerIsLeader),
-                p -> buildRoster(player, party, p));
+                p -> buildRoster(player, party, p, backButton));
 
         if (viewerIsLeader) {
             gui.set(INVITE_SLOT, new GuiButton(new ItemBuilder(Material.NAME_TAG).name("&%b招待")
