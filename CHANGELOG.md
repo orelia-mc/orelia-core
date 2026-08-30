@@ -4,6 +4,7 @@
 
 ## 更新履歴
 
+- `RegionQueryService` の実行時WorldGuard連携失敗(起動後のAPI形状変化等)を、セッション中1回だけWARNINGログするように(従来は完全に無言でフェイルオープンしていた)。
 - `/auction` のGUIで、自分以外の出品を購入/入札する際に確認画面を挟むように変更。
 - `/oladmin dungeonarena set <dungeon-id> <index>` を追加(既存インデックスのアリーナを現在地で上書き)。
 - `/ol help <サブコマンド名>` でサブコマンド単体のヘルプを表示できるように。

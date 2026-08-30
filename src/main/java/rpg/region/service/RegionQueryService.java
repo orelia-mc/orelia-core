@@ -14,7 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Best-effort WorldGuard integration via reflection: this build environment cannot reach
@@ -26,10 +28,22 @@ import java.util.logging.Level;
  * {@code rpg.town} (town detection), {@code rpg.gathering.service.RegenExclusionService}, and
  * fishing's per-area loot table all need. If WorldGuard isn't installed, or its API doesn't
  * match what's expected, every query just returns an empty list (fail-open: no known regions,
- * same as if no region plugin exists).
+ * same as if no region plugin exists) - startup-time mismatches are logged once from the
+ * constructor, and a mismatch first surfacing at query time (WorldGuard reflection succeeded at
+ * startup but breaks on an actual call) is logged once from {@link #getRegionIds} the first time
+ * it happens, so this never fails open in total silence.
  */
 public final class RegionQueryService {
 
+    private final Logger logger;
+    /**
+     * Set on the first runtime reflection failure inside {@link #getRegionIds}, so that only
+     * one WARNING is logged per server session instead of once per call site (block break,
+     * fishing catch, spawn check, ...) - a WorldGuard API mismatch here would otherwise either
+     * spam the console into uselessness or, if left unlogged, fail open in complete silence,
+     * which is exactly the "quietly disabled and nobody notices" risk this exists to close.
+     */
+    private final AtomicBoolean loggedQueryFailure = new AtomicBoolean(false);
     private final Object regionContainer;
     private final Method adaptWorldMethod;
     private final Method regionManagerForWorldMethod;
@@ -41,6 +55,7 @@ public final class RegionQueryService {
     private final Method getParentMethod;
 
     public RegionQueryService(Plugin plugin) {
+        this.logger = plugin.getLogger();
         Plugin worldGuard = plugin.getServer().getPluginManager().getPlugin("WorldGuard");
         Object container = null;
         Method adaptMethod = null;
@@ -137,6 +152,14 @@ public final class RegionQueryService {
             }
             return orderByEffectivePriority(entries);
         } catch (ReflectiveOperationException | ClassCastException e) {
+            if (loggedQueryFailure.compareAndSet(false, true)) {
+                logger.log(Level.WARNING,
+                        "WorldGuard region lookup failed at runtime (API shape likely changed "
+                                + "after startup detection succeeded); region-based detection "
+                                + "(town/fishing area/regen exclusion) will silently return no "
+                                + "regions for the rest of this session. Logged once to avoid "
+                                + "spamming the console on every gathering/combat tick.", e);
+            }
             return List.of();
         }
     }
