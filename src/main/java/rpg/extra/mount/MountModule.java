@@ -10,6 +10,7 @@ import rpg.core.command.CommandAliasUtil;
 import rpg.core.module.RpgModule;
 import rpg.extra.mount.command.MountCommand;
 import rpg.extra.mount.config.MountGrowthLevelingConfig;
+import rpg.extra.mount.gui.MountGuiScreen;
 import rpg.extra.mount.listener.MountGrowthKillListener;
 import rpg.extra.mount.listener.MountLifecycleListener;
 import rpg.extra.mount.manager.MountGrowthManager;
@@ -19,6 +20,7 @@ import rpg.extra.mount.repository.MountGrowthRepository;
 import rpg.extra.mount.repository.MountOwnershipRepository;
 import rpg.extra.mount.service.MountGrowthService;
 import rpg.extra.mount.service.MountService;
+import rpg.gui.framework.GuiManager;
 
 import java.util.logging.Level;
 
@@ -31,6 +33,7 @@ public final class MountModule implements RpgModule {
     private final MountConfigRepository configRepository = new MountConfigRepository();
     private final MountManager mountManager = new MountManager();
     private final MountGrowthLevelingConfig growthLevelingConfig = new MountGrowthLevelingConfig();
+    private final GuiManager guiManager = new GuiManager();
     private MountService mountService;
     private OreliaPlugin plugin;
 
@@ -87,11 +90,12 @@ public final class MountModule implements RpgModule {
         plugin.getServer().getPluginManager().registerEvents(new MountLifecycleListener(mountManager), plugin);
         plugin.getServer().getPluginManager().registerEvents(
                 new MountGrowthKillListener(combatApi, mountManager, mountService, growthService, growthLevelingConfig), plugin);
-        MountCommand mountCommand = new MountCommand(mountService, plugin.getMessageManager());
-        String description = "乗り物を管理します。";
-        String usage = "mount [list|buy <id>|summon [id]|dismiss]";
+        MountGuiScreen guiScreen = new MountGuiScreen(mountService, mountManager, plugin.getMessageManager());
+        MountCommand mountCommand = new MountCommand(mountService, guiScreen, guiManager, plugin.getMessageManager());
+        String description = "乗り物画面を開きます。";
+        String usage = "mount [gui|list|buy <id>|summon [id]|dismiss]";
         plugin.getPlayerCommandRegistry().register("mount", mountCommand, description, usage);
-        CommandAliasUtil.registerAlias(plugin, "mount", mountCommand, description, "[list|buy <id>|summon [id]|dismiss]");
+        CommandAliasUtil.registerAlias(plugin, "mount", mountCommand, description, "[gui|list|buy <id>|summon [id]|dismiss]");
     }
 
     @Override

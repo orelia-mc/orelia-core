@@ -4,7 +4,7 @@
 # NPC dialogue lines / quest descriptions / story text stay in their own content yml files
 # (npc.yml, quests.yml, story.yml, ...) since those are per-entry authored content, not
 # fixed UI copy.
-config-version: 18
+config-version: 19
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -19,6 +19,7 @@ chat-input:
   timed-out: "&%e入力の受付時間が切れました。"
 
 usage:
+  job: "&%e使い方: /job &%7[&%egui&%7|&%einfo&%7|&%elist&%7]&%e"
   party: "&%e使い方: /party &%7<&%ecreate&%7|&%einvite&%7|&%eaccept&%7|&%edecline&%7|&%eleave&%7|&%ekick&%7|&%edisband&%7|&%etransfer&%7|&%elist&%7|&%echat&%7>&%e"
   party-invite: "&%e使い方: /party invite &%7<&%eplayer&%7>&%e"
   party-kick: "&%e使い方: /party kick &%7<&%eplayer&%7>&%e"

@@ -7,8 +7,10 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import rpg.core.command.TabCompletions;
 import rpg.core.message.MessageManager;
+import rpg.extra.mount.gui.MountGuiScreen;
 import rpg.extra.mount.model.MountDefinition;
 import rpg.extra.mount.service.MountService;
+import rpg.gui.framework.GuiManager;
 import rpg.util.MoneyFormat;
 
 import java.util.List;
@@ -16,18 +18,25 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * {@code /ol mount [list|buy <id>|summon [id]|dismiss]} (SOW MountModule).
+ * {@code /ol mount [gui|list|buy <id>|summon [id]|dismiss]} (SOW MountModule). Bare
+ * {@code /ol mount} opens the GUI (same as explicit {@code gui}) rather than the plain-text
+ * {@code list} - same reasoning {@code rpg.extra.pet.command.PetCommand} gives for its own
+ * identical default, which this mirrors ({@code PetGuiScreen} was this screen's template too).
  */
 public final class MountCommand implements CommandExecutor, TabCompleter {
 
-    private static final List<String> SUBCOMMANDS = List.of("list", "buy", "summon", "dismiss");
+    private static final List<String> SUBCOMMANDS = List.of("gui", "list", "buy", "summon", "dismiss");
     private static final List<String> MOUNT_ID_ACTIONS = List.of("buy", "summon");
 
     private final MountService mountService;
+    private final MountGuiScreen guiScreen;
+    private final GuiManager guiManager;
     private final MessageManager messages;
 
-    public MountCommand(MountService mountService, MessageManager messages) {
+    public MountCommand(MountService mountService, MountGuiScreen guiScreen, GuiManager guiManager, MessageManager messages) {
         this.mountService = mountService;
+        this.guiScreen = guiScreen;
+        this.guiManager = guiManager;
         this.messages = messages;
     }
 
@@ -37,7 +46,11 @@ public final class MountCommand implements CommandExecutor, TabCompleter {
             messages.send(sender, "command.player-only");
             return true;
         }
-        if (args.length == 0 || args[0].equalsIgnoreCase("list")) {
+        if (args.length == 0 || args[0].equalsIgnoreCase("gui")) {
+            guiManager.open(player, guiScreen.build(player));
+            return true;
+        }
+        if (args[0].equalsIgnoreCase("list")) {
             listMounts(sender, player);
             return true;
         }
