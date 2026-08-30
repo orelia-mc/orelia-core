@@ -62,7 +62,7 @@ public final class ShopGuiScreen {
             }
             String displayName = displayNameOf(entry);
             ItemStack icon = new ItemBuilder(preview.getType())
-                    .name(Component.text(displayName))
+                    .name(displayNameComponentOf(entry, preview, displayName))
                     .lore("&%7価格: " + MoneyFormat.format(entry.price()))
                     .build();
             gui.set(slot++, new GuiButton(icon, (clicker, clickType) -> confirmPurchase(clicker, entry, displayName)));
@@ -99,13 +99,20 @@ public final class ShopGuiScreen {
                 "item", displayName, "price", MoneyFormat.format(entry.price()));
     }
 
-    /** Static label shown in the shop GUI/purchase message - avoids round-tripping the preview ItemStack's Component name into a String. */
+    /**
+     * Plain-text label for chat messages (purchase confirmation/success) - never a raw id, and
+     * never the bracketed "kind (id)" shape a debug/admin view might use. VANILLA falls back to
+     * a prettified English material name here since chat text has no per-client localization the
+     * way an item's own displayed name does (see {@link #displayNameComponentOf}) - a full
+     * server-side Japanese material name table isn't worth building just for this one message
+     * path.
+     */
     private String displayNameOf(ShopEntry entry) {
         if ("ACCESSORY".equalsIgnoreCase(entry.kind())) {
             return accessoryRepository.findById(entry.id()).map(AccessoryData::getName).orElse(entry.id());
         }
         if ("RELIC".equalsIgnoreCase(entry.kind())) {
-            return "レリック (" + entry.id() + ")";
+            return relicShopService.displayNameOf(entry.id()).orElse(entry.id());
         }
         if ("VANILLA".equalsIgnoreCase(entry.kind())) {
             return prettifyMaterialName(entry.id());
@@ -113,7 +120,21 @@ public final class ShopGuiScreen {
         return itemManager.findById(entry.id()).map(WeaponData::getName).orElse(entry.id());
     }
 
-    /** "DIAMOND_SWORD" -> "Diamond Sword" - fallback label for VANILLA entries, which have no configured display name. */
+    /**
+     * The GUI icon's own displayed name (what a player actually reads when hovering the item in
+     * their inventory) - for VANILLA entries this is a translatable component
+     * ({@code item.minecraft.iron_chestplate}), which Minecraft's client resolves in the
+     * viewing player's own game language automatically, rather than the English-only fallback
+     * {@link #displayNameOf} falls back to for chat text.
+     */
+    private Component displayNameComponentOf(ShopEntry entry, ItemStack preview, String plainTextFallback) {
+        if ("VANILLA".equalsIgnoreCase(entry.kind())) {
+            return Component.translatable(preview.getType().translationKey());
+        }
+        return Component.text(plainTextFallback);
+    }
+
+    /** "DIAMOND_SWORD" -> "Diamond Sword" - chat-text-only fallback label for VANILLA entries; the GUI icon itself uses a translatable component instead, see {@link #displayNameComponentOf}. */
     private String prettifyMaterialName(String materialId) {
         String[] words = materialId.trim().toLowerCase().split("_");
         StringBuilder result = new StringBuilder();

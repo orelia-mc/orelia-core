@@ -1,5 +1,6 @@
 package rpg.quest.gui;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import rpg.core.message.MessageManager;
@@ -17,7 +18,9 @@ import rpg.quest.model.QuestState;
 import rpg.quest.model.QuestType;
 import rpg.quest.repository.QuestRepository;
 import rpg.quest.service.QuestEligibilityService;
+import rpg.quest.service.QuestObjectiveDescriber;
 import rpg.quest.service.QuestProgressService;
+import rpg.util.ColorUtil;
 import rpg.util.ItemBuilder;
 
 import java.time.Duration;
@@ -58,17 +61,19 @@ public final class QuestGuiScreen {
     private final PlayerDataManager playerDataManager;
     private final MessageManager messages;
     private final GuiManager guiManager;
+    private final QuestObjectiveDescriber objectiveDescriber;
     private final QuestObjectiveBarRenderer barRenderer = new QuestObjectiveBarRenderer();
 
     public QuestGuiScreen(QuestRepository questRepository, QuestProgressService progressService,
                            QuestEligibilityService eligibilityService, PlayerDataManager playerDataManager,
-                           MessageManager messages, GuiManager guiManager) {
+                           MessageManager messages, GuiManager guiManager, QuestObjectiveDescriber objectiveDescriber) {
         this.questRepository = questRepository;
         this.progressService = progressService;
         this.eligibilityService = eligibilityService;
         this.playerDataManager = playerDataManager;
         this.messages = messages;
         this.guiManager = guiManager;
+        this.objectiveDescriber = objectiveDescriber;
     }
 
     /** An NPC's curated offer list - id order as configured on the NPC, not grouped by type. */
@@ -134,26 +139,27 @@ public final class QuestGuiScreen {
 
     private GuiButton questButton(Player player, QuestData quest, PlayerQuestComponent component, Supplier<Gui> refresh) {
         QuestState state = state(component, quest.getId());
-        List<String> lore = new ArrayList<>(quest.getDescription());
-        lore.add("");
+        List<Component> lore = new ArrayList<>();
+        quest.getDescription().forEach(line -> lore.add(ColorUtil.component(line)));
+        lore.add(Component.empty());
 
         Material material;
         boolean locked = false;
         if (state == QuestState.IN_PROGRESS || state == QuestState.AWAITING_REPORT) {
             appendObjectiveLore(lore, quest, component.getActiveQuests().get(quest.getId()));
-            lore.add(state == QuestState.AWAITING_REPORT ? "&%6報告可能 - クリックして報告" : "&%7進行中");
+            lore.add(ColorUtil.component(state == QuestState.AWAITING_REPORT ? "&%6報告可能 - クリックして報告" : "&%7進行中"));
             material = Material.WRITTEN_BOOK;
         } else if (state == QuestState.COMPLETE) {
-            lore.add("&%6達成済み");
+            lore.add(ColorUtil.component("&%6達成済み"));
             material = Material.ENCHANTED_BOOK;
         } else {
             var failure = eligibilityService.checkEligibility(player, quest);
             if (failure.isPresent()) {
                 locked = true;
-                lore.add(lockReasonLore(player, quest, failure.get()));
+                lore.add(ColorUtil.component(lockReasonLore(player, quest, failure.get())));
                 material = Material.BARRIER;
             } else {
-                lore.add("&%aクリックして受注");
+                lore.add(ColorUtil.component("&%aクリックして受注"));
                 material = Material.WRITABLE_BOOK;
             }
         }
@@ -161,7 +167,7 @@ public final class QuestGuiScreen {
         boolean finalLocked = locked;
         return new GuiButton(new ItemBuilder(material)
                 .name((finalLocked ? "&%8" : "&%e") + quest.getName())
-                .lore(lore)
+                .loreComponents(lore)
                 .build(), (clicker, clickType) -> {
             if (!finalLocked) {
                 handleClick(clicker, quest, state, clickType, refresh);
@@ -180,13 +186,14 @@ public final class QuestGuiScreen {
         return component.hasCompleted(questId) ? QuestState.COMPLETE : QuestState.NOT_ACCEPTED;
     }
 
-    private void appendObjectiveLore(List<String> lore, QuestData quest, PlayerQuestProgress progress) {
+    private void appendObjectiveLore(List<Component> lore, QuestData quest, PlayerQuestProgress progress) {
         List<QuestObjective> objectives = quest.getObjectives();
         for (int i = 0; i < objectives.size(); i++) {
             QuestObjective objective = objectives.get(i);
             int current = Math.min(progress.getProgress(i), objective.getRequiredAmount());
             String bar = barRenderer.render(current, objective.getRequiredAmount(), BAR_LENGTH, "&%a", "&%8");
-            lore.add("&%7" + objective.getTargetId() + " " + bar + " &%f" + current + "/" + objective.getRequiredAmount());
+            lore.add(ColorUtil.component("&%7").append(objectiveDescriber.targetLabel(objective))
+                    .append(ColorUtil.component(" " + bar + " &%f" + current + "/" + objective.getRequiredAmount())));
         }
     }
 

@@ -1,5 +1,6 @@
 package rpg.world.playerinfo.gui;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import rpg.core.player.PlayerDataManager;
@@ -11,6 +12,8 @@ import rpg.quest.model.QuestData;
 import rpg.quest.model.QuestObjective;
 import rpg.quest.model.QuestState;
 import rpg.quest.repository.QuestRepository;
+import rpg.quest.service.QuestObjectiveDescriber;
+import rpg.util.ColorUtil;
 import rpg.util.ItemBuilder;
 
 import java.util.ArrayList;
@@ -30,10 +33,13 @@ public final class PlayerInfoQuestGuiScreen {
 
     private final QuestRepository questRepository;
     private final PlayerDataManager playerDataManager;
+    private final QuestObjectiveDescriber objectiveDescriber;
 
-    public PlayerInfoQuestGuiScreen(QuestRepository questRepository, PlayerDataManager playerDataManager) {
+    public PlayerInfoQuestGuiScreen(QuestRepository questRepository, PlayerDataManager playerDataManager,
+                                     QuestObjectiveDescriber objectiveDescriber) {
         this.questRepository = questRepository;
         this.playerDataManager = playerDataManager;
+        this.objectiveDescriber = objectiveDescriber;
     }
 
     public Gui build(Player player, GuiButton backButton) {
@@ -63,20 +69,22 @@ public final class PlayerInfoQuestGuiScreen {
             }
             gui.set(QUEST_SLOTS[slotIndex++], GuiButton.display(new ItemBuilder(Material.WRITTEN_BOOK)
                     .name("&%e" + quest.getName())
-                    .lore(questLore(quest, entry.getValue()))
+                    .loreComponents(questLore(quest, entry.getValue()))
                     .build()));
         }
         return gui;
     }
 
-    private List<String> questLore(QuestData quest, PlayerQuestProgress progress) {
-        List<String> lore = new ArrayList<>(quest.getDescription());
-        lore.add("");
-        lore.add("&%7状態: " + stateLabel(progress.getState()));
+    private List<Component> questLore(QuestData quest, PlayerQuestProgress progress) {
+        List<Component> lore = new ArrayList<>();
+        quest.getDescription().forEach(line -> lore.add(ColorUtil.component(line)));
+        lore.add(Component.empty());
+        lore.add(ColorUtil.component("&%7状態: " + stateLabel(progress.getState())));
         List<QuestObjective> objectives = quest.getObjectives();
         for (int i = 0; i < objectives.size(); i++) {
             QuestObjective objective = objectives.get(i);
-            lore.add("&%7" + objectiveLabel(objective) + ": " + progress.getProgress(i) + "/" + objective.getRequiredAmount());
+            lore.add(ColorUtil.component("&%7").append(objectiveLabel(objective))
+                    .append(ColorUtil.component(": " + progress.getProgress(i) + "/" + objective.getRequiredAmount())));
         }
         return lore;
     }
@@ -90,16 +98,19 @@ public final class PlayerInfoQuestGuiScreen {
         };
     }
 
-    private String objectiveLabel(QuestObjective objective) {
-        String target = objective.getTargetId() == null ? "" : " (" + objective.getTargetId() + ")";
+    /** Target label is the resolved display name in parens (e.g. "モンスター討伐 (森のスライム)") via {@link QuestObjectiveDescriber} - never the raw configured id. */
+    private Component objectiveLabel(QuestObjective objective) {
+        Component resolvedTarget = objectiveDescriber.targetLabel(objective);
+        Component target = resolvedTarget.equals(Component.empty()) ? Component.empty()
+                : Component.text(" (").append(resolvedTarget).append(Component.text(")"));
         return switch (objective.getType()) {
-            case KILL_MONSTER -> "モンスター討伐" + target;
-            case KILL_BOSS -> "ボス討伐" + target;
-            case COLLECT_ITEM -> "アイテム収集" + target;
-            case DELIVER_ITEM -> "アイテム納品" + target;
-            case REACH_LOCATION -> "目的地への到達";
-            case TALK_NPC -> "NPCとの会話" + target;
-            case CLEAR_DUNGEON -> "ダンジョン攻略" + target;
+            case KILL_MONSTER -> Component.text("モンスター討伐").append(target);
+            case KILL_BOSS -> Component.text("ボス討伐").append(target);
+            case COLLECT_ITEM -> Component.text("アイテム収集").append(target);
+            case DELIVER_ITEM -> Component.text("アイテム納品").append(target);
+            case REACH_LOCATION -> Component.text("目的地への到達");
+            case TALK_NPC -> Component.text("NPCとの会話").append(target);
+            case CLEAR_DUNGEON -> Component.text("ダンジョン攻略").append(target);
         };
     }
 }

@@ -76,7 +76,7 @@ public final class WeaponFactory {
         // round to 1 decimal place for display only, the underlying double stays exact.
         lore.add("&%c攻撃力 &%f" + String.format(Locale.ROOT, "%.1f", attackPower));
         if (data.getElement() != ElementType.NONE) {
-            lore.add("&%b属性 &%f" + data.getElement());
+            lore.add("&%b属性 &%f" + data.getElement().getDisplayLabel());
         }
         lore.add("&%e会心率 &%f" + data.getCritRate() + "%");
         if (data.getRequiredJob() != null) {

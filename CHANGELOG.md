@@ -4,6 +4,8 @@
 
 ## 更新履歴
 
+- 各種GUIで表示名の代わりに生ID・英語Material名が出ていた箇所を修正: NPCショップのバニラ装備・レリック、クラフト画面の必要材料、クエストログの討伐/収集/納品/攻略対象、属性表示(FIRE等の英語enum名)。バニラ素材名はクライアント言語で自動翻訳されるAdventureのtranslatable componentを採用。
+- ネザースターのプレイヤー情報GUIのボタン配置を、5行の枠内でカテゴリ行とソーシャル行が縦方向に均等になるよう調整(従来は上2行に偏っていた)。
 - Vaultの銀行(Bank)機能に対応(`createBank`/`bankDeposit`/`bankWithdraw`等)。プレイヤーが名前付き銀行を作成し所有できるように。
 - モンスター/ボスのアビリティに`TELEPORT`(位置攪乱)・`DEBUFF`(状態異常付与)・`SUMMON`(小モンスター増援)を追加(既存の`AOE_SLAM`/`FIREBALL_BARRAGE`と合わせ計5種)。
 - `RegionQueryService` の実行時WorldGuard連携失敗(起動後のAPI形状変化等)を、セッション中1回だけWARNINGログするように(従来は完全に無言でフェイルオープンしていた)。

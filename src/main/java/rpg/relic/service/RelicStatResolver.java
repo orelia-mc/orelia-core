@@ -30,10 +30,10 @@ public final class RelicStatResolver {
         };
     }
 
-    /** Human-readable line label, e.g. "会心率%" or "属性ダメージ増加%(FIRE)" for elemental lines. */
+    /** Human-readable line label, e.g. "会心率%" or "属性ダメージ増加%(火)" for elemental lines. */
     public static String describe(RelicLine line) {
         if (line.type() == RelicStatType.ELEMENTAL_DMG_PERCENT) {
-            return line.type().getDisplayLabel() + "(" + line.element().name() + ")";
+            return line.type().getDisplayLabel() + "(" + line.element().getDisplayLabel() + ")";
         }
         return line.type().getDisplayLabel();
     }

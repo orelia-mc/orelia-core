@@ -20,6 +20,7 @@ import rpg.quest.repository.PlayerQuestRepository;
 import rpg.quest.repository.QuestRepository;
 import rpg.quest.service.QuestEligibilityService;
 import rpg.quest.service.QuestItemInventoryService;
+import rpg.quest.service.QuestObjectiveDescriber;
 import rpg.quest.service.QuestObjectiveFeedbackService;
 import rpg.quest.service.QuestProgressService;
 import rpg.quest.service.QuestRewardService;
@@ -90,7 +91,8 @@ public final class QuestModule implements RpgModule {
         this.progressService = new QuestProgressService(plugin.getPlayerDataManager(), questRepository, eligibilityService,
                 rewardService, inventoryService, plugin.getMessageManager(), feedbackService, dialogueSessionService);
         this.questGuiScreen = new QuestGuiScreen(questRepository, progressService, eligibilityService,
-                plugin.getPlayerDataManager(), plugin.getMessageManager(), guiManager);
+                plugin.getPlayerDataManager(), plugin.getMessageManager(), guiManager,
+                new QuestObjectiveDescriber(plugin.getModuleManager()));
 
         plugin.getServer().getPluginManager().registerEvents(new QuestKillListener(combatApi, progressService), plugin);
 
