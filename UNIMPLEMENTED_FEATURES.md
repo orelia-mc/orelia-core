@@ -44,10 +44,10 @@ orelia-core / orelia-world / orelia-extra 3リポジトリを横断して、コ�
 
 - **PvP専用機能**: 決闘(duel)申請、闘技場(アリーナ)、レーティング等。現状の戦闘システムはPvE中心の設計(`CombatDamageListener`はPvPも計算上は通るが、専用のマッチメイキング/観戦/報酬の仕組みは無い)。
 - **ブロックリスト**: `FriendModule`(`rpg/extra/friend/`)でフレンドリスト自体は実装済みだが、迷惑なプレイヤーを拒否するブロックリストに相当する機能は見当たらない。
-- **称号システムの活用箇所**: `QuestReward`は「称号」をクエスト報酬の一種として保持しているが、称号自体をチャット・タブリスト等に表示する仕組みが今回のセッションで実装したorelia-serverutil側のプレースホルダー(`{job}`等)には含まれていない。
 
 ### 前回リストアップ時から実装が追いついていた項目（2026-08-30訂正）
 
 - ~~フレンドリスト~~ → `FriendModule`として実装済み(`FriendCommand`/`FriendGuiScreen`)。フレンド申請・承認・テレポート申請まで対応。ブロックリストのみ未対応(上記参照)。
 - ~~ギルド間の関係(GvG等)~~ → 実装対象外と判断(2026-08-30、ユーザー確認済み)。
 - ~~クラフト/レシピシステム~~ → `CraftingService`/`CraftCommand`/`crafting.yml`として実装済み(`/ol craft`、CHANGELOG.md記載)。
+- ~~称号システムの活用箇所~~ → 実は既に実装済みだったと判明(2026-08-30再調査)。orelia-serverutilの`PlaceholderService`が`{title}`プレースホルダーを`QuestApi#getEquippedTitle`経由で解決しており、`config.yml`のタブリスト(`name-color.suffix-format`)・ネームタグ(`belowname.core-format.format`)・チャット(`chat.core-placeholder.format`)全てに組み込み済み。このリストが実装に追いついていなかっただけ。
