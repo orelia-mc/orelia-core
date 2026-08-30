@@ -4,11 +4,23 @@
 # underlying monster entry.
 #
 # abilities.type: AOE_SLAM (instant radius damage burst) | FIREBALL_BARRAGE (fires a
-# SmallFireball at every nearby player, entity-damage-only impact, no block damage).
+# SmallFireball at every nearby player, entity-damage-only impact, no block damage) |
+# TELEPORT (repositioning ambush, no damage - teleports next to a random nearby player,
+# landing within `radius` blocks of them) | DEBUFF (applies a potion effect within `radius`,
+# no direct damage - see effect-type/effect-duration-seconds/effect-amplifier below) | SUMMON
+# (spawns reinforcements within `radius`, scaled to this boss's own target level - see
+# summon-monster-id/summon-count below). damage/radius are unused by TELEPORT/DEBUFF/SUMMON
+# except as noted.
 # damage is a MULTIPLIER on the underlying monster's own (level-scaled) attack-power, not an
 # absolute amount - e.g. damage: 1.2 hits for 1.2x this boss's current scaled attack power.
 # See monsters.yml's abilities comment for why (DEF/crit/weakness pipeline + level scaling).
 # particle must be a valid org.bukkit.Particle name, sound a valid org.bukkit.Sound name.
+# effect-type: PotionEffectType name, e.g. POISON/WEAKNESS/SLOWNESS (default POISON).
+# effect-duration-seconds: how long the DEBUFF effect lasts (default 5).
+# effect-amplifier: potion amplifier, 0 = level I (default 0).
+# summon-monster-id: another monsters.yml id to spawn as reinforcements (required for SUMMON -
+# a blank/missing id fails that cast closed rather than spawning nothing meaningful).
+# summon-count: how many to spawn per SUMMON cast (default 2).
 # At most one due ability fires per boss per tick (checked every second), oldest-cooldown
 # first in the order they're listed.
 config-version: 2

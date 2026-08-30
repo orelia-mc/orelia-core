@@ -8,11 +8,9 @@ orelia-core / orelia-world / orelia-extra 3リポジトリを横断して、コ�
 
 ## orelia-core
 
-- **武器レベルアップの実際のトリガー(NPC/GUI)**: 「武器レベル」システム(強化とは別、プレイヤーレベルでゲートされる)は、API(`ItemApi#levelUpWeapon`)とロジック(`WeaponIdentityService#levelUp`)のみ実装済みで、実際にプレイヤーが操作する導線(専用NPCやGUI)がまだ無い。現状`/oladmin item levelup`という管理者向け手動コマンドで代用しており、コマンドのJavadoc自身が「orelia-world側のNPC実装待ちの暫定入口」と明記している(`rpg/item/command/ItemCommand.java`)。
 - **採取レベル上限(50)の引き上げ**: `GatheringLevelingConfig`の経験値カーブは`NextXP = a * level^b + c`という汎用式で実装されており、コメントで「将来のレベル上限引き上げ(SOW 3.3)は設定変更だけで対応できる」と明記されている。現状の上限は1〜50固定(`gathering.yml`)で、実際に引き上げた実績・導線はまだ無い。
 - **ジョブ/アクセサリー種別の追加が設定ファイルだけで完結しない**: アイテム・スキルはYAML定義だけで新規追加できるのに対し、`JobType`(`rpg/job/model/JobType.java`)と`AccessoryType`(`rpg/accessory/model/AccessoryType.java`)は列挙型がコード側にハードコードされており、新しいジョブ/アクセサリー種別を追加するにはコード変更(+再ビルド)が必須。`JobType`側はJavadocで「ジョブ識別子が武器制限・スキルツリーのロジックを駆動するため」と設計上の理由が明記されている。
-- **Vaultの銀行(Bank)機能が未対応**: `OreliaVaultEconomy`(`rpg/economy/vault/OreliaVaultEconomy.java`)はプレイヤー個人残高のみをモデル化しており、`createBank`/`deleteBank`/`bankBalance`/`bankDeposit`等のVault銀行系メソッドは全て固定で`NOT_IMPLEMENTED`を返す実装になっている。意図的なスコープ縮小だが、銀行機能を前提にする外部プラグインとの互換性上のギャップとして残っている。
-- **モンスター/ボスの行動パターンが2種類のみ**: `MonsterAbilityType`/`BossAbilityType`は現状`AOE_SLAM`と`FIREBALL_BARRAGE`の2種類しかなく、`MonsterAbilityCastService`/`BossAbilityCastService`もこの2種を実行するのみ。`BossPhase`によるマルチフェーズ演出の枠組み自体は既に対応済みなので、召喚・デバフ・テレポート等の行動バリエーションを増やす余地がある。
+- **Vaultの銀行(Bank)機能が未対応**: `OreliaVaultEconomy`(`rpg/economy/vault/OreliaVaultEconomy.java`)はプレイヤー個人残高のみをモデル化しており、`createBank`/`deleteBank`/`bankBalance`/`bankDeposit`等のVault銀行系メソッドは全て固定で`NOT_IMPLEMENTED`を返す実装になっている。意図的なスコープ縮小だが、銀行機能を前提にする外部プラグインとの互換性上のギャップとして残っている。(2026-08-30: ユーザー確認の上、実装する方針に決定。実装PR進行中)
 - **`RelicModule`が存在しない**: 他の主要機能が全て`RpgModule`単位で登録されている(`CLAUDE.md`記載の規約)のに対し、relic(遺物)関連のロジックは`AccessoryModule`/`ItemModule`/`GuiModule`にまたがって実装されており、独立した`RelicModule`が無い。動作上の不具合ではないが、モジュール構成の一貫性という観点での整理余地。
 - **`GuiApi#openEquipment`が非推奨のリダイレクトのまま残存**: 装備専用画面は廃止され、現在はステータス画面から直接装備できる仕様に変わったが、`GuiApi#openEquipment`は`@Deprecated`のまま「既存にリンクしているorelia-world/orelia-debugのビルドのため」に`openStatus`へのリダイレクトとして残されている。下流リポジトリの参照が無くなり次第、削除対象。
 - **WorldGuard連携がリフレクションのみ・フェイルオープン**: `RegionQueryService`をはじめ、`TownDetectionService`・`RegenExclusionService`・釣りエリア別ドロップ(`FishingListener`)は全てWorldGuardへのコンパイル時依存を持たず、リフレクション越しにAPIを呼び出している(ビルド環境からWorldGuardのMavenリポジトリに到達できないため)。WorldGuard未導入時・API形状が変わった時は静的に失敗せず「何も除外・検出しない」方向に静かにフェイルオープンする設計であり、意図的なトレードオフではあるが、WorldGuard側のアップデートで気づかれにくい形で機能が無効化されるリスクが残る。
@@ -25,6 +23,8 @@ orelia-core / orelia-world / orelia-extra 3リポジトリを横断して、コ�
 - ~~モンスターの能動スキル/AI行動~~ → `MonsterData.abilities`(`List<MonsterAbility>`)として実装され、`MonsterAbilityCastService`が`tick()`・クールダウン管理込みで実際に実行している。ボスと同じ仕組み(`BossAbilityCastService`)がベースモンスターにも適用済み。
 - ~~アクセサリー枠31〜35の追加種別~~ → `AccessoryType`は現在`CHARM`/`RING`/`NECKLACE`/`WING`/`EARRING`/`BELT`の6種に拡張されており、未使用の予約スロットは見当たらない。
 - ~~ダンジョン⇔クエストの自動連携~~ → `DungeonEncounterService#forceEnd`が`DungeonEndReason.CLEARED`時にパーティ全員分`QuestProgressService#onDungeonCleared`を呼んでおり、「ダンジョンクリア」を条件とするクエスト目標は既に自動進行する。`QuestProgressService`側のJavadocが「未接続のフック」という古い記述のまま残っていたのを2026-08-25に修正済み(実装自体は既に繋がっていた)。
+- ~~武器レベルアップの実際のトリガー(NPC/GUI)~~ → `NpcType.WEAPON_LEVELUP`(`NpcInteractListener#levelUpWeapon`)として既に実装済み。素材アイテム消費・お金消費・レベル上限チェック・専用エラーメッセージまで揃った本実装で、`ItemCommand`のJavadoc自身も「正規の導線はこのNPC」と明記している。このリストが実装に追いついていなかっただけと判明(2026-08-30)。
+- ~~モンスター/ボスの行動パターンが2種類のみ~~ → 2026-08-30に`TELEPORT`(位置攪乱)・`DEBUFF`(状態異常付与)・`SUMMON`(小モンスター増援)の3種を追加、計5種に拡張(`MonsterAbilityType`/`BossAbilityType`)。
 
 ## orelia-world
 - **NPC経由のギルド機能**: `NpcInteractListener`は現状ダイアログ機能のみを扱っており、「ギルド機能は将来のモジュール向けのフック」とコメントされている。ギルド自体(`GuildModule`)はorelia-extra側に実装済みだが、orelia-world側のNPC(受付NPC等)からギルド関連操作(入会・管理等)を行う導線はまだ無い。

@@ -4,6 +4,7 @@
 
 ## 更新履歴
 
+- モンスター/ボスのアビリティに`TELEPORT`(位置攪乱)・`DEBUFF`(状態異常付与)・`SUMMON`(小モンスター増援)を追加(既存の`AOE_SLAM`/`FIREBALL_BARRAGE`と合わせ計5種)。
 - `/auction` のGUIで、自分以外の出品を購入/入札する際に確認画面を挟むように変更。
 - `/oladmin dungeonarena set <dungeon-id> <index>` を追加(既存インデックスのアリーナを現在地で上書き)。
 - `/ol help <サブコマンド名>` でサブコマンド単体のヘルプを表示できるように。
