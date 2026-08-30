@@ -46,7 +46,8 @@ public final class BossModule implements RpgModule {
 
         reloadBosses();
 
-        this.abilityCastService = new BossAbilityCastService(plugin, monsterModule.getSpawnService(), repository);
+        this.abilityCastService = new BossAbilityCastService(plugin, monsterModule.getSpawnService(), repository,
+                monsterModule.getAbilityCastService());
         this.bossBarService = new BossBarService(monsterModule.getSpawnService());
 
         plugin.getServer().getPluginManager().registerEvents(

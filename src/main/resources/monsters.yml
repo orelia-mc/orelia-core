@@ -7,8 +7,8 @@
 # crit-rate: optional percent chance (0-100) this monster's attacks crit (default 0 = never).
 # crit-multiplier: optional multiplier applied on a crit (default 1.5, only matters if crit-rate > 0).
 # abilities: optional periodic attacks cast at nearby players (MonsterAbilityCastService), same
-# shape as bosses.yml's own abilities block: type is AOE_SLAM or FIREBALL_BARRAGE, damage/radius/
-# cooldown-seconds/particle/sound. damage is a MULTIPLIER on this monster's own (level-scaled)
+# shape as bosses.yml's own abilities block: type, damage/radius/cooldown-seconds/particle/sound,
+# plus per-type extra keys below. damage is a MULTIPLIER on this monster's own (level-scaled)
 # attack-power, not an absolute amount - e.g. damage: 1.5 hits for 1.5x this monster's current
 # scaled attack power. This keeps ability damage properly scaled through the DEF/crit/weakness
 # pipeline and MonsterLevelScalingConfig instead of bypassing it as a fixed vanilla amount (see
@@ -18,6 +18,20 @@
 # "ability happening" signal. Do not configure abilities here for a monster id that's also
 # referenced by bosses.yml's monster-id (goblin_king, flame_lord below) - that entity spawns
 # through the separate boss ability system instead when spawned as a boss.
+#
+# type: AOE_SLAM | FIREBALL_BARRAGE | TELEPORT | DEBUFF | SUMMON
+#   AOE_SLAM / FIREBALL_BARRAGE: direct damage, see damage/radius above.
+#   TELEPORT: repositioning ambush, no damage. Teleports next to a random nearby player, landing
+#     within `radius` blocks of them. damage is unused.
+#   DEBUFF: applies a potion effect within `radius`, no direct damage. damage is unused.
+#     effect-type: PotionEffectType name, e.g. POISON/WEAKNESS/SLOWNESS (default POISON)
+#     effect-duration-seconds: how long the effect lasts (default 5)
+#     effect-amplifier: potion amplifier, 0 = level I (default 0)
+#   SUMMON: spawns reinforcements within `radius` of this monster, scaled to its own target
+#     level. damage is unused.
+#     summon-monster-id: another id in this file to spawn (required - a blank/missing id fails
+#       this cast closed rather than spawning nothing meaningful)
+#     summon-count: how many to spawn per cast (default 2)
 config-version: 2
 
 monsters:
