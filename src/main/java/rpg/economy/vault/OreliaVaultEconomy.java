@@ -4,23 +4,28 @@ import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import rpg.economy.service.BankService;
 import rpg.economy.service.EconomyService;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Adapts {@link EconomyService} to Vault's {@code Economy} interface so third-party
- * plugins (shops, other RPG add-ons) can read/modify Orelia balances through Vault
- * (SOW section 16: "Vault連携を考慮した設計"). Banks are not supported - Orelia only
- * models a personal balance.
+ * Adapts {@link EconomyService}/{@link BankService} to Vault's {@code Economy} interface so
+ * third-party plugins (shops, other RPG add-ons) can read/modify Orelia balances - and named
+ * banks - through Vault (SOW section 16: "Vault連携を考慮した設計"). A bank has exactly one
+ * owner and no separate member list - see {@link BankService}'s own note on why, which stems
+ * from a limit in Vault's {@code Economy} interface itself, not an Orelia-side scope cut.
  */
 public final class OreliaVaultEconomy implements Economy {
 
     private final EconomyService economyService;
+    private final BankService bankService;
 
-    public OreliaVaultEconomy(EconomyService economyService) {
+    public OreliaVaultEconomy(EconomyService economyService, BankService bankService) {
         this.economyService = economyService;
+        this.bankService = bankService;
     }
 
     @Deprecated
@@ -40,7 +45,7 @@ public final class OreliaVaultEconomy implements Economy {
 
     @Override
     public boolean hasBankSupport() {
-        return false;
+        return true;
     }
 
     @Override
@@ -185,71 +190,106 @@ public final class OreliaVaultEconomy implements Economy {
         return new EconomyResponse(amount, economyService.getBalance(uuid), EconomyResponse.ResponseType.SUCCESS, null);
     }
 
-    private EconomyResponse unsupported() {
-        return new EconomyResponse(0, 0, EconomyResponse.ResponseType.NOT_IMPLEMENTED, "Orelia does not support bank accounts");
+    /** Every bank method below fails this same way for a name with no matching row - a bank must be created via {@link #createBank(String, OfflinePlayer)} before any other bank call accepts it. */
+    private EconomyResponse bankNotFound(String name) {
+        return new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "No bank named '" + name + "' exists");
     }
 
     @Override
     @Deprecated
     public EconomyResponse createBank(String name, String player) {
-        return unsupported();
+        return createBank(name, Bukkit.getOfflinePlayer(player));
     }
 
     @Override
     public EconomyResponse createBank(String name, OfflinePlayer player) {
-        return unsupported();
+        if (!bankService.create(name, player.getUniqueId())) {
+            return new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "A bank named '" + name + "' already exists");
+        }
+        return new EconomyResponse(0, 0, EconomyResponse.ResponseType.SUCCESS, null);
     }
 
     @Override
     public EconomyResponse deleteBank(String name) {
-        return unsupported();
+        if (!bankService.delete(name)) {
+            return bankNotFound(name);
+        }
+        return new EconomyResponse(0, 0, EconomyResponse.ResponseType.SUCCESS, null);
     }
 
     @Override
     public EconomyResponse bankBalance(String name) {
-        return unsupported();
+        return bankService.getBalance(name)
+                .map(balance -> new EconomyResponse(0, balance, EconomyResponse.ResponseType.SUCCESS, null))
+                .orElseGet(() -> bankNotFound(name));
     }
 
     @Override
     public EconomyResponse bankHas(String name, double amount) {
-        return unsupported();
+        Optional<Double> balance = bankService.getBalance(name);
+        if (balance.isEmpty()) {
+            return bankNotFound(name);
+        }
+        if (balance.get() < amount) {
+            return new EconomyResponse(0, balance.get(), EconomyResponse.ResponseType.FAILURE, "Insufficient bank funds");
+        }
+        return new EconomyResponse(0, balance.get(), EconomyResponse.ResponseType.SUCCESS, null);
     }
 
     @Override
     public EconomyResponse bankWithdraw(String name, double amount) {
-        return unsupported();
+        if (!bankService.exists(name)) {
+            return bankNotFound(name);
+        }
+        if (!bankService.withdraw(name, amount)) {
+            return new EconomyResponse(0, bankService.getBalance(name).orElse(0.0), EconomyResponse.ResponseType.FAILURE, "Insufficient bank funds");
+        }
+        return new EconomyResponse(amount, bankService.getBalance(name).orElse(0.0), EconomyResponse.ResponseType.SUCCESS, null);
     }
 
     @Override
     public EconomyResponse bankDeposit(String name, double amount) {
-        return unsupported();
+        if (!bankService.deposit(name, amount)) {
+            return bankNotFound(name);
+        }
+        return new EconomyResponse(amount, bankService.getBalance(name).orElse(0.0), EconomyResponse.ResponseType.SUCCESS, null);
     }
 
     @Override
     @Deprecated
     public EconomyResponse isBankOwner(String name, String playerName) {
-        return unsupported();
+        return isBankOwner(name, Bukkit.getOfflinePlayer(playerName));
     }
 
     @Override
     public EconomyResponse isBankOwner(String name, OfflinePlayer player) {
-        return unsupported();
+        if (!bankService.exists(name)) {
+            return bankNotFound(name);
+        }
+        return bankService.isOwner(name, player.getUniqueId())
+                ? new EconomyResponse(0, 0, EconomyResponse.ResponseType.SUCCESS, null)
+                : new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, player.getName() + " is not the owner of bank '" + name + "'");
     }
 
     @Override
     @Deprecated
     public EconomyResponse isBankMember(String name, String playerName) {
-        return unsupported();
+        return isBankMember(name, Bukkit.getOfflinePlayer(playerName));
     }
 
     @Override
     public EconomyResponse isBankMember(String name, OfflinePlayer player) {
-        return unsupported();
+        if (!bankService.exists(name)) {
+            return bankNotFound(name);
+        }
+        return bankService.isMember(name, player.getUniqueId())
+                ? new EconomyResponse(0, 0, EconomyResponse.ResponseType.SUCCESS, null)
+                : new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, player.getName() + " is not a member of bank '" + name + "'");
     }
 
     @Override
     public List<String> getBanks() {
-        return List.of();
+        return bankService.getAllNames();
     }
 
     @Override

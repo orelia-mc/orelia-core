@@ -4,6 +4,7 @@
 
 ## 更新履歴
 
+- Vaultの銀行(Bank)機能に対応(`createBank`/`bankDeposit`/`bankWithdraw`等)。プレイヤーが名前付き銀行を作成し所有できるように。
 - `/auction` のGUIで、自分以外の出品を購入/入札する際に確認画面を挟むように変更。
 - `/oladmin dungeonarena set <dungeon-id> <index>` を追加(既存インデックスのアリーナを現在地で上書き)。
 - `/ol help <サブコマンド名>` でサブコマンド単体のヘルプを表示できるように。

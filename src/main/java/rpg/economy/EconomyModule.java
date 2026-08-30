@@ -6,7 +6,9 @@ import org.bukkit.plugin.ServicePriority;
 import rpg.core.OreliaPlugin;
 import rpg.core.module.RpgModule;
 import rpg.database.DatabaseModule;
+import rpg.economy.repository.BankRepository;
 import rpg.economy.repository.EconomyRepository;
+import rpg.economy.service.BankService;
 import rpg.economy.service.EconomyService;
 import rpg.economy.vault.OreliaVaultEconomy;
 
@@ -20,6 +22,7 @@ import java.util.logging.Level;
 public final class EconomyModule implements RpgModule {
 
     private EconomyService economyService;
+    private BankService bankService;
 
     @Override
     public String getName() {
@@ -43,6 +46,14 @@ public final class EconomyModule implements RpgModule {
 
         this.economyService = new EconomyService(repository);
 
+        BankRepository bankRepository = new BankRepository(databaseModule.getDatabaseManager());
+        try {
+            bankRepository.createSchemaIfNotExists();
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to initialize bank schema", e);
+        }
+        this.bankService = new BankService(bankRepository);
+
         if (Bukkit.getPluginManager().getPlugin("Vault") != null) {
             // Highest priority (the top of ServicePriority, not just "High") so Orelia's own
             // balance always wins ServicesManager.load(Economy.class) lookups (e.g.
@@ -57,7 +68,7 @@ public final class EconomyModule implements RpgModule {
             // "I have enough money but it still says insufficient funds".
             Bukkit.getServicesManager().register(
                     net.milkbowl.vault.economy.Economy.class,
-                    new OreliaVaultEconomy(economyService),
+                    new OreliaVaultEconomy(economyService, bankService),
                     plugin,
                     ServicePriority.Highest);
             plugin.getLogger().info("Registered Orelia as the Vault economy provider.");
@@ -70,5 +81,9 @@ public final class EconomyModule implements RpgModule {
 
     public EconomyService getEconomyService() {
         return economyService;
+    }
+
+    public BankService getBankService() {
+        return bankService;
     }
 }
