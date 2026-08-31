@@ -1668,7 +1668,6 @@ duel:
   already-pending: "&%cその相手には既に決闘を申請中です。"
   on-cooldown: "&%c決闘の申請はクールダウン中です。"
   cannot-target-self: "&%c自分自身に決闘を申し込むことはできません。"
-  accepted: "&%a決闘の申請を承認しました。"
   started: "&%a決闘が始まりました！"
   no-arena-free: "&%c空いている決闘アリーナがありません。しばらく待ってから再度お試しください。"
   no-pending-request: "&%c該当する決闘申請がありません。"

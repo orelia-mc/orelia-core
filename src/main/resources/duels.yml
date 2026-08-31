@@ -1,0 +1,9 @@
+# duels.yml
+# arenas: flat, 0-indexed list of physical duel locations, managed via
+# /oladmin duelarena add|set|remove|list - do not hand-edit unless you know what you're doing.
+# Each arena's world needs PvP enabled (world.getPVP()) to actually function - without it,
+# players can never damage each other there, so a duel started in that arena can never end.
+# /oladmin duelarena add|set warns (but does not block) if the target world has PvP off.
+config-version: 1
+
+arenas: {}

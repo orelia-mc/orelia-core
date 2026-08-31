@@ -1,0 +1,80 @@
+package rpg.extra.duel.manager;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
+import rpg.extra.duel.model.DuelArena;
+import rpg.extra.duel.model.DuelSession;
+import rpg.extra.duel.repository.DuelArenaRepository;
+import rpg.extra.duel.service.DuelArenaAllocator;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Tracks every currently-active {@link DuelSession}, keyed by both participants' UUIDs (so a
+ * lookup from either side is O(1)), and which arena indices are currently occupied.
+ */
+public final class DuelSessionManager {
+
+    private final DuelArenaRepository arenaRepository;
+    private final Map<UUID, DuelSession> sessionsByPlayer = new ConcurrentHashMap<>();
+    private final Set<Integer> occupiedArenaIndices = ConcurrentHashMap.newKeySet();
+
+    public DuelSessionManager(DuelArenaRepository arenaRepository) {
+        this.arenaRepository = arenaRepository;
+    }
+
+    /** Empty if no arena is currently free - {@link rpg.extra.duel.service.DuelService#accept} is responsible for messaging the two players. */
+    public Optional<DuelSession> start(Player a, Player b) {
+        List<DuelArena> arenas = arenaRepository.getAll();
+
+        // Atomically find and allocate a free arena to prevent double-booking
+        int index;
+        synchronized (occupiedArenaIndices) {
+            Optional<Integer> freeIndex = DuelArenaAllocator.findFreeIndex(arenas.size(), Set.copyOf(occupiedArenaIndices));
+            if (freeIndex.isEmpty()) {
+                return Optional.empty();
+            }
+            index = freeIndex.get();
+            occupiedArenaIndices.add(index);
+        }
+
+        DuelArena arena = arenas.get(index);
+
+        // Check world exists before committing session state
+        var world = Bukkit.getWorld(arena.world());
+        if (world == null) {
+            // Rollback: release the arena we just allocated
+            occupiedArenaIndices.remove(index);
+            return Optional.empty();
+        }
+
+        // Now safe to commit session state
+        DuelSession session = new DuelSession(a.getUniqueId(), b.getUniqueId(),
+                a.getLocation().clone(), b.getLocation().clone(), index);
+        sessionsByPlayer.put(a.getUniqueId(), session);
+        sessionsByPlayer.put(b.getUniqueId(), session);
+
+        // Teleport to the arena
+        Location destination = new Location(world, arena.x(), arena.y(), arena.z(), arena.yaw(), arena.pitch());
+        a.teleport(destination);
+        b.teleport(destination);
+        return Optional.of(session);
+    }
+
+    public Optional<DuelSession> sessionOf(UUID playerId) {
+        return Optional.ofNullable(sessionsByPlayer.get(playerId));
+    }
+
+    /** Removes {@code session} from tracking and frees its arena - does not teleport/heal anyone, callers (DuelService/DuelDamageListener) do that once, after deciding the outcome. */
+    public void end(DuelSession session) {
+        sessionsByPlayer.remove(session.getPlayerA());
+        sessionsByPlayer.remove(session.getPlayerB());
+        occupiedArenaIndices.remove(session.getArenaIndex());
+    }
+}
