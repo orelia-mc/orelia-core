@@ -32,19 +32,36 @@ public final class DuelSessionManager {
     /** Empty if no arena is currently free - caller is responsible for messaging the two players. */
     public Optional<DuelSession> start(Player a, Player b) {
         List<DuelArena> arenas = arenaRepository.getAll();
-        Optional<Integer> freeIndex = DuelArenaAllocator.findFreeIndex(arenas.size(), Set.copyOf(occupiedArenaIndices));
-        if (freeIndex.isEmpty()) {
+
+        // Atomically find and allocate a free arena to prevent double-booking
+        int index;
+        synchronized (occupiedArenaIndices) {
+            Optional<Integer> freeIndex = DuelArenaAllocator.findFreeIndex(arenas.size(), Set.copyOf(occupiedArenaIndices));
+            if (freeIndex.isEmpty()) {
+                return Optional.empty();
+            }
+            index = freeIndex.get();
+            occupiedArenaIndices.add(index);
+        }
+
+        DuelArena arena = arenas.get(index);
+
+        // Check world exists before committing session state
+        var world = Bukkit.getWorld(arena.world());
+        if (world == null) {
+            // Rollback: release the arena we just allocated
+            occupiedArenaIndices.remove(index);
             return Optional.empty();
         }
-        int index = freeIndex.get();
-        DuelArena arena = arenas.get(index);
+
+        // Now safe to commit session state
         DuelSession session = new DuelSession(a.getUniqueId(), b.getUniqueId(),
                 a.getLocation().clone(), b.getLocation().clone(), index);
-        occupiedArenaIndices.add(index);
         sessionsByPlayer.put(a.getUniqueId(), session);
         sessionsByPlayer.put(b.getUniqueId(), session);
-        Location destination = new Location(
-                Bukkit.getWorld(arena.world()), arena.x(), arena.y(), arena.z(), arena.yaw(), arena.pitch());
+
+        // Teleport to the arena
+        Location destination = new Location(world, arena.x(), arena.y(), arena.z(), arena.yaw(), arena.pitch());
         a.teleport(destination);
         b.teleport(destination);
         return Optional.of(session);

@@ -5,7 +5,7 @@ import org.bukkit.Location;
 import java.util.UUID;
 
 /**
- * One in-progress duel between two players - mutable, in-memory only (not persisted; a duel is
+ * One in-progress duel between two players - in-memory only (not persisted; a duel is
  * a short-lived interaction, same reasoning rpg.extra.party.model.Party has no DB backing
  * either - it's rebuilt fresh from PlayerData/quit events, there's nothing meaningful to
  * restore across a server restart).
@@ -35,7 +35,13 @@ public final class DuelSession {
     }
 
     public Location getReturnLocation(UUID playerId) {
-        return playerId.equals(playerA) ? returnLocationA : returnLocationB;
+        if (playerId.equals(playerA)) {
+            return returnLocationA;
+        }
+        if (playerId.equals(playerB)) {
+            return returnLocationB;
+        }
+        throw new IllegalArgumentException(playerId + " is not part of this duel session");
     }
 
     /** The other participant's id - throws if {@code playerId} isn't part of this session, which would be a caller bug. */
