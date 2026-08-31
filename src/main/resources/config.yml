@@ -5,7 +5,7 @@
 # added - on next startup, ConfigManager appends the new section (with its comments) to any
 # existing config.yml that's missing it, without touching anything you've already customized.
 # Never bump this for a value-only change (e.g. tweaking a default), only for new/removed keys.
-config-version: 13
+config-version: 14
 
 chat:
   mute:
@@ -250,6 +250,12 @@ guild:
     name: ENTITY_EXPERIENCE_ORB_PICKUP
     volume: 1.0
     pitch: 1.0
+
+duel:
+  # Seconds a player must wait between sending duel requests.
+  cooldown-seconds: 60
+  # Money paid to the winner from the server (Vault), not a player-vs-player wager.
+  reward-money: 50
 
 mail:
   # A player's send-from-player mail is rejected once their inbox holds this many messages

@@ -4,7 +4,7 @@
 # NPC dialogue lines / quest descriptions / story text stay in their own content yml files
 # (npc.yml, quests.yml, story.yml, ...) since those are per-entry authored content, not
 # fixed UI copy.
-config-version: 19
+config-version: 20
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -422,6 +422,34 @@ trade:
   too-many-items: "&%c提示できるアイテム数の上限に達しています。"
   money-set: "&%a提示金額を{money}に設定しました。"
   offer-money: "&%7提示金額: &%6{money}"
+
+duel:
+  usage: "&%e使い方: /duel &%7<&%erequest&%7|&%eaccept&%7|&%edecline&%7|&%ecancel&%7|&%eforfeit&%7|&%eranking&%7>&%e"
+  usage-request: "&%e使い方: /duel request &%7<&%eplayer&%7>&%e"
+  usage-cancel: "&%e使い方: /duel cancel &%7<&%eplayer&%7>&%e"
+  request-sent: "&%a{player}に決闘を申請しました。"
+  request-received: "&%e{player}から決闘の申請が届きました。&%7/duel accept &%f{player}&%7 で承認できます。"
+  already-pending: "&%cその相手には既に決闘を申請中です。"
+  on-cooldown: "&%c決闘の申請はクールダウン中です。"
+  cannot-target-self: "&%c自分自身に決闘を申し込むことはできません。"
+  already-in-duel: "&%c既に決闘中です。"
+  started: "&%a決闘が始まりました！"
+  no-arena-free: "&%c空いている決闘アリーナがありません。しばらく待ってから再度お試しください。"
+  no-pending-request: "&%c該当する決闘申請がありません。"
+  declined: "&%e決闘の申請を拒否しました。"
+  cancelled: "&%e決闘の申請を取り消しました。"
+  requester-offline: "&%c申請者がオフラインです。"
+  not-in-duel: "&%c現在決闘中ではありません。"
+  won: "&%a{opponent}との決闘に勝利しました！ &%6+{reward}G"
+  lost: "&%c{opponent}との決闘に敗北しました。"
+  admin:
+    arena-usage: "&%e使い方: /oladmin duelarena &%7<&%eadd&%7|&%eset&%7|&%eremove&%7|&%elist&%7>&%e"
+    arena-added: "&%a決闘アリーナを追加しました。"
+    arena-set: "&%aアリーナ{index}番を現在地に設定しました。"
+    arena-removed: "&%aアリーナ{index}番を削除しました。"
+    arena-index-out-of-range: "&%c指定したインデックスのアリーナは存在しません。"
+    arena-list-header: "&%a決闘アリーナ一覧:"
+    arena-list-entry: "&%7{index}: &%f{world} ({x}, {y}, {z})"
 
 mail:
   unread-count: "&%e未読メール: {count}件 (クリックで開く)"

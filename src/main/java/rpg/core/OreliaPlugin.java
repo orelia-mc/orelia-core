@@ -46,6 +46,7 @@ import rpg.extra.party.PartyModule;
 import rpg.extra.friend.FriendModule;
 import rpg.extra.guild.GuildModule;
 import rpg.extra.chat.ChatModule;
+import rpg.extra.duel.DuelModule;
 import rpg.extra.trade.TradeModule;
 import rpg.extra.mail.MailModule;
 import rpg.extra.auction.AuctionModule;
@@ -175,6 +176,7 @@ public final class OreliaPlugin extends JavaPlugin {
         moduleManager.register(new FriendModule());
         moduleManager.register(new GuildModule());
         moduleManager.register(new ChatModule());
+        moduleManager.register(new DuelModule());
         moduleManager.register(new TradeModule());
         moduleManager.register(new MailModule());
         moduleManager.register(new AuctionModule());
