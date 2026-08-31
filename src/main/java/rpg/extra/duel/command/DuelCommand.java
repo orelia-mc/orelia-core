@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import rpg.core.command.TabCompletions;
 import rpg.core.message.MessageManager;
 import rpg.extra.duel.gui.DuelGuiScreen;
+import rpg.extra.duel.gui.DuelRankingGuiScreen;
 import rpg.extra.duel.listener.DuelDamageListener;
 import rpg.extra.duel.manager.DuelSessionManager;
 import rpg.extra.duel.model.DuelSession;
@@ -25,21 +26,23 @@ import java.util.Optional;
  */
 public final class DuelCommand implements CommandExecutor, TabCompleter {
 
-    private static final List<String> SUBCOMMANDS = List.of("gui", "request", "accept", "decline", "cancel", "forfeit");
+    private static final List<String> SUBCOMMANDS = List.of("gui", "request", "accept", "decline", "cancel", "forfeit", "ranking");
 
     private final DuelService duelService;
     private final DuelSessionManager sessionManager;
     private final DuelDamageListener damageListener;
     private final DuelGuiScreen guiScreen;
+    private final DuelRankingGuiScreen rankingScreen;
     private final GuiManager guiManager;
     private final MessageManager messages;
 
     public DuelCommand(DuelService duelService, DuelSessionManager sessionManager, DuelDamageListener damageListener,
-                        DuelGuiScreen guiScreen, GuiManager guiManager, MessageManager messages) {
+                        DuelGuiScreen guiScreen, DuelRankingGuiScreen rankingScreen, GuiManager guiManager, MessageManager messages) {
         this.duelService = duelService;
         this.sessionManager = sessionManager;
         this.damageListener = damageListener;
         this.guiScreen = guiScreen;
+        this.rankingScreen = rankingScreen;
         this.guiManager = guiManager;
         this.messages = messages;
     }
@@ -60,6 +63,7 @@ public final class DuelCommand implements CommandExecutor, TabCompleter {
             case "decline" -> decline(player, args);
             case "cancel" -> cancel(player, args);
             case "forfeit" -> forfeit(player);
+            case "ranking" -> guiManager.open(player, rankingScreen.build());
             default -> messages.send(sender, "duel.usage");
         }
         return true;
