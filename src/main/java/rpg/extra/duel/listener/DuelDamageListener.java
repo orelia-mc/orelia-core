@@ -13,6 +13,7 @@ import rpg.core.message.MessageManager;
 import rpg.extra.duel.manager.DuelSessionManager;
 import rpg.extra.duel.model.DuelSession;
 import rpg.extra.duel.service.DuelStatsService;
+import rpg.util.MoneyFormat;
 
 import java.util.Map;
 import java.util.Optional;
@@ -98,7 +99,7 @@ public final class DuelDamageListener implements Listener {
             // Sound, float, float), which throws on a null Sound rather than tolerating it, so a
             // plain send() (no sound cue) is used here instead of sendWithSound with a null third
             // argument, which would have thrown and skipped the loser's message below.
-            messages.send(winner, "duel.won", "opponent", loser != null ? loser.getName() : loserId.toString(), "reward", rewardMoney);
+            messages.send(winner, "duel.won", "opponent", loser != null ? loser.getName() : loserId.toString(), "reward", MoneyFormat.format(rewardMoney));
         }
         if (loser != null) {
             messages.send(loser, "duel.lost", "opponent", winner != null ? winner.getName() : winnerId.toString());
