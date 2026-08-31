@@ -52,6 +52,7 @@ public final class DuelArenaAdminCommand implements CommandExecutor, TabComplete
         }
         adminService.addArena(player.getLocation());
         messages.send(sender, "duel.admin.arena-added");
+        warnIfPvpOff(sender, player);
     }
 
     private void set(CommandSender sender, String[] args) {
@@ -72,8 +73,21 @@ public final class DuelArenaAdminCommand implements CommandExecutor, TabComplete
         }
         DuelArenaAdminService.SetResult result = adminService.setArena(index, player.getLocation());
         switch (result) {
-            case OK -> messages.send(sender, "duel.admin.arena-set", "index", index);
+            case OK -> {
+                messages.send(sender, "duel.admin.arena-set", "index", index);
+                warnIfPvpOff(sender, player);
+            }
             case INDEX_OUT_OF_RANGE -> messages.send(sender, "duel.admin.arena-index-out-of-range");
+        }
+    }
+
+    /** Warns (does not block) when the arena being registered sits in a world with PvP disabled - without it,
+     * EntityDamageByEntityEvent never fires between players there, so a duel started in that arena can never end
+     * (spec's open confirmation item #2, docs/superpowers/specs/2026-08-30-duel-module-design.md ~line 161). Some
+     * admins may intentionally want a manual/off-by-default arena, so this only warns. */
+    private void warnIfPvpOff(CommandSender sender, Player player) {
+        if (!player.getWorld().getPVP()) {
+            messages.send(sender, "duel.admin.world-pvp-off-warning", "world", player.getWorld().getName());
         }
     }
 
