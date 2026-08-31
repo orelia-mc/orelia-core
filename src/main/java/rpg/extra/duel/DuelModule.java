@@ -12,6 +12,7 @@ import rpg.extra.duel.command.DuelCommand;
 import rpg.extra.duel.gui.DuelGuiScreen;
 import rpg.extra.duel.gui.DuelRankingGuiScreen;
 import rpg.extra.duel.listener.DuelDamageListener;
+import rpg.extra.duel.listener.DuelDeathListener;
 import rpg.extra.duel.listener.DuelQuitListener;
 import rpg.extra.duel.manager.DuelRequestManager;
 import rpg.extra.duel.manager.DuelSessionManager;
@@ -76,8 +77,10 @@ public final class DuelModule implements RpgModule {
         DuelDamageListener damageListener = new DuelDamageListener(sessionManager, statsService, statusApi, economy,
                 plugin.getMessageManager(), rewardMoney);
         DuelQuitListener quitListener = new DuelQuitListener(sessionManager, requestManager, damageListener);
+        DuelDeathListener deathListener = new DuelDeathListener(sessionManager, damageListener);
         plugin.getServer().getPluginManager().registerEvents(damageListener, plugin);
         plugin.getServer().getPluginManager().registerEvents(quitListener, plugin);
+        plugin.getServer().getPluginManager().registerEvents(deathListener, plugin);
 
         DuelGuiScreen guiScreen = new DuelGuiScreen(requestManager, duelService, plugin.getMessageManager());
         DuelRankingGuiScreen rankingScreen = new DuelRankingGuiScreen(statsService);
