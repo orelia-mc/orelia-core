@@ -55,6 +55,10 @@ public final class DuelGuiScreen {
             if (decline) {
                 duelService.decline(clicker, requesterId);
                 messages.send(clicker, "duel.declined");
+                Player requesterPlayer = Bukkit.getPlayer(requesterId);
+                if (requesterPlayer != null) {
+                    messages.send(requesterPlayer, "duel.declined-notice", "player", clicker.getName());
+                }
                 return;
             }
             Player requesterPlayer = Bukkit.getPlayer(requesterId);
@@ -64,8 +68,7 @@ public final class DuelGuiScreen {
             }
             DuelService.AcceptResult result = duelService.accept(clicker, requesterId, id -> java.util.Optional.ofNullable(Bukkit.getPlayer(id)));
             switch (result) {
-                case OK -> messages.send(clicker, "duel.started");
-                case NO_ARENA_FREE -> messages.send(clicker, "duel.no-arena-free");
+                case OK, NO_ARENA_FREE -> { } // DuelService.accept already messaged both participants
                 case NO_PENDING_REQUEST -> messages.send(clicker, "duel.no-pending-request");
                 case ALREADY_IN_DUEL -> messages.send(clicker, "duel.already-in-duel");
             }

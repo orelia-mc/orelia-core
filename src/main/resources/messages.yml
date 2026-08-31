@@ -4,7 +4,7 @@
 # NPC dialogue lines / quest descriptions / story text stay in their own content yml files
 # (npc.yml, quests.yml, story.yml, ...) since those are per-entry authored content, not
 # fixed UI copy.
-config-version: 20
+config-version: 21
 
 prefix: "&%8[&%6Orelia&%8] &r"
 
@@ -437,7 +437,9 @@ duel:
   no-arena-free: "&%c空いている決闘アリーナがありません。しばらく待ってから再度お試しください。"
   no-pending-request: "&%c該当する決闘申請がありません。"
   declined: "&%e決闘の申請を拒否しました。"
+  declined-notice: "&%e{player}に決闘の申請を拒否されました。"
   cancelled: "&%e決闘の申請を取り消しました。"
+  cancelled-notice: "&%e{player}が決闘の申請を取り消しました。"
   requester-offline: "&%c申請者がオフラインです。"
   not-in-duel: "&%c現在決闘中ではありません。"
   won: "&%a{opponent}との決闘に勝利しました！ &%6+{reward}G"
@@ -450,6 +452,7 @@ duel:
     arena-index-out-of-range: "&%c指定したインデックスのアリーナは存在しません。"
     arena-list-header: "&%a決闘アリーナ一覧:"
     arena-list-entry: "&%7{index}: &%f{world} ({x}, {y}, {z})"
+    world-pvp-off-warning: "&%c警告: ワールド「{world}」はPvPが無効になっています。このワールドの決闘アリーナは正常に機能しません(プレイヤー同士がダメージを与えられないため決闘が終了できません)。"
 
 mail:
   unread-count: "&%e未読メール: {count}件 (クリックで開く)"

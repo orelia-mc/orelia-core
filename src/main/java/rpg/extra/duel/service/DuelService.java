@@ -1,6 +1,7 @@
 package rpg.extra.duel.service;
 
 import org.bukkit.entity.Player;
+import rpg.core.message.MessageManager;
 import rpg.extra.duel.manager.DuelRequestManager;
 import rpg.extra.duel.manager.DuelSessionManager;
 import rpg.extra.duel.model.DuelSession;
@@ -13,17 +14,24 @@ import java.util.concurrent.ConcurrentHashMap;
 /** Orchestrates the request -> accept/decline/cancel -> session-start flow. Mid-duel forfeit
  * (teleport/heal/reward/stats) is NOT owned here - that lives in DuelDamageListener.resolveDuel
  * (Task 8), invoked directly by DuelQuitListener (Task 9) and DuelCommand (Task 10); this class
- * only clears pending requests a departing player was involved in ({@link #clearPendingRequestsFor}). */
+ * only clears pending requests a departing player was involved in ({@link #clearPendingRequestsFor}).
+ * {@link #accept} sends "duel.started"/"duel.no-arena-free" to BOTH participants itself (final
+ * review I-1) rather than leaving that to each caller - DuelCommand and DuelGuiScreen both call
+ * into this one method, and centralizing it here is the only way to fix it once instead of twice
+ * (same reasoning TradeService/AuctionService already take a MessageManager for player-facing
+ * outcomes rather than pushing all of it back onto the command/GUI layer). */
 public final class DuelService {
 
     private final DuelRequestManager requestManager;
     private final DuelSessionManager sessionManager;
+    private final MessageManager messages;
     private final long cooldownMillis;
     private final Map<UUID, Long> lastRequestAtMillis = new ConcurrentHashMap<>();
 
-    public DuelService(DuelRequestManager requestManager, DuelSessionManager sessionManager, long cooldownSeconds) {
+    public DuelService(DuelRequestManager requestManager, DuelSessionManager sessionManager, MessageManager messages, long cooldownSeconds) {
         this.requestManager = requestManager;
         this.sessionManager = sessionManager;
+        this.messages = messages;
         this.cooldownMillis = cooldownSeconds * 1000L;
     }
 
@@ -84,14 +92,23 @@ public final class DuelService {
             return AcceptResult.NO_PENDING_REQUEST;
         }
         Optional<DuelSession> session = sessionManager.start(requester.get(), target);
-        return session.isPresent() ? AcceptResult.OK : AcceptResult.NO_ARENA_FREE;
+        if (session.isPresent()) {
+            messages.send(requester.get(), "duel.started");
+            messages.send(target, "duel.started");
+            return AcceptResult.OK;
+        }
+        // Spec (2026-08-30-duel-module-design.md, ~line 90): "空いてるアリーナが無い場合は、
+        // 申請の承認時点で失敗させ、両者にメッセージを送る" - both sides, not just the accepter.
+        messages.send(requester.get(), "duel.no-arena-free");
+        messages.send(target, "duel.no-arena-free");
+        return AcceptResult.NO_ARENA_FREE;
     }
 
-    public boolean decline(Player target, UUID requesterId) {
-        Optional<UUID> consumed = requesterId == null
+    /** Empty if there was no matching pending request to decline; otherwise the declined requester's id, so the caller can notify them too. */
+    public Optional<UUID> decline(Player target, UUID requesterId) {
+        return requesterId == null
                 ? requestManager.consume(target.getUniqueId())
                 : requestManager.consume(target.getUniqueId(), requesterId);
-        return consumed.isPresent();
     }
 
     public boolean cancel(Player requester, UUID targetId) {

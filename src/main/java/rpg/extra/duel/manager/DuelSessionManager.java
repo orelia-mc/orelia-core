@@ -29,7 +29,7 @@ public final class DuelSessionManager {
         this.arenaRepository = arenaRepository;
     }
 
-    /** Empty if no arena is currently free - caller is responsible for messaging the two players. */
+    /** Empty if no arena is currently free - {@link rpg.extra.duel.service.DuelService#accept} is responsible for messaging the two players. */
     public Optional<DuelSession> start(Player a, Player b) {
         List<DuelArena> arenas = arenaRepository.getAll();
 

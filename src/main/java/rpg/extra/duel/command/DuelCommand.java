@@ -104,8 +104,7 @@ public final class DuelCommand implements CommandExecutor, TabCompleter {
         }
         DuelService.AcceptResult result = duelService.accept(player, requesterId, id -> Optional.ofNullable(Bukkit.getPlayer(id)));
         switch (result) {
-            case OK -> messages.send(player, "duel.started");
-            case NO_ARENA_FREE -> messages.send(player, "duel.no-arena-free");
+            case OK, NO_ARENA_FREE -> { } // DuelService.accept already messaged both participants
             case NO_PENDING_REQUEST -> messages.send(player, "duel.no-pending-request");
             case ALREADY_IN_DUEL -> messages.send(player, "duel.already-in-duel");
         }
@@ -115,10 +114,20 @@ public final class DuelCommand implements CommandExecutor, TabCompleter {
         java.util.UUID requesterId = null;
         if (args.length >= 2) {
             Player requester = Bukkit.getPlayerExact(args[1]);
-            requesterId = requester != null ? requester.getUniqueId() : null;
+            if (requester == null) {
+                messages.send(player, "command.player-not-found", "player", args[1]);
+                return;
+            }
+            requesterId = requester.getUniqueId();
         }
-        boolean declined = duelService.decline(player, requesterId);
-        messages.send(player, declined ? "duel.declined" : "duel.no-pending-request");
+        Optional<java.util.UUID> declinedRequesterId = duelService.decline(player, requesterId);
+        messages.send(player, declinedRequesterId.isPresent() ? "duel.declined" : "duel.no-pending-request");
+        declinedRequesterId.ifPresent(id -> {
+            Player requester = Bukkit.getPlayer(id);
+            if (requester != null) {
+                messages.send(requester, "duel.declined-notice", "player", player.getName());
+            }
+        });
     }
 
     private void cancel(Player player, String[] args) {
@@ -133,6 +142,9 @@ public final class DuelCommand implements CommandExecutor, TabCompleter {
         }
         boolean cancelled = duelService.cancel(player, target.getUniqueId());
         messages.send(player, cancelled ? "duel.cancelled" : "duel.no-pending-request");
+        if (cancelled) {
+            messages.send(target, "duel.cancelled-notice", "player", player.getName());
+        }
     }
 
     private void forfeit(Player player) {

@@ -72,7 +72,7 @@ public final class DuelModule implements RpgModule {
         long cooldownSeconds = config.getLong("duel.cooldown-seconds", 60);
         double rewardMoney = config.getDouble("duel.reward-money", 50);
 
-        DuelService duelService = new DuelService(requestManager, sessionManager, cooldownSeconds);
+        DuelService duelService = new DuelService(requestManager, sessionManager, plugin.getMessageManager(), cooldownSeconds);
         DuelDamageListener damageListener = new DuelDamageListener(sessionManager, statsService, statusApi, economy,
                 plugin.getMessageManager(), rewardMoney);
         DuelQuitListener quitListener = new DuelQuitListener(sessionManager, requestManager, damageListener);
