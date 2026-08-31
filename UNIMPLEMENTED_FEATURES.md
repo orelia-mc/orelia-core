@@ -42,7 +42,6 @@ orelia-core / orelia-world / orelia-extra 3リポジトリを横断して、コ�
 
 以下は、3リポジトリの`CLAUDE.md`のモジュール一覧を見る限り「言及が見当たらない」機能です。SOWで実際に要求されているかは未確認なので、あくまで参考程度に留めてください。
 
-- **PvP専用機能**: 決闘(duel)申請、闘技場(アリーナ)、レーティング等。現状の戦闘システムはPvE中心の設計(`CombatDamageListener`はPvPも計算上は通るが、専用のマッチメイキング/観戦/報酬の仕組みは無い)。
 - **ブロックリスト**: `FriendModule`(`rpg/extra/friend/`)でフレンドリスト自体は実装済みだが、迷惑なプレイヤーを拒否するブロックリストに相当する機能は見当たらない。
 
 ### 前回リストアップ時から実装が追いついていた項目（2026-08-30訂正）
@@ -51,3 +50,4 @@ orelia-core / orelia-world / orelia-extra 3リポジトリを横断して、コ�
 - ~~ギルド間の関係(GvG等)~~ → 実装対象外と判断(2026-08-30、ユーザー確認済み)。
 - ~~クラフト/レシピシステム~~ → `CraftingService`/`CraftCommand`/`crafting.yml`として実装済み(`/ol craft`、CHANGELOG.md記載)。
 - ~~称号システムの活用箇所~~ → 実は既に実装済みだったと判明(2026-08-30再調査)。orelia-serverutilの`PlaceholderService`が`{title}`プレースホルダーを`QuestApi#getEquippedTitle`経由で解決しており、`config.yml`のタブリスト(`name-color.suffix-format`)・ネームタグ(`belowname.core-format.format`)・チャット(`chat.core-placeholder.format`)全てに組み込み済み。このリストが実装に追いついていなかっただけ。
+- ~~PvP専用機能(決闘/duel)~~ → 2026-08-30〜31に`DuelModule`として実装(ブレインストーミング→設計仕様書→実装計画→サブエージェント駆動実装の正式フロー)。1対1の申請・承認フロー、複数登録可能な専用アリーナ(`/oladmin duelarena add|set|remove|list`)、HP0到達で実際には死なせず終了する死亡防止フック、勝者へのVault経由の少額報酬(デフォルト50G)、決闘専用の勝敗数ランキング(`/ol duel ranking`)まで実装済み。**闘技場の「観戦」・レーティング(ELO)・プレイヤー間の賭けは設計時点で明示的にスコープ外**(仕様書に明記)。2026-08-31時点で12タスク全て実装・レビュー完了しているが、最終の全体レビューとmainへのマージは次回セッションに持ち越し(`.claude/worktrees/duel-module`ブランチ`worktree-duel-module`上、詳細は`2026-08-31-orelia-core-session-summary.md`参照)。
