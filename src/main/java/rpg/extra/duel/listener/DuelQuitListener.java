@@ -21,7 +21,7 @@ public final class DuelQuitListener implements Listener {
         this.damageListener = damageListener;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.LOW)
     public void onQuit(PlayerQuitEvent event) {
         var playerId = event.getPlayer().getUniqueId();
         requestManager.clear(playerId);
